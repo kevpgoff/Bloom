@@ -14,5 +14,41 @@
     ]
   },
   { "id": "focus", "name": "Focus", "cost": 1, "effects": [{ "type": "focus", "amount": 4 }] },
-  { "id": "chorus", "name": "Chorus", "cost": 1, "effects": [{ "type": "draw", "count": 2 }] }
+  { "id": "chorus", "name": "Chorus", "cost": 1, "effects": [{ "type": "draw", "count": 2 }] },
+  { "id": "patch", "name": "Patch", "cost": 1, "placeholder": true, "effects": [{ "type": "repair", "count": 1 }] },
+  { "id": "cut", "name": "Cut", "cost": 1, "placeholder": true, "effects": [{ "type": "damage", "amount": 6 }] },
+  { "id": "ping", "name": "Ping", "cost": 0, "placeholder": true, "effects": [{ "type": "damage", "amount": 3 }] },
+  { "id": "screen", "name": "Screen", "cost": 1, "placeholder": true, "effects": [{ "type": "block", "amount": 6 }] },
+  {
+    "id": "glide",
+    "name": "Glide",
+    "cost": 0,
+    "placeholder": true,
+    "effects": [
+      { "type": "gainEnergy", "amount": 1 },
+      { "type": "draw", "count": 1 }
+    ]
+  },
+  { "id": "sunstrike", "name": "Sunstrike", "cost": 3, "placeholder": true, "effects": [{ "type": "damage", "amount": 26 }] },
+  {
+    "id": "tend",
+    "name": "Tend",
+    "cost": 1,
+    "placeholder": true,
+    "effects": [
+      { "type": "block", "amount": 3 },
+      { "type": "grow", "amount": 2 }
+    ]
+  },
+  {
+    "id": "rewire",
+    "name": "Rewire",
+    "cost": 1,
+    "placeholder": true,
+    "effects": [
+      { "type": "repair", "count": 1 },
+      { "type": "draw", "count": 1 }
+    ]
+  },
+  { "id": "hymn", "name": "Hymn", "cost": 1, "placeholder": true, "effects": [{ "type": "focus", "amount": 6 }] }
 ]

@@ -29,6 +29,15 @@ public sealed class GodotSaveStore(string path = "user://run.json") : ISaveStore
         }
     }
 
+    /// <summary>Copies the save file, if there is one, so it survives being overwritten.</summary>
+    public void CopyTo(string copyPath)
+    {
+        if (FileAccess.FileExists(path))
+        {
+            DirAccess.CopyAbsolute(ProjectSettings.GlobalizePath(path), ProjectSettings.GlobalizePath(copyPath));
+        }
+    }
+
     public void Delete()
     {
         if (FileAccess.FileExists(path))

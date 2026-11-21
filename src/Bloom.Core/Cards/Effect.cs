@@ -29,13 +29,23 @@ public sealed record GainEnergyEffect(int Amount) : Effect;
 
 public sealed record DrawEffect(int Count) : Effect;
 
-/// <summary>Bring disabled pieces back during a fight.</summary>
+/// <summary>
+/// Bring disabled pieces back during a fight. The player picks which ones: as many as
+/// <see cref="Count"/>, or every disabled piece if fewer are disabled. Their cards go to the discard pile.
+/// A card with this effect cannot be played while no piece is disabled.
+/// </summary>
 public sealed record RepairEffect(int Count) : Effect;
 
-/// <summary>The next attack deals this much more damage.</summary>
+/// <summary>
+/// The next attack (a card with a damage effect) deals this much more damage. Focus adds up, lasts
+/// until an attack uses it or the fight ends, and is used up even if enemy block absorbs the damage.
+/// </summary>
 public sealed record FocusEffect(int Amount) : Effect;
 
-/// <summary>Each time the card is played, it gains this much block for the rest of the fight.</summary>
+/// <summary>
+/// Each time the card is played, it gains this much block for the rest of the fight: each of its block
+/// effects gives <c>Amount × Growth</c> more. Each copy grows on its own.
+/// </summary>
 public sealed record GrowEffect(int Amount) : Effect;
 
 /// <summary>
@@ -50,5 +60,8 @@ public abstract record BonusEffect : Effect;
 /// <summary>Cards of the receiving piece deal this much more damage.</summary>
 public sealed record DamageBonusEffect(int Amount) : BonusEffect;
 
-/// <summary>Cards of the receiving piece start each fight already grown this many times.</summary>
+/// <summary>
+/// Cards of the receiving piece start each fight already grown this many times. The growth is given
+/// when the fight starts and stays even if the giver is disabled later.
+/// </summary>
 public sealed record StartGrownEffect(int Times) : BonusEffect;

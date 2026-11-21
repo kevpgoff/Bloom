@@ -36,7 +36,10 @@ public sealed record CardGrant(string Card, int Count);
 /// </summary>
 public sealed record AdjacencyBonus(string Name, Tag TargetTag, BonusEffect Effect);
 
-/// <summary>A piece of equipment or a crew member, as defined in pieces.json.</summary>
+/// <summary>
+/// A piece of equipment or a crew member, as defined in pieces.json. <see cref="Placeholder"/> marks
+/// pieces that are invented and not in the spec.
+/// </summary>
 public sealed record PieceDef(
     string Id,
     string Name,
@@ -46,7 +49,8 @@ public sealed record PieceDef(
     Shape Shape,
     IReadOnlyList<CardGrant> Cards,
     AdjacencyBonus? Bonus = null,
-    string? Commune = null)
+    string? Commune = null,
+    bool Placeholder = false)
 {
     /// <summary>The bridge carries the Core tag. It can be moved but never removed.</summary>
     [JsonIgnore]

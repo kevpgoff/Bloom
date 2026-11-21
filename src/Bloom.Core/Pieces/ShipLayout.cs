@@ -15,12 +15,21 @@ public sealed class ShipLayout
     public FittedPiece? Find(int pieceId) => Fitted.Find(f => f.Piece.Id == pieceId);
 }
 
-/// <summary>Unfitted pieces. The player must sell or compost any piece beyond the capacity.</summary>
+/// <summary>
+/// Unfitted pieces. The hold may go over <see cref="Rules.CargoCapacity"/> while the player refits, but
+/// the next fight cannot start until the extra pieces are fitted or composted.
+/// </summary>
 public sealed class CargoHold
 {
     public List<PieceInstance> Pieces { get; set; } = [];
 
     public bool IsFull => Pieces.Count >= Rules.CargoCapacity;
+
+    /// <summary>Pieces over the capacity.</summary>
+    public int Excess => Math.Max(0, Pieces.Count - Rules.CargoCapacity);
+
+    /// <summary>Adds a piece even past the capacity.</summary>
+    public void Add(PieceInstance piece) => Pieces.Add(piece);
 
     public bool TryAdd(PieceInstance piece)
     {

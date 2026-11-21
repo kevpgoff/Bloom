@@ -23,6 +23,9 @@ public enum CombatOutcome
     Lost,
 }
 
+/// <summary>How the most recent fight ended. It stays on the run after the fight, so the result can be shown again after a restart.</summary>
+public sealed record FightRecord(string EnemyId, CombatOutcome Outcome, int Turns);
+
 public sealed class EnemyState
 {
     public required string DefId { get; set; }
@@ -50,6 +53,9 @@ public sealed class CombatState
     public int Energy { get; set; }
 
     public int Block { get; set; }
+
+    /// <summary>Extra damage for the next attack card. Focus cards add to it; it lasts until an attack uses it or the fight ends.</summary>
+    public int PendingFocus { get; set; }
 
     public List<CardInstance> DrawPile { get; set; } = [];
 

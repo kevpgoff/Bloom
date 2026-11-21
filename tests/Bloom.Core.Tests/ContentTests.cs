@@ -90,19 +90,71 @@ public class ShippedContentTests
     public void TheShippedContentLoadsAndPassesValidation()
     {
         var db = TestContent.LoadShipped();
-        Assert.Equal(7, db.Pieces.Count);
-        Assert.Equal(8, db.Cards.Count);
-        Assert.Single(db.Enemies);
+        Assert.Equal(16, db.Pieces.Count); // the spec's 7, the placeholder Tinker and 8 placeholder rewards
+        Assert.Equal(17, db.Cards.Count);  // the spec's 8, the placeholder Patch and 8 for the rewards
+        Assert.Equal(4, db.Enemies.Count);
         Assert.Single(db.Ships);
     }
 
+    /// <summary>Until the map exists, a run fights every enemy in the order of enemies.json (owner ruling, 2026-11-21).</summary>
     [Fact]
-    public void TheStartingShipMatchesTheSpec()
+    public void ARunFightsTheFourEnemiesInFileOrder()
     {
         var db = TestContent.LoadShipped();
         var run = RunFactory.NewRun(db, "seedling", seed: 1);
-        Assert.Equal(20, run.Ship.Grid.CellCount);       // "about 20 cells"
-        Assert.Equal(9, DeckBuilder.Build(run.Ship, db).Count); // "about 10 cards"
+        Assert.Equal(["feral_harvester", "pollen_squall", "rogue_tiller", "singing_comet"], run.Encounters);
+        Assert.Equal(RunPhase.Refit, run.Phase);
+    }
+
+    [Fact]
+    public void EveryHeavyAttackHitsALaneTheSeedlingCovers()
+    {
+        var db = TestContent.LoadShipped();
+        var run = RunFactory.NewRun(db, "seedling", seed: 1);
+        var lanes = run.Ship.Grid.Cells.Select(c => c.X).ToHashSet();
+        foreach (var enemy in db.Enemies)
+        {
+            foreach (var intent in enemy.Pattern.Where(i => i.Kind == IntentKind.HeavyAttack))
+            {
+                Assert.True(lanes.Contains(intent.Lane!.Value), $"{enemy.Id} attacks lane {intent.Lane}, which has no hull.");
+            }
+        }
+    }
+
+    [Fact]
+    public void TheShippedContentOffersThreePieces()
+    {
+        var db = TestContent.LoadShipped();
+        var offer = new RewardEngine(db).Roll(RunFactory.NewRun(db, "seedling", seed: 1));
+        Assert.Equal(3, offer!.Pieces.Distinct().Count());
+        Assert.DoesNotContain("bridge", offer.Pieces);
+    }
+
+    /// <summary>
+    /// The placeholder seedling carries every spec piece so that their effects show up in the game: a
+    /// 5x5 hull instead of the spec's "about 20 cells" (owner ruling, 2026-11-21).
+    /// </summary>
+    [Fact]
+    public void TheStartingShipCarriesEveryPiece()
+    {
+        var db = TestContent.LoadShipped();
+        var run = RunFactory.NewRun(db, "seedling", seed: 1);
+        Assert.Equal(25, run.Ship.Grid.CellCount);
+        var startingPieces = db.Pieces.Where(p => !p.Placeholder || p.Id == "tinker").Select(p => p.Id);
+        Assert.Equal(startingPieces.Order(), run.Ship.Fitted.Select(f => f.Piece.DefId).Order());
+        Assert.Equal(14, DeckBuilder.Build(run.Ship, db).Count);
         Assert.Equal(60, run.Hull);
+    }
+
+    [Fact]
+    public void BothAdjacencyBonusesAreActiveOnTheStartingShip()
+    {
+        var db = TestContent.LoadShipped();
+        var run = RunFactory.NewRun(db, "seedling", seed: 1);
+        string DefOf(int pieceId) => run.Ship.Find(pieceId)!.Piece.DefId;
+        var bonuses = new ShipFitter(db).ActiveBonuses(run.Ship, [])
+            .Select(b => $"{DefOf(b.GiverId)}->{DefOf(b.ReceiverId)}")
+            .Order();
+        Assert.Equal(["lens_grinder->light_lance", "spore_singer->moss_reactor"], bonuses);
     }
 }

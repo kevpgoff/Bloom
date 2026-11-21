@@ -1,46 +1,216 @@
-[gd_scene format=3]
+[gd_scene load_steps=3 format=3]
 
-[node name="Combat" type="VBoxContainer"]
+[ext_resource type="Script" path="res://scripts/Screens/CombatScreen.cs" id="1_screen"]
+[ext_resource type="Script" path="res://scripts/Screens/ShipGridView.cs" id="2_grid"]
+
+[node name="Combat" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_screen")
+
+[node name="Layout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="EnemyPanel" type="PanelContainer" parent="Layout"]
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Layout/EnemyPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="EnemyBox" type="VBoxContainer" parent="Layout/EnemyPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Header" type="HBoxContainer" parent="Layout/EnemyPanel/Margin/EnemyBox"]
+layout_mode = 2
+
+[node name="EnemyName" type="Label" parent="Layout/EnemyPanel/Margin/EnemyBox/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 36
+text = "Enemy"
+
+[node name="TurnLabel" type="Label" parent="Layout/EnemyPanel/Margin/EnemyBox/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.627, 0.659, 0.678, 1)
+theme_override_font_sizes/font_size = 24
+text = "Turn 1"
+
+[node name="EnemyHullBar" type="ProgressBar" parent="Layout/EnemyPanel/Margin/EnemyBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+max_value = 1.0
+show_percentage = false
+
+[node name="Stats" type="HBoxContainer" parent="Layout/EnemyPanel/Margin/EnemyBox"]
+layout_mode = 2
+
+[node name="EnemyHullLabel" type="Label" parent="Layout/EnemyPanel/Margin/EnemyBox/Stats"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 26
+text = "Hull"
+
+[node name="EnemyBlockLabel" type="Label" parent="Layout/EnemyPanel/Margin/EnemyBox/Stats"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.506, 0.831, 0.98, 1)
+theme_override_font_sizes/font_size = 26
+
+[node name="IntentLabel" type="Label" parent="Layout/EnemyPanel/Margin/EnemyBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Next:"
+autowrap_mode = 3
+
+[node name="ShipGrid" type="Control" parent="Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 320)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("2_grid")
+
+[node name="StatusRow" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+
+[node name="ShipLabel" type="Label" parent="Layout/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 28
+text = "Hull"
+
+[node name="EnergyLabel" type="Label" parent="Layout/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.878, 0.4, 1)
+theme_override_font_sizes/font_size = 32
+text = "Energy"
+
+[node name="PilesLabel" type="Label" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.627, 0.659, 0.678, 1)
+theme_override_font_sizes/font_size = 22
+text = "Draw · Discard"
+autowrap_mode = 3
+
+[node name="TargetBanner" type="HBoxContainer" parent="Layout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TargetLabel" type="Label" parent="Layout/TargetBanner"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.878, 0.4, 1)
+theme_override_font_sizes/font_size = 26
+text = "Tap a disabled piece to repair it."
+autowrap_mode = 3
+
+[node name="CancelButton" type="Button" parent="Layout/TargetBanner"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 88)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Cancel"
+
+[node name="HandScroll" type="ScrollContainer" parent="Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 216)
+layout_mode = 2
+horizontal_scroll_mode = 1
+vertical_scroll_mode = 0
+
+[node name="Hand" type="HBoxContainer" parent="Layout/HandScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 8
+alignment = 1
 
-[node name="EnemyArea" type="PanelContainer" parent="."]
+[node name="EndTurnButton" type="Button" parent="Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
-size_flags_vertical = 3
-size_flags_stretch_ratio = 1.0
+theme_override_font_sizes/font_size = 32
+text = "End Turn"
 
-[node name="Label" type="Label" parent="EnemyArea"]
+[node name="ResultOverlay" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.7)
+
+[node name="Center" type="CenterContainer" parent="ResultOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ResultPanel" type="PanelContainer" parent="ResultOverlay/Center"]
+custom_minimum_size = Vector2(600, 0)
 layout_mode = 2
-text = "Enemy and intents (top fifth)"
+
+[node name="Margin" type="MarginContainer" parent="ResultOverlay/Center/ResultPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="Box" type="VBoxContainer" parent="ResultOverlay/Center/ResultPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="ResultTitle" type="Label" parent="ResultOverlay/Center/ResultPanel/Margin/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Victory"
 horizontal_alignment = 1
-vertical_alignment = 1
+
+[node name="ResultMessage" type="Label" parent="ResultOverlay/Center/ResultPanel/Margin/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(536, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="ShipArea" type="PanelContainer" parent="."]
+[node name="NewRunButton" type="Button" parent="ResultOverlay/Center/ResultPanel/Margin/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
-size_flags_vertical = 3
-size_flags_stretch_ratio = 3.0
-
-[node name="Label" type="Label" parent="ShipArea"]
-layout_mode = 2
-text = "Ship grid (placeholder)"
-horizontal_alignment = 1
-vertical_alignment = 1
-autowrap_mode = 3
-
-[node name="HandArea" type="PanelContainer" parent="."]
-layout_mode = 2
-size_flags_vertical = 3
-size_flags_stretch_ratio = 1.0
-
-[node name="Label" type="Label" parent="HandArea"]
-layout_mode = 2
-text = "Hand of cards (within thumb reach)"
-horizontal_alignment = 1
-vertical_alignment = 1
-autowrap_mode = 3
+theme_override_font_sizes/font_size = 32
+text = "New Run"

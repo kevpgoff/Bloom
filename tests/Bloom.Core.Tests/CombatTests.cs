@@ -63,19 +63,6 @@ public class CombatTests
     }
 
     [Fact]
-    public void AnUnimplementedEffectThrowsAndChangesNothing()
-    {
-        var run = NewRun();
-        Fit(run, "grinder", 0, 0); // adds Focus, which is not implemented yet
-        var combat = _engine.StartFight(run, "dummy");
-        int focus = CardIn(combat, "focus");
-        Assert.False(_engine.CanPlay(run, focus));
-        Assert.Throws<NotSupportedException>(() => _engine.PlayCard(run, focus));
-        Assert.Equal(Rules.EnergyPerTurn, combat.Energy);
-        Assert.Contains(combat.Hand, c => c.Id == focus);
-    }
-
-    [Fact]
     public void BlockAbsorbsEnemyDamageBeforeHullAndThenResets()
     {
         var run = NewRun();
@@ -149,6 +136,21 @@ public class CombatTests
         Assert.Equal(CombatOutcome.Won, _engine.PlayCard(run, CardIn(combat, "ram")));
         Assert.Null(run.Combat);
         Assert.Equal(RunResult.InProgress, run.Result);
+        Assert.Equal(new FightRecord("dummy", CombatOutcome.Won, 1), run.LastFight);
+        Assert.Equal(1, run.FightsWon);
+        Assert.NotNull(run.Reward);
+        Assert.Equal(RunPhase.Reward, run.Phase);
+    }
+
+    [Fact]
+    public void AFightCannotStartWhileARewardWaits()
+    {
+        var run = NewRun();
+        var combat = _engine.StartFight(run, "dummy");
+        combat.Enemy.Hull = 5;
+        _engine.PlayCard(run, CardIn(combat, "ram"));
+        Assert.Throws<InvalidOperationException>(() => _engine.StartFight(run, "dummy"));
+        Assert.Null(run.Combat);
     }
 
     [Fact]
@@ -161,6 +163,31 @@ public class CombatTests
         Assert.Equal(0, run.Hull);
         Assert.Equal(RunResult.Lost, run.Result);
         Assert.Null(run.Combat);
+        Assert.Equal(new FightRecord("dummy", CombatOutcome.Lost, 1), run.LastFight);
+        Assert.Equal(0, run.FightsWon);
+        Assert.Null(run.Reward);
+        Assert.Equal(RunPhase.Lost, run.Phase);
+        Assert.Throws<InvalidOperationException>(() => _engine.StartFight(run, "dummy"));
+    }
+
+    [Fact]
+    public void TheHeavyAttackTargetIsTheFrontmostWorkingPieceInItsLane()
+    {
+        var run = NewRun();
+        var plating = Fit(run, "plating", 0, 0);
+        _engine.StartFight(run, "heavy");
+        Assert.Equal(plating.Id, _engine.HeavyAttackTarget(run)?.Piece.Id);
+
+        _engine.EndTurn(run); // disables the plating; the bridge is next in lane 0
+        Assert.Equal(BridgeId(run), _engine.HeavyAttackTarget(run)?.Piece.Id);
+    }
+
+    [Fact]
+    public void ThereIsNoHeavyAttackTargetWhenTheEnemyDoesNotMakeAHeavyAttack()
+    {
+        var run = NewRun();
+        _engine.StartFight(run, "dummy");
+        Assert.Null(_engine.HeavyAttackTarget(run));
     }
 
     [Fact]

@@ -79,5 +79,118 @@
       "targetTag": "Garden",
       "effect": { "type": "startGrown", "times": 1 }
     }
+  },
+  {
+    "id": "tinker",
+    "name": "Tinker",
+    "kind": "Crew",
+    "tags": [],
+    "rarity": "Common",
+    "commune": "tinker_hives",
+    "placeholder": true,
+    "shape": ["#"],
+    "cards": [{ "card": "patch", "count": 1 }]
+  },
+  {
+    "id": "arc_cutter",
+    "name": "Arc Cutter",
+    "kind": "Equipment",
+    "tags": ["Weapon"],
+    "rarity": "Common",
+    "commune": "sunwrights",
+    "placeholder": true,
+    "shape": ["##"],
+    "cards": [{ "card": "cut", "count": 2 }]
+  },
+  {
+    "id": "seed_drone",
+    "name": "Seed Drone",
+    "kind": "Equipment",
+    "tags": ["Drone"],
+    "rarity": "Common",
+    "commune": "tinker_hives",
+    "placeholder": true,
+    "shape": ["#.", "##"],
+    "cards": [{ "card": "ping", "count": 3 }]
+  },
+  {
+    "id": "reed_screen",
+    "name": "Reed Screen",
+    "kind": "Equipment",
+    "tags": ["Shield"],
+    "rarity": "Common",
+    "placeholder": true,
+    "shape": [".##", "##."],
+    "cards": [{ "card": "screen", "count": 3 }]
+  },
+  {
+    "id": "mirror_kite",
+    "name": "Mirror Kite",
+    "kind": "Equipment",
+    "tags": ["Solar"],
+    "rarity": "Uncommon",
+    "commune": "sunwrights",
+    "placeholder": true,
+    "shape": ["#.#", "###"],
+    "cards": [{ "card": "glide", "count": 2 }]
+  },
+  {
+    "id": "sunspear",
+    "name": "Sunspear",
+    "kind": "Equipment",
+    "tags": ["Weapon"],
+    "rarity": "Rare",
+    "commune": "sunwrights",
+    "placeholder": true,
+    "shape": ["####", ".#.."],
+    "cards": [{ "card": "sunstrike", "count": 2 }]
+  },
+  {
+    "id": "orchard_keeper",
+    "name": "Orchard Keeper",
+    "kind": "Crew",
+    "tags": [],
+    "rarity": "Common",
+    "commune": "tide_orchard",
+    "placeholder": true,
+    "shape": ["#"],
+    "cards": [{ "card": "tend", "count": 1 }],
+    "bonus": {
+      "name": "orchard_care",
+      "targetTag": "Garden",
+      "effect": { "type": "startGrown", "times": 1 }
+    }
+  },
+  {
+    "id": "drone_wrangler",
+    "name": "Drone Wrangler",
+    "kind": "Crew",
+    "tags": [],
+    "rarity": "Uncommon",
+    "commune": "tinker_hives",
+    "placeholder": true,
+    "shape": ["##"],
+    "cards": [{ "card": "rewire", "count": 1 }],
+    "bonus": {
+      "name": "drone_tuning",
+      "targetTag": "Drone",
+      "effect": { "type": "damageBonus", "amount": 2 }
+    }
+  },
+  {
+    "id": "choir_elder",
+    "name": "Choir Elder",
+    "kind": "Crew",
+    "tags": [],
+    "rarity": "Rare",
+    "commune": "mycelial_choir",
+    "placeholder": true,
+    "shape": ["###"],
+    "cards": [{ "card": "hymn", "count": 1 }],
+    "bonus": {
+      "name": "elder_hymn",
+      "targetTag": "Weapon",
+      "effect": { "type": "damageBonus", "amount": 3 }
+    }
   }
 ]

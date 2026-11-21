@@ -20,6 +20,8 @@ public sealed class RunSession
         _store = store;
         Fitter = new ShipFitter(content);
         Combat = new CombatEngine(content);
+        Rewards = new RewardEngine(content);
+        Refit = new RefitEngine(content);
     }
 
     public ContentDb Content { get; }
@@ -29,6 +31,10 @@ public sealed class RunSession
     public ShipFitter Fitter { get; }
 
     public CombatEngine Combat { get; }
+
+    public RewardEngine Rewards { get; }
+
+    public RefitEngine Refit { get; }
 
     public static RunSession StartNew(ContentDb content, ISaveStore store, string shipClassId, ulong seed)
     {

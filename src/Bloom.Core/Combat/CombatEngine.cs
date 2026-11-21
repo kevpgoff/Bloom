@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Bloom.Core.Cards;
 using Bloom.Core.Content;
 using Bloom.Core.Pieces;
@@ -5,24 +6,39 @@ using Bloom.Core.Run;
 
 namespace Bloom.Core.Combat;
 
+/// <summary>What a card would do if it were played now, with every bonus applied. The UI shows this.</summary>
+/// <param name="Effects">
+/// The card's effects with final numbers: damage includes adjacency bonuses and pending focus, and
+/// block includes growth. Compare with <see cref="CardDef.Effects"/> to see what was boosted.
+/// </param>
+/// <param name="Playable">Whether the card is in the hand and can be played now.</param>
+/// <param name="RepairTargets">How many disabled pieces the player must pick to play it; 0 for cards that do not repair.</param>
+public sealed record CardPreview(CardInstance Card, CardDef Def, IReadOnlyList<Effect> Effects, bool Playable, int RepairTargets);
+
 /// <summary>
-/// The turn cycle of a fight. Each public method is one player action and leaves the run in a state
-/// that can be saved.
+/// The turn cycle of a fight. Each public method that changes state is one player action and leaves
+/// the run in a state that can be saved. Every method validates before it changes anything.
 /// </summary>
 /// <remarks>
-/// Implemented: energy, draw and reshuffle, damage, block, gain energy, draw effects, enemy intents,
-/// lanes and disabling. Not yet: repair, focus, grow, and applying adjacency bonuses in combat; cards
-/// with those effects throw <see cref="NotSupportedException"/> when played.
+/// Adjacency bonuses: <see cref="DamageBonusEffect"/> is worked out each time a card is played, from the
+/// pieces that work at that moment. <see cref="StartGrownEffect"/> is given once, when the fight starts.
 /// </remarks>
 public sealed class CombatEngine(ContentDb content)
 {
     private readonly ShipFitter _fitter = new(content);
+    private readonly RewardEngine _rewards = new(content);
 
+    /// <summary>Starts a fight against an enemy. Players start fights through <see cref="RefitEngine.StartNextFight"/>.</summary>
     public CombatState StartFight(RunState run, string enemyId)
     {
-        if (run.Combat is not null)
+        switch (run.Phase)
         {
-            throw new InvalidOperationException("A fight is already in progress.");
+            case RunPhase.Fight:
+                throw new InvalidOperationException("A fight is already in progress.");
+            case RunPhase.Reward:
+                throw new InvalidOperationException("Take or skip the reward first.");
+            case RunPhase.Won or RunPhase.Lost:
+                throw new InvalidOperationException("The run is over.");
         }
 
         var enemy = content.Enemy(enemyId);
@@ -30,7 +46,9 @@ public sealed class CombatEngine(ContentDb content)
         {
             Enemy = new EnemyState { DefId = enemy.Id, Hull = enemy.Hull, MaxHull = enemy.Hull },
         };
-        combat.DrawPile.AddRange(DeckBuilder.Build(run.Ship, content));
+        var deck = DeckBuilder.Build(run.Ship, content);
+        GiveStartingGrowth(run, deck);
+        combat.DrawPile.AddRange(deck);
         run.Rng.Shuffle(combat.DrawPile);
         run.Combat = combat;
         StartTurn(run, combat);
@@ -43,13 +61,45 @@ public sealed class CombatEngine(ContentDb content)
         return pattern[combat.Enemy.PatternIndex % pattern.Count];
     }
 
+    /// <summary>
+    /// The piece the enemy's next action would disable if its damage gets past block, or null when the
+    /// next action is not a heavy attack or its lane has no working piece.
+    /// </summary>
+    public FittedPiece? HeavyAttackTarget(RunState run)
+    {
+        var combat = RequireCombat(run);
+        return CurrentIntent(combat) is { Kind: IntentKind.HeavyAttack, Lane: int lane }
+            ? _fitter.FrontmostInLane(run.Ship, lane, combat.DisabledPieceIds)
+            : null;
+    }
+
     public bool CanPlay(RunState run, int cardId) =>
         run.Combat is { } combat
         && combat.Hand.Find(c => c.Id == cardId) is { } card
-        && content.Card(card.CardId).Cost <= combat.Energy
-        && content.Card(card.CardId).Effects.All(IsSupported);
+        && CanPlay(combat, content.Card(card.CardId));
 
-    public CombatOutcome PlayCard(RunState run, int cardId)
+    /// <summary>How many disabled pieces the player must pick to play this card from the hand.</summary>
+    public int RepairTargetsNeeded(RunState run, int cardId)
+    {
+        var combat = RequireCombat(run);
+        var card = combat.Hand.Find(c => c.Id == cardId)
+                   ?? throw new InvalidOperationException($"Card {cardId} is not in the hand.");
+        return RepairTargetsNeeded(combat, content.Card(card.CardId));
+    }
+
+    public CardPreview Preview(RunState run, CardInstance card)
+    {
+        var combat = RequireCombat(run);
+        var def = content.Card(card.CardId);
+        bool playable = combat.Hand.Exists(c => c.Id == card.Id) && CanPlay(combat, def);
+        return new CardPreview(card, def, ResolveEffects(run, combat, card, def), playable, RepairTargetsNeeded(combat, def));
+    }
+
+    /// <summary>
+    /// Plays a card from the hand. A card that repairs needs <paramref name="repairTargets"/>: exactly
+    /// <see cref="RepairTargetsNeeded"/> different disabled pieces, which come back in that order.
+    /// </summary>
+    public CombatOutcome PlayCard(RunState run, int cardId, IReadOnlyList<int>? repairTargets = null)
     {
         var combat = RequireCombat(run);
         int index = combat.Hand.FindIndex(c => c.Id == cardId);
@@ -65,21 +115,67 @@ public sealed class CombatEngine(ContentDb content)
             throw new InvalidOperationException($"'{def.Id}' costs {def.Cost} energy but only {combat.Energy} is left.");
         }
 
-        // Check every effect before changing anything, so a failed play leaves the state untouched.
-        if (def.Effects.FirstOrDefault(e => !IsSupported(e)) is { } unsupported)
+        if (HasRepair(def) && combat.DisabledPieceIds.Count == 0)
         {
-            throw new NotSupportedException($"Effect '{unsupported.GetType().Name}' on card '{def.Id}' is not implemented yet.");
+            throw new InvalidOperationException($"'{def.Id}' repairs, but no piece is disabled.");
         }
 
+        repairTargets ??= [];
+        ValidateRepairTargets(combat, def, repairTargets);
+
+        // Everything is checked. From here on the play cannot fail.
+        var effects = ResolveEffects(run, combat, card, def);
         combat.Energy -= def.Cost;
         combat.Hand.RemoveAt(index);
-        foreach (var effect in def.Effects)
+        if (IsAttack(def))
         {
-            Apply(run, combat, effect);
+            // The resolved damage already includes the focus, so it is used up even if block absorbs it all.
+            combat.PendingFocus = 0;
+        }
+
+        int nextTarget = 0;
+        foreach (var effect in effects)
+        {
+            switch (effect)
+            {
+                case DamageEffect damage:
+                    DamageEnemy(combat.Enemy, damage.Amount);
+                    break;
+                case BlockEffect block:
+                    combat.Block += block.Amount;
+                    break;
+                case GainEnergyEffect energy:
+                    combat.Energy += energy.Amount;
+                    break;
+                case DrawEffect draw:
+                    Draw(run, combat, draw.Count);
+                    break;
+                case FocusEffect focus:
+                    combat.PendingFocus += focus.Amount;
+                    break;
+                case RepairEffect repair:
+                    for (int i = 0; i < repair.Count && nextTarget < repairTargets.Count; i++)
+                    {
+                        Repair(combat, repairTargets[nextTarget++]);
+                    }
+
+                    break;
+                case GrowEffect:
+                    // Counted once per play, below.
+                    break;
+                default:
+                    // The content validator rejects bonus effects on cards.
+                    throw new UnreachableException($"Effect '{effect.GetType().Name}' cannot be on a card.");
+            }
+        }
+
+        if (def.Effects.Any(e => e is GrowEffect))
+        {
+            card.Growth++;
         }
 
         combat.DiscardPile.Add(card);
-        return combat.Enemy.Hull <= 0 ? EndFight(run, won: true) : CombatOutcome.Ongoing;
+        return combat.Enemy.Hull <= 0 ? EndFight(run, combat, CombatOutcome.Won) : CombatOutcome.Ongoing;
     }
 
     /// <summary>The enemy acts, unplayed cards go to the discard pile, block returns to 0, and the next turn starts.</summary>
@@ -89,7 +185,7 @@ public sealed class CombatEngine(ContentDb content)
         EnemyActs(run, combat);
         if (run.Hull <= 0)
         {
-            return EndFight(run, won: false);
+            return EndFight(run, combat, CombatOutcome.Lost);
         }
 
         combat.DiscardPile.AddRange(combat.Hand);
@@ -107,35 +203,73 @@ public sealed class CombatEngine(ContentDb content)
         return Rules.CardsDrawnPerTurn - (bridgeDisabled ? 1 : 0);
     }
 
-    private static bool IsSupported(Effect effect) =>
-        effect is DamageEffect or BlockEffect or GainEnergyEffect or DrawEffect;
+    private static bool IsAttack(CardDef def) => def.Effects.Any(e => e is DamageEffect);
+
+    private static bool HasRepair(CardDef def) => def.Effects.Any(e => e is RepairEffect);
+
+    private static bool CanPlay(CombatState combat, CardDef def) =>
+        def.Cost <= combat.Energy && (!HasRepair(def) || combat.DisabledPieceIds.Count > 0);
+
+    private static int RepairTargetsNeeded(CombatState combat, CardDef def) =>
+        Math.Min(def.Effects.OfType<RepairEffect>().Sum(e => e.Count), combat.DisabledPieceIds.Count);
+
+    private static void ValidateRepairTargets(CombatState combat, CardDef def, IReadOnlyList<int> targets)
+    {
+        int needed = RepairTargetsNeeded(combat, def);
+        if (targets.Count != needed)
+        {
+            throw new InvalidOperationException(needed == 0
+                ? $"'{def.Id}' does not repair, so it takes no pieces to repair."
+                : $"'{def.Id}' needs {needed} disabled piece(s) to repair, but {targets.Count} were picked.");
+        }
+
+        if (targets.Distinct().Count() != targets.Count)
+        {
+            throw new InvalidOperationException("A piece can be picked for repair only once.");
+        }
+
+        foreach (int pieceId in targets)
+        {
+            if (!combat.DisabledPieceIds.Contains(pieceId))
+            {
+                throw new InvalidOperationException($"Piece {pieceId} is not disabled.");
+            }
+        }
+    }
+
+    /// <summary>The card's effects with adjacency bonuses, pending focus and growth applied.</summary>
+    private List<Effect> ResolveEffects(RunState run, CombatState combat, CardInstance card, CardDef def)
+    {
+        int extraDamage = BonusesReceived(run, combat.DisabledPieceIds, card.SourcePieceId)
+            .OfType<DamageBonusEffect>().Sum(e => e.Amount) + combat.PendingFocus;
+        int extraBlock = def.Effects.OfType<GrowEffect>().Sum(e => e.Amount) * card.Growth;
+        return def.Effects.Select(effect => effect switch
+        {
+            DamageEffect damage => damage with { Amount = damage.Amount + extraDamage },
+            BlockEffect block => block with { Amount = block.Amount + extraBlock },
+            _ => effect,
+        }).ToList();
+    }
+
+    private IEnumerable<BonusEffect> BonusesReceived(RunState run, IReadOnlyCollection<int> disabledPieceIds, int pieceId) =>
+        _fitter.ActiveBonuses(run.Ship, disabledPieceIds)
+            .Where(b => b.ReceiverId == pieceId)
+            .Select(b => b.Bonus.Effect);
+
+    /// <summary>No piece is disabled when a fight starts, so every bonus applies.</summary>
+    private void GiveStartingGrowth(RunState run, List<CardInstance> deck)
+    {
+        foreach (var card in deck)
+        {
+            card.Growth = BonusesReceived(run, [], card.SourcePieceId).OfType<StartGrownEffect>().Sum(e => e.Times);
+        }
+    }
 
     private void StartTurn(RunState run, CombatState combat)
     {
         combat.Turn++;
         combat.Energy = Rules.EnergyPerTurn;
         Draw(run, combat, CardsToDraw(run, combat));
-    }
-
-    private void Apply(RunState run, CombatState combat, Effect effect)
-    {
-        switch (effect)
-        {
-            case DamageEffect damage:
-                DamageEnemy(combat.Enemy, damage.Amount);
-                break;
-            case BlockEffect block:
-                combat.Block += block.Amount;
-                break;
-            case GainEnergyEffect energy:
-                combat.Energy += energy.Amount;
-                break;
-            case DrawEffect draw:
-                Draw(run, combat, draw.Count);
-                break;
-            default:
-                throw new NotSupportedException($"Effect '{effect.GetType().Name}' is not implemented yet.");
-        }
     }
 
     private void EnemyActs(RunState run, CombatState combat)
@@ -201,6 +335,14 @@ public sealed class CombatEngine(ContentDb content)
         }
     }
 
+    /// <summary>The piece works again and its cards, with their growth, go to the discard pile.</summary>
+    private static void Repair(CombatState combat, int pieceId)
+    {
+        combat.DisabledPieceIds.Remove(pieceId);
+        combat.DiscardPile.AddRange(combat.OfflineCards.Where(c => c.SourcePieceId == pieceId));
+        combat.OfflineCards.RemoveAll(c => c.SourcePieceId == pieceId);
+    }
+
     private static void Draw(RunState run, CombatState combat, int count)
     {
         for (int i = 0; i < count; i++)
@@ -223,16 +365,32 @@ public sealed class CombatEngine(ContentDb content)
         }
     }
 
-    /// <summary>Disabled pieces come back at no cost: the next fight rebuilds the deck from the ship.</summary>
-    private static CombatOutcome EndFight(RunState run, bool won)
+    /// <summary>
+    /// Records the result on the run. Disabled pieces come back at no cost: the next fight rebuilds the
+    /// deck from the ship. A win counts toward the run: after the last encounter the run is won, and
+    /// otherwise a reward is offered. All of it happens in the same action, so it is saved together.
+    /// </summary>
+    private CombatOutcome EndFight(RunState run, CombatState combat, CombatOutcome outcome)
     {
         run.Combat = null;
-        if (!won)
+        run.LastFight = new FightRecord(combat.Enemy.DefId, outcome, combat.Turn);
+        if (outcome == CombatOutcome.Lost)
         {
             run.Result = RunResult.Lost;
+            return outcome;
         }
 
-        return won ? CombatOutcome.Won : CombatOutcome.Lost;
+        run.FightsWon++;
+        if (run.FightsWon >= run.Encounters.Count)
+        {
+            run.Result = RunResult.Won;
+        }
+        else
+        {
+            run.Reward = _rewards.Roll(run);
+        }
+
+        return outcome;
     }
 
     private static CombatState RequireCombat(RunState run) =>

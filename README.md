@@ -12,8 +12,9 @@ A paid, single-player card roguelite for phones, where the ship is the deck (wor
 ```sh
 dotnet build Bloom.sln          # builds the rules, the tests and the Godot game assembly; no editor needed
 dotnet test                     # runs the rule tests, including validation of game/data/*.json
-godot --path game               # opens the project in the editor (or use the Project Manager)
-godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 7, …"
+godot --path game               # runs the game (portrait window, 405×720)
+godot -e --path game            # opens the project in the editor
+godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 16, …" and a screen line ("FittingScreen: …" on a new run)
 ```
 
 ## Layout
@@ -36,7 +37,7 @@ docs/decisions.md             decisions made so far
 
 ## Status
 
-This pass is scaffolding: the rule models and a basic turn cycle, plus placeholder screens.
+The loop of a run, before the sector map: a new run opens on the Fitting screen; the player fights, picks 1 of 3 pieces after a win, refits the ship, and fights the next enemy. A placeholder run is the 4 enemies in `enemies.json`, in order, and winning the 4th wins it. The game saves after every action and resumes at the same point. Saves are written to `user://run.json` (on Linux, `~/.local/share/godot/app_userdata/Bloom/run.json`); a save from an older schema is copied to `user://run.unreadable.json` and a new run starts.
 
 | Area | State |
 | --- | --- |
@@ -44,8 +45,13 @@ This pass is scaffolding: the rule models and a basic turn cycle, plus placehold
 | Fitting, adjacency, bonuses, lanes, cargo | Done, tested |
 | Deck from fitted pieces | Done, tested |
 | Combat turn cycle (energy, draw, block, damage, heavy attacks that disable pieces) | Done, tested |
-| Card effects `repair`, `focus` and `grow`, and applying adjacency bonuses in combat | Not yet: playing such a card throws `NotSupportedException` |
+| Card effects `repair`, `focus` and `grow`, and adjacency bonuses (`damageBonus`, `startGrown`) in combat | Done, tested; rulings in `docs/decisions.md` |
+| Rewards (1 of 3 pieces) and refitting (move, turn, fit, unfit, compost, undo) between fights | Done, tested; rulings in `docs/decisions.md` |
+| A run is 4 fights in a fixed order (`RunState.Encounters`) | Done; replaced when the map exists |
 | Sector map | Types only; no generation |
-| Rewards, docks, shipyards, events, renown | Not started |
-| Godot screens | Placeholders only |
+| Docks, shipyards, groves, events, salvage, renown | Not started |
+| Combat screen | Done with plain Controls, no art: enemy and intent, ship grid, hand, End Turn, defeat or voyage complete and New Run |
+| Reward screen | Done: 3 offered pieces with their shapes and cards, Take and Skip |
+| Fitting screen | Done: drag and drop with the piece floating above the finger, fit and bonus preview, tap to select and tap again to turn, cargo hold, Compost, Undo, next enemy's heavy lanes |
+| Map screen | Placeholder, not shown |
 | Mobile export presets | Not set up. When they are, check that `data/*.json` is included in the export. |

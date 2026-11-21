@@ -7,7 +7,10 @@ namespace Bloom.Core.Run;
 
 public static class RunFactory
 {
-    /// <summary>Every run starts from the ship class's basic ship. The same seed always gives the same run.</summary>
+    /// <summary>
+    /// Every run starts from the ship class's basic ship, between fights, so the player can refit before
+    /// the first one. The same seed always gives the same run.
+    /// </summary>
     public static RunState NewRun(ContentDb content, string shipClassId, ulong seed)
     {
         var ship = content.Ship(shipClassId);
@@ -19,6 +22,9 @@ public static class RunFactory
             Hull = ship.Hull,
             MaxHull = ship.Hull,
             Ship = new ShipLayout { Grid = ShipGrid.FromShape(ship.HullShape, ship.HullOrigin) },
+
+            // Until the sector map exists, a run is every enemy in content order (enemies.json).
+            Encounters = content.Enemies.Select(e => e.Id).ToList(),
         };
 
         var fitter = new ShipFitter(content);

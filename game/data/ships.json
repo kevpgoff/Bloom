@@ -4,13 +4,17 @@
     "name": "Seedling",
     "placeholder": true,
     "hull": 60,
-    "hullShape": ["####", "####", "####", "####", "####"],
+    "hullShape": ["#####", "#####", "#####", "#####", "#####"],
     "hullOrigin": { "x": 1, "y": 1 },
     "startingPieces": [
       { "piece": "hull_plating", "origin": { "x": 1, "y": 1 }, "rotation": "R0" },
-      { "piece": "light_lance", "origin": { "x": 1, "y": 2 }, "rotation": "R0" },
-      { "piece": "sun_sail", "origin": { "x": 1, "y": 3 }, "rotation": "R0" },
-      { "piece": "bridge", "origin": { "x": 3, "y": 4 }, "rotation": "R90" }
+      { "piece": "lens_grinder", "origin": { "x": 4, "y": 1 }, "rotation": "R0" },
+      { "piece": "tinker", "origin": { "x": 1, "y": 2 }, "rotation": "R0" },
+      { "piece": "light_lance", "origin": { "x": 2, "y": 2 }, "rotation": "R0" },
+      { "piece": "moss_reactor", "origin": { "x": 1, "y": 3 }, "rotation": "R0" },
+      { "piece": "sun_sail", "origin": { "x": 3, "y": 3 }, "rotation": "R0" },
+      { "piece": "spore_singer", "origin": { "x": 2, "y": 4 }, "rotation": "R270" },
+      { "piece": "bridge", "origin": { "x": 4, "y": 5 }, "rotation": "R0" }
     ]
   }
 ]

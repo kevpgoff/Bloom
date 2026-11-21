@@ -9,5 +9,39 @@
       { "kind": "HeavyAttack", "amount": 10, "lane": 2 },
       { "kind": "Block", "amount": 8 }
     ]
+  },
+  {
+    "id": "pollen_squall",
+    "name": "Pollen Squall",
+    "placeholder": true,
+    "hull": 42,
+    "pattern": [
+      { "kind": "Attack", "amount": 5 },
+      { "kind": "HeavyAttack", "amount": 9, "lane": 4 },
+      { "kind": "Attack", "amount": 5 }
+    ]
+  },
+  {
+    "id": "rogue_tiller",
+    "name": "Rogue Tiller",
+    "placeholder": true,
+    "hull": 50,
+    "pattern": [
+      { "kind": "Block", "amount": 10 },
+      { "kind": "HeavyAttack", "amount": 12, "lane": 1 },
+      { "kind": "Attack", "amount": 8 }
+    ]
+  },
+  {
+    "id": "singing_comet",
+    "name": "Singing Comet",
+    "placeholder": true,
+    "hull": 60,
+    "pattern": [
+      { "kind": "Attack", "amount": 7 },
+      { "kind": "HeavyAttack", "amount": 12, "lane": 3 },
+      { "kind": "Block", "amount": 8 },
+      { "kind": "HeavyAttack", "amount": 12, "lane": 5 }
+    ]
   }
 ]

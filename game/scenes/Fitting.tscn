@@ -1,34 +1,117 @@
-[gd_scene format=3]
+[gd_scene load_steps=3 format=3]
 
-[node name="Fitting" type="VBoxContainer"]
+[ext_resource type="Script" path="res://scripts/Screens/FittingScreen.cs" id="1_screen"]
+[ext_resource type="Script" path="res://scripts/Screens/FittingBoard.cs" id="2_board"]
+
+[node name="Fitting" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 8
+script = ExtResource("1_screen")
 
-[node name="ShipArea" type="PanelContainer" parent="."]
-layout_mode = 2
-size_flags_vertical = 3
-size_flags_stretch_ratio = 4.0
+[node name="Layout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
 
-[node name="Label" type="Label" parent="ShipArea"]
+[node name="Header" type="HBoxContainer" parent="Layout"]
 layout_mode = 2
-text = "Ship grid: drag pieces here (placeholder)"
-horizontal_alignment = 1
+
+[node name="Title" type="Label" parent="Layout/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+text = "Refit"
+
+[node name="StatusLabel" type="Label" parent="Layout/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 1
+theme_override_font_sizes/font_size = 26
+text = "Hull"
 vertical_alignment = 1
+
+[node name="NextLabel" type="Label" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.718, 0.302, 1)
+theme_override_font_sizes/font_size = 24
+text = "Next:"
 autowrap_mode = 3
 
-[node name="CargoArea" type="PanelContainer" parent="."]
+[node name="Board" type="Control" parent="Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 560)
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 1.0
+script = ExtResource("2_board")
 
-[node name="Label" type="Label" parent="CargoArea"]
+[node name="InfoPanel" type="PanelContainer" parent="Layout"]
+custom_minimum_size = Vector2(0, 190)
 layout_mode = 2
-text = "Cargo hold, 3 slots (placeholder)"
-horizontal_alignment = 1
-vertical_alignment = 1
+
+[node name="Margin" type="MarginContainer" parent="Layout/InfoPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="Row" type="HBoxContainer" parent="Layout/InfoPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="InfoText" type="RichTextLabel" parent="Layout/InfoPanel/Margin/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_font_sizes/normal_font_size = 22
+theme_override_font_sizes/bold_font_size = 28
+bbcode_enabled = true
+scroll_active = false
 autowrap_mode = 3
+
+[node name="CompostButton" type="Button" parent="Layout/InfoPanel/Margin/Row"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(180, 88)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 26
+text = "Compost"
+
+[node name="FightHint" type="Label" parent="Layout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.718, 0.302, 1)
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Buttons" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="UndoButton" type="Button" parent="Layout/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 96)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Undo"
+
+[node name="FightButton" type="Button" parent="Layout/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 32
+text = "Start fight"

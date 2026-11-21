@@ -29,29 +29,8 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="Status" type="Label" parent="Layout"]
+visible = false
 layout_mode = 2
 text = "Loading content…"
 horizontal_alignment = 1
 autowrap_mode = 3
-
-[node name="Nav" type="HBoxContainer" parent="Layout"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="MapButton" type="Button" parent="Layout/Nav"]
-custom_minimum_size = Vector2(0, 96)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Map"
-
-[node name="FittingButton" type="Button" parent="Layout/Nav"]
-custom_minimum_size = Vector2(0, 96)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Fitting"
-
-[node name="CombatButton" type="Button" parent="Layout/Nav"]
-custom_minimum_size = Vector2(0, 96)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Combat"

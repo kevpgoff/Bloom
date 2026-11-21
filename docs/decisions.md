@@ -20,6 +20,42 @@ Recorded on 2026-11-20. The full design spec is a doc at https://claude.ai/artif
 | Tone | Hopeful and strange solarpunk. Threats are anomalies and feral machines. |
 | Engine | Godot 4 (.NET build) with C#. Game rules live in a plain C# library, `Bloom.Core`, with no Godot dependency. Decided 2026-11-20. |
 
+## Combat rules decided on 2026-11-21
+
+The spec left these open. The owner decided them for the first fight on the Combat screen.
+
+| Topic | Decision |
+| --- | --- |
+| Focus | Focus adds up into one bonus: two Focus cards give the next attack +8. It lasts until an attack (a card with a damage effect) uses it or the fight ends, and is used up even if enemy block absorbs all the damage. |
+| Repair: which piece | The player taps the disabled piece to bring back. A card that repairs N pieces needs N picks, or all the disabled pieces if fewer are disabled. |
+| Repair: the cards | The repaired piece's cards go to the discard pile and keep any growth. |
+| Repair with nothing disabled | A card that repairs cannot be played while no piece is disabled, even if it has other effects. |
+| Spore Singer disabled mid-fight | The starting growth it gave stays. A disabled piece only stops giving bonuses from then on. |
+| Starting ship (placeholder) | A 5×5 hull with all 7 pieces from the spec, plus a placeholder 1-cell crew, Tinker, whose Patch card repairs 1 piece. |
+
+Taken as defaults, not raised by the owner: grow raises only block, counts separately for each copy of a card, and resets each fight. A card's damage shown in the hand includes pending Focus. If a card ever has two damage effects, bonuses and Focus add to each one.
+
+## Rewards and refitting decided on 2026-11-21
+
+The owner decided these for the loop of fight, reward, refit and next fight, before the sector map exists.
+
+| Topic | Decision |
+| --- | --- |
+| Reward offers | After a won fight the player picks 1 of 3 pieces or skips. Each pick rolls a rarity (common 60%, uncommon 30%, rare 10%, placeholder odds), then a piece of that rarity. A piece is 3× as likely if it shares a tag with a fitted piece; crew count the tag their bonus targets. No piece appears twice in one offer, and the bridge is never offered. |
+| Full cargo hold | The hold may go over its 3 pieces while refitting, but the next fight cannot start until fitting or composting brings it back to 3. Skipping a reward is always allowed. |
+| Placeholder run | 4 enemies in a fixed order of rising difficulty, the order of `enemies.json`. Winning the 4th wins the run. Replaced by the sector map. |
+| Hull between fights | Damage carries over with no healing, as the spec says, until groves and docks exist. |
+| Reward pool | 8 placeholder pieces (5 equipment, 3 crew) using only existing effects, plus every spec piece except the bridge. |
+| Salvage | Left out until docks exist. Composting removes a piece for nothing for now. |
+| Run start | A new run opens on the Fitting screen, so the player can refit before the first fight. |
+| Taps when fitting | The first tap selects a piece and shows its cards and bonus; a tap on the selected piece turns it clockwise. Dragging works at any time. |
+
+Taken as defaults, not raised by the owner:
+- Undo steps back through every refit action (move, turn, fit, unfit, compost), one per press, up to 50 steps. It is saved with the run and cleared when the next fight starts.
+- A piece turns in place, keeping its center; if it doesn't fit there, the nearest spot within one cell is used, and if none fits the turn is refused.
+- A piece in the cargo hold turns on screen only, since it has no position yet; that turn is not saved.
+- The Fitting screen names the next enemy and marks the lanes of its heavy attacks.
+
 ## Proposed in the spec, not yet confirmed
 
 - Three sectors for each run, about 8 nodes and 25 minutes for each sector.
