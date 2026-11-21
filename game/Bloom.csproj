@@ -1,0 +1,17 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+
+  <!--
+    The Godot presentation layer. Game rules live in Bloom.Core; keep this project thin.
+    The SDK version must match the Godot editor version (4.7.2).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RootNamespace>Bloom.Game</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../src/Bloom.Core/Bloom.Core.csproj" />
+  </ItemGroup>
+
+</Project>

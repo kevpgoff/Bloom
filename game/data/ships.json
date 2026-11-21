@@ -1,0 +1,16 @@
+[
+  {
+    "id": "seedling",
+    "name": "Seedling",
+    "placeholder": true,
+    "hull": 60,
+    "hullShape": ["####", "####", "####", "####", "####"],
+    "hullOrigin": { "x": 1, "y": 1 },
+    "startingPieces": [
+      { "piece": "hull_plating", "origin": { "x": 1, "y": 1 }, "rotation": "R0" },
+      { "piece": "light_lance", "origin": { "x": 1, "y": 2 }, "rotation": "R0" },
+      { "piece": "sun_sail", "origin": { "x": 1, "y": 3 }, "rotation": "R0" },
+      { "piece": "bridge", "origin": { "x": 3, "y": 4 }, "rotation": "R90" }
+    ]
+  }
+]

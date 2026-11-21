@@ -1,0 +1,17 @@
+# .NET
+bin/
+obj/
+*.user
+TestResults/
+
+# Godot
+.godot/
+/android/
+export_credentials.cfg
+
+# Editors and OS
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store

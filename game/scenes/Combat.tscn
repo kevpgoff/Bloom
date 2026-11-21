@@ -1,0 +1,46 @@
+[gd_scene format=3]
+
+[node name="Combat" type="VBoxContainer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="EnemyArea" type="PanelContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="Label" type="Label" parent="EnemyArea"]
+layout_mode = 2
+text = "Enemy and intents (top fifth)"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ShipArea" type="PanelContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+
+[node name="Label" type="Label" parent="ShipArea"]
+layout_mode = 2
+text = "Ship grid (placeholder)"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="HandArea" type="PanelContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="Label" type="Label" parent="HandArea"]
+layout_mode = 2
+text = "Hand of cards (within thumb reach)"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3

@@ -1,0 +1,39 @@
+; Engine configuration file.
+; Godot rewrites this file when settings change in the editor.
+
+config_version=5
+
+[application]
+
+config/name="Bloom"
+config/description="Solarpunk ship roguelite (working title)."
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
+
+[autoload]
+
+GameRoot="*res://scripts/Autoload/GameRoot.cs"
+
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/size/window_width_override=405
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+
+[dotnet]
+
+project/assembly_name="Bloom"
+project/solution_directory="../"
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

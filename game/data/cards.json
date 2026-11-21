@@ -1,0 +1,18 @@
+[
+  { "id": "ram", "name": "Ram", "cost": 1, "effects": [{ "type": "damage", "amount": 5 }] },
+  { "id": "brace", "name": "Brace", "cost": 1, "effects": [{ "type": "block", "amount": 5 }] },
+  { "id": "lance", "name": "Lance", "cost": 2, "effects": [{ "type": "damage", "amount": 12 }] },
+  { "id": "deflect", "name": "Deflect", "cost": 1, "effects": [{ "type": "block", "amount": 8 }] },
+  { "id": "unfurl", "name": "Unfurl", "cost": 0, "effects": [{ "type": "gainEnergy", "amount": 2 }] },
+  {
+    "id": "bloom",
+    "name": "Bloom",
+    "cost": 1,
+    "effects": [
+      { "type": "block", "amount": 4 },
+      { "type": "grow", "amount": 2 }
+    ]
+  },
+  { "id": "focus", "name": "Focus", "cost": 1, "effects": [{ "type": "focus", "amount": 4 }] },
+  { "id": "chorus", "name": "Chorus", "cost": 1, "effects": [{ "type": "draw", "count": 2 }] }
+]

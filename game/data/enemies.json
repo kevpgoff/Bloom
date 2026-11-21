@@ -1,0 +1,13 @@
+[
+  {
+    "id": "feral_harvester",
+    "name": "Feral Harvester",
+    "placeholder": true,
+    "hull": 40,
+    "pattern": [
+      { "kind": "Attack", "amount": 6 },
+      { "kind": "HeavyAttack", "amount": 10, "lane": 2 },
+      { "kind": "Block", "amount": 8 }
+    ]
+  }
+]
