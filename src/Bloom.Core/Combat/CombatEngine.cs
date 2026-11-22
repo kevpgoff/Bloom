@@ -20,10 +20,16 @@ public sealed record CardPreview(CardInstance Card, CardDef Def, IReadOnlyList<E
 /// the run in a state that can be saved. Every method validates before it changes anything.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Adjacency bonuses: <see cref="DamageBonusEffect"/> is worked out each time a card is played, from the
 /// pieces that work at that moment. <see cref="StartGrownEffect"/> is given once, when the fight starts.
+/// </para>
+/// <para>
+/// Each change is reported to <paramref name="emit"/> as a <see cref="CombatEvent"/>, in the order it
+/// happens, so the game can show it. Reporting happens only after validation, so a rejected action reports nothing.
+/// </para>
 /// </remarks>
-public sealed class CombatEngine(ContentDb content)
+public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = null)
 {
     private readonly ShipFitter _fitter = new(content);
     private readonly RewardEngine _rewards = new(content);
@@ -51,6 +57,7 @@ public sealed class CombatEngine(ContentDb content)
         combat.DrawPile.AddRange(deck);
         run.Rng.Shuffle(combat.DrawPile);
         run.Combat = combat;
+        Emit(new FightStarted(enemy.Id));
         StartTurn(run, combat);
         return combat;
     }
@@ -127,9 +134,15 @@ public sealed class CombatEngine(ContentDb content)
         var effects = ResolveEffects(run, combat, card, def);
         combat.Energy -= def.Cost;
         combat.Hand.RemoveAt(index);
+        Emit(new CardPlayed(card.Id, def.Id, card.SourcePieceId));
         if (IsAttack(def))
         {
             // The resolved damage already includes the focus, so it is used up even if block absorbs it all.
+            if (combat.PendingFocus > 0)
+            {
+                Emit(new FocusSpent(combat.PendingFocus));
+            }
+
             combat.PendingFocus = 0;
         }
 
@@ -139,19 +152,23 @@ public sealed class CombatEngine(ContentDb content)
             switch (effect)
             {
                 case DamageEffect damage:
-                    DamageEnemy(combat.Enemy, damage.Amount);
+                    var (blocked, hullDamage) = DamageEnemy(combat.Enemy, damage.Amount);
+                    Emit(new EnemyHit(damage.Amount, blocked, hullDamage, combat.Enemy.Hull));
                     break;
                 case BlockEffect block:
                     combat.Block += block.Amount;
+                    Emit(new BlockGained(block.Amount, combat.Block));
                     break;
                 case GainEnergyEffect energy:
                     combat.Energy += energy.Amount;
+                    Emit(new EnergyGained(energy.Amount, combat.Energy));
                     break;
                 case DrawEffect draw:
                     Draw(run, combat, draw.Count);
                     break;
                 case FocusEffect focus:
                     combat.PendingFocus += focus.Amount;
+                    Emit(new FocusGained(focus.Amount, combat.PendingFocus));
                     break;
                 case RepairEffect repair:
                     for (int i = 0; i < repair.Count && nextTarget < repairTargets.Count; i++)
@@ -172,6 +189,7 @@ public sealed class CombatEngine(ContentDb content)
         if (def.Effects.Any(e => e is GrowEffect))
         {
             card.Growth++;
+            Emit(new CardGrew(card.Id, card.Growth));
         }
 
         combat.DiscardPile.Add(card);
@@ -186,6 +204,11 @@ public sealed class CombatEngine(ContentDb content)
         if (run.Hull <= 0)
         {
             return EndFight(run, combat, CombatOutcome.Lost);
+        }
+
+        if (combat.Hand.Count > 0)
+        {
+            Emit(new HandDiscarded(combat.Hand.Count));
         }
 
         combat.DiscardPile.AddRange(combat.Hand);
@@ -269,6 +292,7 @@ public sealed class CombatEngine(ContentDb content)
     {
         combat.Turn++;
         combat.Energy = Rules.EnergyPerTurn;
+        Emit(new TurnStarted(combat.Turn));
         Draw(run, combat, CardsToDraw(run, combat));
     }
 
@@ -282,10 +306,10 @@ public sealed class CombatEngine(ContentDb content)
         switch (intent.Kind)
         {
             case IntentKind.Attack:
-                DamageShip(run, combat, intent.Amount);
+                DamageShip(run, combat, intent.Amount, heavyLane: null);
                 break;
             case IntentKind.HeavyAttack:
-                int hullDamage = DamageShip(run, combat, intent.Amount);
+                int hullDamage = DamageShip(run, combat, intent.Amount, intent.Lane);
                 if (hullDamage > 0 && intent.Lane is int lane)
                 {
                     DisableFrontmost(run, combat, lane);
@@ -294,6 +318,7 @@ public sealed class CombatEngine(ContentDb content)
                 break;
             case IntentKind.Block:
                 enemy.Block += intent.Amount;
+                Emit(new EnemyBlocked(intent.Amount, enemy.Block));
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(combat), intent.Kind, "Unknown intent.");
@@ -303,20 +328,23 @@ public sealed class CombatEngine(ContentDb content)
     }
 
     /// <summary>Block absorbs damage first; the rest reduces hull points. Returns the hull damage.</summary>
-    private static int DamageShip(RunState run, CombatState combat, int amount)
+    private int DamageShip(RunState run, CombatState combat, int amount, int? heavyLane)
     {
         int absorbed = Math.Min(combat.Block, amount);
         combat.Block -= absorbed;
         int hullDamage = amount - absorbed;
         run.Hull = Math.Max(0, run.Hull - hullDamage);
+        Emit(new ShipHit(amount, absorbed, hullDamage, run.Hull, heavyLane));
         return hullDamage;
     }
 
-    private static void DamageEnemy(EnemyState enemy, int amount)
+    /// <summary>Enemy block absorbs damage first; the rest reduces its hull points.</summary>
+    private static (int Blocked, int HullDamage) DamageEnemy(EnemyState enemy, int amount)
     {
         int absorbed = Math.Min(enemy.Block, amount);
         enemy.Block -= absorbed;
         enemy.Hull = Math.Max(0, enemy.Hull - (amount - absorbed));
+        return (absorbed, amount - absorbed);
     }
 
     private void DisableFrontmost(RunState run, CombatState combat, int lane)
@@ -333,17 +361,20 @@ public sealed class CombatEngine(ContentDb content)
             combat.OfflineCards.AddRange(pile.Where(c => c.SourcePieceId == pieceId));
             pile.RemoveAll(c => c.SourcePieceId == pieceId);
         }
+
+        Emit(new PieceDisabled(pieceId, lane));
     }
 
     /// <summary>The piece works again and its cards, with their growth, go to the discard pile.</summary>
-    private static void Repair(CombatState combat, int pieceId)
+    private void Repair(CombatState combat, int pieceId)
     {
         combat.DisabledPieceIds.Remove(pieceId);
         combat.DiscardPile.AddRange(combat.OfflineCards.Where(c => c.SourcePieceId == pieceId));
         combat.OfflineCards.RemoveAll(c => c.SourcePieceId == pieceId);
+        Emit(new PieceRepaired(pieceId));
     }
 
-    private static void Draw(RunState run, CombatState combat, int count)
+    private void Draw(RunState run, CombatState combat, int count)
     {
         for (int i = 0; i < count; i++)
         {
@@ -354,6 +385,7 @@ public sealed class CombatEngine(ContentDb content)
                     return;
                 }
 
+                Emit(new DiscardShuffled(combat.DiscardPile.Count));
                 combat.DrawPile.AddRange(combat.DiscardPile);
                 combat.DiscardPile.Clear();
                 run.Rng.Shuffle(combat.DrawPile);
@@ -362,6 +394,7 @@ public sealed class CombatEngine(ContentDb content)
             var top = combat.DrawPile[^1];
             combat.DrawPile.RemoveAt(combat.DrawPile.Count - 1);
             combat.Hand.Add(top);
+            Emit(new CardDrawn(top.Id));
         }
     }
 
@@ -377,21 +410,25 @@ public sealed class CombatEngine(ContentDb content)
         if (outcome == CombatOutcome.Lost)
         {
             run.Result = RunResult.Lost;
-            return outcome;
-        }
-
-        run.FightsWon++;
-        if (run.FightsWon >= run.Encounters.Count)
-        {
-            run.Result = RunResult.Won;
         }
         else
         {
-            run.Reward = _rewards.Roll(run);
+            run.FightsWon++;
+            if (run.FightsWon >= run.Encounters.Count)
+            {
+                run.Result = RunResult.Won;
+            }
+            else
+            {
+                run.Reward = _rewards.Roll(run);
+            }
         }
 
+        Emit(new FightEnded(outcome));
         return outcome;
     }
+
+    private void Emit(CombatEvent e) => emit?.Invoke(e);
 
     private static CombatState RequireCombat(RunState run) =>
         run.Combat ?? throw new InvalidOperationException("No fight is in progress.");

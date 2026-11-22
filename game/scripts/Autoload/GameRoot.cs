@@ -1,6 +1,8 @@
+using Bloom.Core.Combat;
 using Bloom.Core.Content;
 using Bloom.Core.Run;
 using Bloom.Core.Save;
+using Bloom.Game.Dev;
 using Bloom.Game.Platform;
 using Godot;
 
@@ -9,8 +11,12 @@ namespace Bloom.Game.Autoload;
 /// <summary>
 /// Autoloaded singleton that owns the content and the current run. Screens read from it and send
 /// every player action through <see cref="Act"/>, which runs it in <see cref="RunSession.Do(Action{RunSession})"/>
-/// (so it is saved) and then raises <see cref="Changed"/>.
+/// (so it is saved) and then raises <see cref="CombatEvents"/> and <see cref="Changed"/>.
 /// </summary>
+/// <remarks>
+/// With <c>-- --fx-demo</c> in a debug build, the run is kept in memory with a fixed seed and an
+/// <see cref="FxDemo"/> plays it, so the saved run is never touched.
+/// </remarks>
 public partial class GameRoot : Node
 {
     public const string DataDir = "res://data";
@@ -18,7 +24,10 @@ public partial class GameRoot : Node
 
     private const string UnreadableSaveCopy = "user://run.unreadable.json";
 
-    private readonly GodotSaveStore _store = new();
+    private const ulong DemoSeed = 7;
+
+    private readonly GodotSaveStore _fileStore = new();
+    private ISaveStore _store = null!;
 
     public static GameRoot Instance { get; private set; } = null!;
 
@@ -32,9 +41,18 @@ public partial class GameRoot : Node
     /// <summary>Raised after every action and after a new run starts. Screens redraw on it.</summary>
     public event Action? Changed;
 
+    /// <summary>
+    /// Raised after an action that changed a fight, with what happened in order (<see cref="RunSession.LastEvents"/>),
+    /// before <see cref="Changed"/>. The combat screen plays them as feedback.
+    /// </summary>
+    public event Action<IReadOnlyList<CombatEvent>>? CombatEvents;
+
     public override void _Ready()
     {
         Instance = this;
+        UserSettings.Load();
+        bool demo = FxDemo.IsRequested;
+        _store = demo ? new MemorySaveStore() : _fileStore;
         try
         {
             Content = GodotContentSource.Load(DataDir);
@@ -50,6 +68,14 @@ public partial class GameRoot : Node
                  $"enemies {Content.Enemies.Count}, ship classes {Content.Ships.Count}.";
         GD.Print($"GameRoot: {Status}");
 
+        if (demo)
+        {
+            Session = RunSession.StartNew(Content, _store, StartingShip, DemoSeed);
+            AddChild(new FxDemo());
+            GD.Print("GameRoot: FX demo; the run is kept in memory and not saved.");
+            return;
+        }
+
         try
         {
             Session = RunSession.TryResume(Content, _store);
@@ -57,7 +83,7 @@ public partial class GameRoot : Node
         catch (SaveException e)
         {
             // A new run starts right away and overwrites the file, so keep a copy of it first.
-            _store.CopyTo(UnreadableSaveCopy);
+            _fileStore.CopyTo(UnreadableSaveCopy);
             GD.PushWarning($"GameRoot: the saved run could not be read; a copy is at {UnreadableSaveCopy}. {e.Message}");
         }
 
@@ -105,6 +131,11 @@ public partial class GameRoot : Node
         {
             GD.PushWarning($"GameRoot: action rejected: {e.Message}");
             done = false;
+        }
+
+        if (done && session.LastEvents.Count > 0)
+        {
+            CombatEvents?.Invoke(session.LastEvents);
         }
 
         Changed?.Invoke();

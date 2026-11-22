@@ -13,6 +13,7 @@ namespace Bloom.Core.Tests;
 /// bridge on cells (0,4) and (1,4). The enemies "heavy" and "mixed" make heavy attacks on lane 0.
 /// All pieces are common except "drone" (uncommon) and "spear" (rare), for reward tests. A new run's
 /// encounters are the four enemies in order; tests that need others set <see cref="RunState.Encounters"/>.
+/// No piece adds the card "chorus" (draw 2); tests put it in the hand themselves, so the reward pool stays the same.
 /// </summary>
 internal static class TestContent
 {
@@ -55,7 +56,8 @@ internal static class TestContent
           { "id": "unfurl", "name": "Unfurl", "cost": 0, "effects": [{ "type": "gainEnergy", "amount": 2 }] },
           { "id": "sprout", "name": "Sprout", "cost": 1, "effects": [{ "type": "block", "amount": 4 }, { "type": "grow", "amount": 2 }] },
           { "id": "patch", "name": "Patch", "cost": 1, "effects": [{ "type": "repair", "count": 1 }] },
-          { "id": "overhaul", "name": "Overhaul", "cost": 0, "effects": [{ "type": "repair", "count": 2 }] }
+          { "id": "overhaul", "name": "Overhaul", "cost": 0, "effects": [{ "type": "repair", "count": 2 }] },
+          { "id": "chorus", "name": "Chorus", "cost": 1, "effects": [{ "type": "draw", "count": 2 }] }
         ]
         """;
 

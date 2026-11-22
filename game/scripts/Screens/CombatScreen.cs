@@ -2,6 +2,7 @@ using Bloom.Core.Cards;
 using Bloom.Core.Combat;
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Feedback;
 using Bloom.Game.Visuals;
 using Godot;
 
@@ -14,8 +15,16 @@ namespace Bloom.Game.Screens;
 /// defeat or, after the last fight, the voyage complete; a fight won before that goes to the Reward screen.
 /// </summary>
 /// <remarks>
-/// Picking pieces for a repair card is the only state kept here. It is not saved: quitting while
+/// <para>
+/// Picking pieces for a repair card is the only rule-related state kept here. It is not saved: quitting while
 /// picking resumes as if the card had not been tapped.
+/// </para>
+/// <para>
+/// Feedback: the events of each action (<see cref="GameRoot.CombatEvents"/>) play on an <see cref="FxLayer"/>
+/// through <see cref="CombatFeedback"/>. The screen still redraws to the new state at once; new cards fade in
+/// when their deal reaches them, the result overlay waits for the last hit, and after a won fight
+/// <see cref="TakeExitHold"/> tells <see cref="MainScreen"/> how long to wait before the next screen.
+/// </para>
 /// </remarks>
 public partial class CombatScreen : Control
 {
@@ -24,12 +33,27 @@ public partial class CombatScreen : Control
     private const float MaxCardWidth = 136;
     private const float CardHeight = 220;
     private const float CardPadding = 8;
+    private const float DisabledCardAlpha = 0.45f;
+
+    /// <summary>
+    /// End Turn ignores a press this soon after the last one, so a double tap can't end two turns while the new
+    /// hand deals in. Real time, like the finger.
+    /// </summary>
+    private const ulong EndTurnGuardMs = 300;
 
     private readonly List<int> _chosenTargets = [];
+    private readonly Dictionary<int, Button> _cardButtons = [];
+    private readonly HashSet<int> _waitingToDeal = [];
     private int? _targetingCardId;
     private int _targetsNeeded;
     private bool _refreshQueued;
     private float _cardWidth = MaxCardWidth;
+    private bool _resultHeld;
+    private float _exitHold;
+    private ulong? _lastEndTurnMs;
+
+    private FxLayer _fx = null!;
+    private CombatFeedback _feedback = null!;
 
     private EnemyEmblem _enemyEmblem = null!;
     private Label _enemyName = null!;
@@ -80,12 +104,31 @@ public partial class CombatScreen : Control
         _resultTitle = GetNode<Label>("%ResultTitle");
         _resultMessage = GetNode<Label>("%ResultMessage");
 
-        _endTurn.Pressed += () => Act(s => s.Combat.EndTurn(s.State));
+        // Effects draw over the screen's content and under the result overlay.
+        var layout = GetNode<Control>("Layout");
+        _fx = new FxLayer { Name = "Fx", ShakeTarget = layout };
+        AddChild(_fx);
+        MoveChild(_fx, layout.GetIndex() + 1);
+        _fx.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _feedback = new CombatFeedback(
+            _fx,
+            new CombatFeedback.Widgets(_enemyEmblem, _grid, _enemyHullBar, _ship, _energy, _piles, _turn, _endTurn),
+            CardRect,
+            () => _cardButtons.Values.Where(IsLive).Select(b => b.GetGlobalRect()).ToList());
+
+        _endTurn.Pressed += OnEndTurnPressed;
         GetNode<Button>("%CancelButton").Pressed += CancelTargeting;
         GetNode<Button>("%NewRunButton").Pressed += StartNewRun;
         _grid.PieceTapped += OnPieceTapped;
         _handScroll.Resized += OnHandResized;
         GameRoot.Instance.Changed += QueueRefresh;
+        GameRoot.Instance.CombatEvents += OnCombatEvents;
+
+        // A fight starts on the Fitting screen, so its first events (the opening deal) are played here.
+        if (Session?.LastEvents is { Count: > 0 } opening && opening.Any(e => e is FightStarted))
+        {
+            OnCombatEvents(opening);
+        }
 
         Refresh();
         if (Session?.State is { Combat: { } combat } run)
@@ -94,7 +137,84 @@ public partial class CombatScreen : Control
         }
     }
 
-    public override void _ExitTree() => GameRoot.Instance.Changed -= QueueRefresh;
+    public override void _ExitTree()
+    {
+        GameRoot.Instance.Changed -= QueueRefresh;
+        GameRoot.Instance.CombatEvents -= OnCombatEvents;
+    }
+
+    /// <summary>
+    /// How long to keep this screen up before showing the next one, once: after a won fight, so its last hit and
+    /// the enemy's shatter can play. Zero otherwise. Reading it clears it.
+    /// </summary>
+    public float TakeExitHold()
+    {
+        float hold = _exitHold;
+        _exitHold = 0f;
+        return hold;
+    }
+
+    /// <summary>
+    /// Plays an action's events. Runs before the redraw, so the old card buttons can still be measured.
+    /// </summary>
+    private void OnCombatEvents(IReadOnlyList<CombatEvent> events)
+    {
+        if (Session is not { } session || !IsInsideTree())
+        {
+            return;
+        }
+
+        var cue = _feedback.Play(session, events);
+        foreach (var (cardId, at) in cue.DealIns)
+        {
+            _waitingToDeal.Add(cardId);
+            _fx.Schedule(at, () => DealIn(cardId));
+        }
+
+        if (cue.ResultAt is float result)
+        {
+            _resultHeld = true;
+            _fx.Schedule(result, () =>
+            {
+                _resultHeld = false;
+                QueueRefresh();
+            });
+        }
+
+        // Only a fight that leads to the Reward screen leaves this screen; after the last fight it stays up.
+        if (cue.ExitHold is float hold && session.State.Phase == RunPhase.Reward)
+        {
+            _exitHold = hold;
+        }
+    }
+
+    private void OnEndTurnPressed()
+    {
+        ulong now = Time.GetTicksMsec();
+        if (_lastEndTurnMs is ulong last && now - last < EndTurnGuardMs)
+        {
+            return;
+        }
+
+        _lastEndTurnMs = now;
+        _feedback.EndTurnPressed();
+        Act(s => s.Combat.EndTurn(s.State));
+    }
+
+    private static bool IsLive(Button button) => IsInstanceValid(button) && button.IsInsideTree();
+
+    private Rect2? CardRect(int cardId) =>
+        _cardButtons.TryGetValue(cardId, out var button) && IsLive(button) ? button.GetGlobalRect() : null;
+
+    /// <summary>A dealt card fades in from nothing to its usual brightness, which is dimmer when it can't be played.</summary>
+    private void DealIn(int cardId)
+    {
+        _waitingToDeal.Remove(cardId);
+        if (_cardButtons.TryGetValue(cardId, out var button) && IsLive(button))
+        {
+            button.CreateTween().TweenProperty(button, "modulate:a", button.Disabled ? DisabledCardAlpha : 1f, CombatFeedback.Tuning.DealFade);
+        }
+    }
 
     /// <summary>Runs one player action through the session (which saves); <see cref="GameRoot.Changed"/> then redraws.</summary>
     private static void Act(Action<RunSession> action) => GameRoot.Instance.Act(action);
@@ -222,6 +342,7 @@ public partial class CombatScreen : Control
             child.QueueFree();
         }
 
+        _cardButtons.Clear();
         if (combat is null)
         {
             return;
@@ -230,7 +351,9 @@ public partial class CombatScreen : Control
         _cardWidth = CardWidth(combat.Hand.Count);
         foreach (var card in combat.Hand)
         {
-            _hand.AddChild(BuildCard(session, run, session.Combat.Preview(run, card), _cardWidth));
+            var button = BuildCard(session, run, session.Combat.Preview(run, card), _cardWidth);
+            _cardButtons[card.Id] = button;
+            _hand.AddChild(button);
         }
     }
 
@@ -255,7 +378,10 @@ public partial class CombatScreen : Control
             Disabled = !enabled,
             ClipContents = true,
             FocusMode = FocusModeEnum.None,
-            Modulate = enabled ? Colors.White : new Color(1, 1, 1, 0.45f),
+            // A card still on its way from the draw pile starts invisible; DealIn fades it in.
+            Modulate = _waitingToDeal.Contains(preview.Card.Id)
+                ? Colors.Transparent
+                : enabled ? Colors.White : new Color(1, 1, 1, DisabledCardAlpha),
         };
         button.AddThemeStyleboxOverride("normal", BloomTheme.CardSurface(accent, targetingThis, hovered: false, !enabled));
         button.AddThemeStyleboxOverride("hover", BloomTheme.CardSurface(accent, targetingThis, hovered: true, !enabled));
@@ -592,7 +718,7 @@ public partial class CombatScreen : Control
     /// <summary>The overlay at the end of a run: defeat, or the voyage complete after the last fight.</summary>
     private void ShowResult(RunSession session, RunState run)
     {
-        _resultOverlay.Visible = run.Phase is RunPhase.Lost or RunPhase.Won;
+        _resultOverlay.Visible = (run.Phase is RunPhase.Lost or RunPhase.Won) && !_resultHeld;
         if (!_resultOverlay.Visible || run.LastFight is not { } last)
         {
             return;

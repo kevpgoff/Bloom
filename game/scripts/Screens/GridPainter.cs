@@ -490,7 +490,7 @@ internal static class GridPainter
     }
 
     /// <summary>The visual center for a piece's glyph: solid rectangles center on the block, other shapes on their hub cell.</summary>
-    private static (Vector2 Center, float Span) IconAnchor(GridLayout g, IReadOnlyCollection<Cell> cells)
+    internal static (Vector2 Center, float Span) IconAnchor(GridLayout g, IReadOnlyCollection<Cell> cells)
     {
         var set = cells.ToHashSet();
         int minX = set.Min(c => c.X);

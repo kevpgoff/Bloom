@@ -7,7 +7,8 @@ namespace Bloom.Game.Screens;
 
 /// <summary>
 /// The shell that hosts one screen at a time: the one for the run's phase. Screens only draw state and
-/// forward input; game rules belong in Bloom.Core.
+/// forward input; game rules belong in Bloom.Core. After a won fight the combat screen stays up a moment
+/// (<see cref="CombatScreen.TakeExitHold"/>), so the last hit can play before the Reward screen.
 /// </summary>
 public partial class MainScreen : Control
 {
@@ -19,6 +20,7 @@ public partial class MainScreen : Control
     private Label _status = null!;
     private string? _shownScene;
     private bool _swapQueued;
+    private bool _holding;
 
     public override void _Ready()
     {
@@ -55,6 +57,12 @@ public partial class MainScreen : Control
         }).CallDeferred();
     }
 
+    private void EndHold()
+    {
+        _holding = false;
+        ShowScreenForPhase();
+    }
+
     private void ShowScreenForPhase()
     {
         // Without a run (the content failed to load), only the status message shows.
@@ -65,8 +73,16 @@ public partial class MainScreen : Control
         }
 
         string scene = SceneFor(session.State.Phase);
-        if (scene == _shownScene)
+        if (scene == _shownScene || _holding)
         {
+            return;
+        }
+
+        // The timer checks the phase again when it fires, so whatever the run does meanwhile still shows.
+        if (_host.GetChildCount() > 0 && _host.GetChild(0) is CombatScreen combat && combat.TakeExitHold() is > 0f and var hold)
+        {
+            _holding = true;
+            GetTree().CreateTimer(hold).Timeout += EndHold;
             return;
         }
 

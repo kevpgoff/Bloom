@@ -8,16 +8,32 @@ namespace Bloom.Game.Screens;
 /// dashed rings that turn in opposite directions. The rings stand still in low-processor mode, and when
 /// <see cref="Active"/> is off (the fight is over).
 /// </summary>
+/// <remarks>
+/// Combat feedback can <see cref="Kick"/> it (a recoil that springs back), <see cref="Flash"/> it, and hold
+/// back its next tint change (<see cref="DelayTintChange"/>). Those play in low-processor mode too, since they end.
+/// </remarks>
 public partial class EnemyEmblem : Control
 {
     private const float OuterTurnSpeed = 0.22f;
     private const float InnerTurnSpeed = -0.45f;
     private const int OuterDashes = 28;
+    private const float KickLife = 0.5f;
+    private const float TintFade = 0.3f;
 
     private Texture2D? _icon;
     private Color _tint = Palette.Threat;
     private bool _active;
     private float _elapsed;
+
+    private Vector2 _kick;
+    private float _kickAge = KickLife;
+    private Color _flashColor = Colors.White;
+    private float _flashAge;
+    private float _flashLife;
+    private bool _tintChanging;
+    private Color _fromTint;
+    private float _tintDelay;
+    private float _tintFadeAge;
 
     public Texture2D? Icon
     {
@@ -46,23 +62,89 @@ public partial class EnemyEmblem : Control
         set
         {
             _active = value;
-            SetProcess(value && !OS.LowProcessorUsageMode);
+            UpdateProcessing();
             QueueRedraw();
         }
+    }
+
+    private bool Turning => _active && !OS.LowProcessorUsageMode;
+
+    private bool Animating => _kickAge < KickLife || _flashAge < _flashLife || _tintChanging;
+
+    /// <summary>A recoil of <paramref name="pixels"/> toward <paramref name="direction"/> that springs back, with a slight squash.</summary>
+    public void Kick(Vector2 direction, float pixels)
+    {
+        _kick = direction.Normalized() * pixels;
+        _kickAge = 0f;
+        UpdateProcessing();
+    }
+
+    /// <summary>The icon and glow light up in a color and fade back over <paramref name="seconds"/>.</summary>
+    public void Flash(Color color, float seconds)
+    {
+        _flashColor = color;
+        _flashAge = 0f;
+        _flashLife = seconds;
+        UpdateProcessing();
+    }
+
+    /// <summary>
+    /// Keeps showing the current tint for <paramref name="seconds"/>, then fades to whatever <see cref="Tint"/> is by
+    /// then. On a killing blow the emblem turns grey only when it shatters, not when the screen redraws.
+    /// </summary>
+    public void DelayTintChange(float seconds)
+    {
+        _fromTint = ShownTint();
+        _tintChanging = true;
+        _tintDelay = seconds;
+        _tintFadeAge = 0f;
+        UpdateProcessing();
     }
 
     public override void _Ready()
     {
         MouseFilter = MouseFilterEnum.Ignore;
-        SetProcess(_active && !OS.LowProcessorUsageMode);
+        UpdateProcessing();
         Resized += QueueRedraw;
     }
 
     public override void _Process(double delta)
     {
-        // Wrap well past a full turn of both rings so the float stays precise on a long fight.
-        _elapsed = (_elapsed + (float)delta) % 1000f;
+        float dt = (float)delta;
+        if (Turning)
+        {
+            // Wrap well past a full turn of both rings so the float stays precise on a long fight.
+            _elapsed = (_elapsed + dt) % 1000f;
+        }
+
+        _kickAge += dt;
+        _flashAge += dt;
+        if (_tintChanging)
+        {
+            if (_tintDelay > 0f)
+            {
+                _tintDelay -= dt;
+            }
+            else if ((_tintFadeAge += dt) >= TintFade)
+            {
+                _tintChanging = false;
+            }
+        }
+
         QueueRedraw();
+        UpdateProcessing();
+    }
+
+    private void UpdateProcessing() => SetProcess(Turning || Animating);
+
+    private Color ShownTint()
+    {
+        if (!_tintChanging)
+        {
+            return _tint;
+        }
+
+        return _tintDelay > 0f ? _fromTint : _fromTint.Lerp(_tint, Mathf.Clamp(_tintFadeAge / TintFade, 0f, 1f));
     }
 
     public override void _Draw()
@@ -75,12 +157,22 @@ public partial class EnemyEmblem : Control
 
         var c = Size / 2f;
         float r = side / 2f;
-        var line = _tint;
+        var line = ShownTint();
+
+        // The recoil and squash, around the center.
+        float flash = _flashAge < _flashLife ? 1f - (_flashAge / _flashLife) : 0f;
+        if (_kickAge < KickLife)
+        {
+            float spring = Mathf.Exp(-_kickAge * 9f);
+            float scale = 1f - (0.06f * Mathf.Exp(-_kickAge * 14f));
+            DrawSetTransform((_kick * spring * Mathf.Cos(_kickAge * 26f)) + (c * (1f - scale)), 0f, new Vector2(scale, scale));
+        }
 
         if (ArtLibrary.Glow is { } glow)
         {
             float g = side * 1.25f;
-            DrawTextureRect(glow, new Rect2(c - new Vector2(g, g) / 2f, new Vector2(g, g)), tile: false, modulate: line with { A = 0.26f });
+            var glowColor = line.Lerp(_flashColor, flash * 0.6f) with { A = 0.26f + (0.4f * flash) };
+            DrawTextureRect(glow, new Rect2(c - new Vector2(g, g) / 2f, new Vector2(g, g)), tile: false, modulate: glowColor);
         }
 
         // A dark disc behind the icon, so the backdrop's lines don't run through the enemy.
@@ -128,7 +220,7 @@ public partial class EnemyEmblem : Control
         if (_icon is { } icon)
         {
             float s = side * 0.62f;
-            DrawTextureRect(icon, new Rect2(c - new Vector2(s, s) / 2f, new Vector2(s, s)), tile: false, modulate: Palette.Glyph(line));
+            DrawTextureRect(icon, new Rect2(c - new Vector2(s, s) / 2f, new Vector2(s, s)), tile: false, modulate: Palette.Glyph(line).Lerp(_flashColor, flash * 0.8f));
         }
     }
 }
