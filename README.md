@@ -17,6 +17,8 @@ godot -e --path game            # opens the project in the editor
 godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 16, …" and a screen line ("FittingScreen: …" on a new run)
 ```
 
+CI (`.github/workflows/ci.yml`) runs the first two commands on every pull request, on GitHub's 1-vCPU runner to keep the cost low. Pull requests that change only Markdown files or `docs/` are skipped, and the Godot editor is never run.
+
 ## Layout
 
 ```

@@ -1,0 +1,34 @@
+# Builds everything and runs the rule tests on each pull request.
+# Kept cheap on purpose (free while the repo is public, billed per minute if it goes private): one job on the
+# 1-vCPU runner, which costs a third of ubuntu-latest; pull requests only; docs-only changes skipped; a newer
+# push cancels the run it replaces.
+# If this check is ever made required in branch protection, remove paths-ignore, or docs-only PRs will wait forever.
+name: CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - run: dotnet build Bloom.sln
+      - run: dotnet test --no-build

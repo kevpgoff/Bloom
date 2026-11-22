@@ -20,6 +20,8 @@ Recorded on 2026-11-20. The full design spec is a doc at https://claude.ai/artif
 | Tone | Hopeful and strange solarpunk. Threats are anomalies and feral machines. |
 | Engine | Godot 4 (.NET build) with C#. Game rules live in a plain C# library, `Bloom.Core`, with no Godot dependency. Decided 2026-11-20. |
 | Art direction | Option A, vector art in the "Holo Grove" style: a dark teal night, the ship drawn as a lit hologram (glowing outlines in each piece's tag color, scanlines, corner brackets, root traces on the deck), and the Saira typeface. The owner picked it over Option B (pixel art) and over two other takes on A. Decided 2026-11-21. Conventions are in `game/art/README.md`. |
+| Source code | Public on GitHub at https://github.com/kevpgoff/Bloom. Decided 2026-11-22. There is no license file, so default copyright applies: people can read the code but have no permission to reuse it. |
+| CI | A very minimal check on pull requests that keeps GitHub spending low. Decided 2026-11-22 while the repo was private and Actions time was billed per minute. Now that the repo is public it costs nothing, and it stays cheap if the repo goes private again. Taken as defaults: one job that builds and tests on the 1-vCPU `ubuntu-slim` runner, which costs a third of `ubuntu-latest`; pull requests only; no run when only Markdown files or `docs/` change; a newer push cancels the run it replaces; a 10-minute limit; no NuGet cache. Details in `.github/workflows/ci.yml`. |
 
 ## Combat rules decided on 2026-11-21
 
