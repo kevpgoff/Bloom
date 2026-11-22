@@ -17,6 +17,10 @@ public partial class BloomBackdrop : Control
     public override void _Ready()
     {
         MouseFilter = MouseFilterEnum.Ignore;
+
+        // The motes redraw every frame. In low-processor mode (which saves battery on phones) the
+        // backdrop stays still, so it doesn't keep the engine from idling.
+        SetProcess(!OS.LowProcessorUsageMode);
         for (int i = 0; i < MoteCount; i++)
         {
             // Deterministic golden-ratio scatter so the starfield looks balanced on first frame.
