@@ -1,6 +1,7 @@
 using Bloom.Core.Pieces;
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -14,7 +15,7 @@ public partial class RewardScreen : Control
 {
     private const float OfferHeight = 228;
 
-    private readonly List<Button> _offerButtons = [];
+    private readonly List<(Button Button, Color Accent, NinePatchRect? Frame)> _offers = [];
     private int? _selected;
     private Button _take = null!;
 
@@ -43,8 +44,9 @@ public partial class RewardScreen : Control
         var offers = GetNode<VBoxContainer>("%Offers");
         for (int i = 0; i < offer.Pieces.Count; i++)
         {
-            var button = BuildOffer(session.Content.Piece(offer.Pieces[i]), i);
-            _offerButtons.Add(button);
+            var piece = session.Content.Piece(offer.Pieces[i]);
+            var (button, frame) = BuildOffer(piece, i);
+            _offers.Add((button, Palette.ForPiece(piece), frame));
             offers.AddChild(button);
         }
 
@@ -52,8 +54,9 @@ public partial class RewardScreen : Control
         GD.Print($"RewardScreen: offering {string.Join(", ", offer.Pieces)}.");
     }
 
-    private Button BuildOffer(PieceDef piece, int index)
+    private (Button Button, NinePatchRect? Frame) BuildOffer(PieceDef piece, int index)
     {
+        var accent = Palette.ForPiece(piece);
         var button = new Button
         {
             CustomMinimumSize = new Vector2(0, OfferHeight),
@@ -61,6 +64,11 @@ public partial class RewardScreen : Control
             FocusMode = FocusModeEnum.None,
             ClipContents = true,
         };
+        var frame = BloomTheme.CreateFrameOverlay(ArtLibrary.PanelFrame, accent with { A = 0.65f });
+        if (frame is not null)
+        {
+            button.AddChild(frame);
+        }
 
         var margin = new MarginContainer { MouseFilter = MouseFilterEnum.Ignore };
         foreach (string side in new[] { "left", "top", "right", "bottom" })
@@ -101,35 +109,29 @@ public partial class RewardScreen : Control
             _selected = index;
             ShowSelection();
         };
-        return button;
+        return (button, frame);
     }
 
     private void ShowSelection()
     {
-        for (int i = 0; i < _offerButtons.Count; i++)
+        for (int i = 0; i < _offers.Count; i++)
         {
-            var box = OfferStyle(i == _selected);
+            bool selected = i == _selected;
+            var (button, accent, frame) = _offers[i];
+            var box = BloomTheme.OfferSurface(accent, selected);
             foreach (string state in new[] { "normal", "hover", "pressed", "hover_pressed" })
             {
-                _offerButtons[i].AddThemeStyleboxOverride(state, box);
+                button.AddThemeStyleboxOverride(state, box);
             }
 
-            _offerButtons[i].AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
+            button.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
+            if (frame is not null)
+            {
+                frame.Modulate = selected ? Palette.Selectable : accent with { A = 0.65f };
+            }
         }
 
         _take.Disabled = _selected is null;
-    }
-
-    private static StyleBoxFlat OfferStyle(bool selected)
-    {
-        var box = new StyleBoxFlat
-        {
-            BgColor = Palette.LaneOdd,
-            BorderColor = selected ? Palette.Selectable : Palette.Hull,
-        };
-        box.SetBorderWidthAll(selected ? 6 : 2);
-        box.SetCornerRadiusAll(8);
-        return box;
     }
 
     private void Take()

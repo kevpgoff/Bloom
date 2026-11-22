@@ -1,5 +1,6 @@
 using Bloom.Core.Combat;
 using Bloom.Core.Run;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -76,7 +77,13 @@ public partial class ShipGridView : Control
             var cells = _session.Fitter.CellsOf(fitted);
             bool off = disabled.Contains(id);
             GridPainter.DrawPiece(this, g, cells, off ? Palette.ForPiece(def).Darkened(0.65f) : Palette.ForPiece(def));
-            GridPainter.DrawLabel(this, font, g, cells, off ? $"{def.Name}\nOFF" : def.Name, off ? Palette.DisabledText : Palette.PieceText);
+            if (off)
+            {
+                GridPainter.DrawDisabledOverlay(this, g, cells);
+            }
+
+            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), off ? Palette.DisabledText with { A = 0.55f } : Palette.Ink);
+            GridPainter.DrawLabel(this, font, g, cells, off ? "OFF" : def.Name, off ? Palette.DisabledText : Palette.PieceText);
             if (bonusReceivers.Contains(id))
             {
                 GridPainter.DrawBonusBadge(this, font, g, cells, Palette.Badge);

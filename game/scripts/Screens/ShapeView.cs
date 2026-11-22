@@ -1,9 +1,10 @@
 using Bloom.Core.Pieces;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
 
-/// <summary>Draws one piece's shape, centered and scaled to fit, in the piece's color.</summary>
+/// <summary>Draws one piece's shape, centered and scaled to fit, with its vector emblem.</summary>
 public partial class ShapeView : Control
 {
     private PieceDef? _piece;
@@ -32,5 +33,6 @@ public partial class ShapeView : Control
         var origin = (Size - (new Vector2(shape.Width, shape.Height) * cell)) / 2;
         var layout = new GridLayout(cell, origin, 0, shape.Height);
         GridPainter.DrawPiece(this, layout, shape.Cells, Palette.ForPiece(piece));
+        GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(piece), Palette.Ink, reserveLabelSpace: false);
     }
 }

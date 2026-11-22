@@ -3,6 +3,7 @@ using Bloom.Core.Cards;
 using Bloom.Core.Pieces;
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -35,6 +36,7 @@ public partial class FittingScreen : Control
         _fightHint = GetNode<Label>("%FightHint");
         _undo = GetNode<Button>("%UndoButton");
         _fight = GetNode<Button>("%FightButton");
+        BloomTheme.AttachPanelFrame(GetNode<Control>("Layout/InfoPanel"));
 
         _undo.Pressed += () => GameRoot.Instance.Act(s => s.Refit.Undo(s.State));
         _fight.Pressed += () => GameRoot.Instance.Act(s => s.Refit.StartNextFight(s.State));

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Bold botanical hexagonal shield with clean interior for the value -->
+  <path d="M 32 5 L 56 14 L 56 34 C 56 48 45 56 32 60 C 19 56 8 48 8 34 L 8 14 Z"
+        fill="#ffffff" fill-opacity="0.26" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M 32 11 L 50 18 L 50 33 C 50 44 42 50 32 54 C 22 50 14 44 14 33 L 14 18 Z"
+        fill="#0d161b" fill-opacity="0.38" stroke="#ffffff" stroke-width="1.4" stroke-opacity="0.55" stroke-linejoin="round"/>
+</svg>

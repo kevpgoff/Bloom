@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Singing Comet: crystalline core with harmonic arcs -->
+  <polygon points="42,10 50,24 42,38 28,24" fill="#ffffff"/>
+  <circle cx="39" cy="24" r="14" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.55"/>
+  <path d="M 28 34 L 10 52 M 34 40 L 18 56 M 22 28 L 8 42" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-opacity="0.85"/>
+  <path d="M 48 36 C 54 32 57 26 57 18" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.7"/>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Light Lance: focused beam spear -->
+  <polygon points="32,6 42,26 36,26 36,56 28,56 28,26 22,26" fill="#ffffff"/>
+  <circle cx="32" cy="24" r="11" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.65"/>
+  <path d="M 16 40 L 24 36 M 48 40 L 40 36" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+</svg>

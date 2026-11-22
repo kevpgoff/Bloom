@@ -4,6 +4,7 @@ using Bloom.Core.Grid;
 using Bloom.Core.Pieces;
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -182,6 +183,7 @@ public partial class FittingBoard : Control
             bool lifted = _drag?.PieceId == id;
             var color = Palette.ForPiece(def);
             GridPainter.DrawPiece(this, g, cells, lifted ? color with { A = 0.25f } : color);
+            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Ink);
             GridPainter.DrawLabel(this, font, g, cells, def.Name, lifted ? Palette.Muted : Palette.PieceText);
             if (!lifted && receivers.Contains(id))
             {
@@ -221,6 +223,7 @@ public partial class FittingBoard : Control
     {
         var area = CargoArea;
         DrawRect(area, Palette.CargoBack);
+        DrawRect(area, Palette.BrassLine with { A = 0.45f }, filled: false, width: 1.5f);
         if (_drag is { FromCargo: false, OverCargo: true })
         {
             DrawRect(area, Palette.CargoDrop);
@@ -230,7 +233,7 @@ public partial class FittingBoard : Control
         string header = run.Cargo.Excess > 0
             ? $"Cargo hold {pieces.Count} / {Rules.CargoCapacity}: fit or compost {run.Cargo.Excess}"
             : $"Cargo hold {pieces.Count} / {Rules.CargoCapacity}";
-        DrawString(font, area.Position + new Vector2(8, 26), header, HorizontalAlignment.Left, area.Size.X - 16, 22,
+        DrawString(font, area.Position + new Vector2(10, 26), header, HorizontalAlignment.Left, area.Size.X - 20, 22,
             run.Cargo.Excess > 0 ? Palette.Heavy : Palette.Muted);
 
         var slots = CargoSlots(pieces.Count);
@@ -238,6 +241,7 @@ public partial class FittingBoard : Control
         {
             var slot = slots[i];
             DrawRect(slot, i >= Rules.CargoCapacity ? Palette.CargoOver : Palette.CargoSlot);
+            DrawRect(slot, Palette.LineMuted, filled: false, width: 1.5f);
             if (i >= pieces.Count)
             {
                 continue;
@@ -253,11 +257,12 @@ public partial class FittingBoard : Control
             bool lifted = _drag?.PieceId == piece.Id;
             var color = Palette.ForPiece(def);
             GridPainter.DrawPiece(this, layout, shape.Cells, lifted ? color with { A = 0.25f } : color);
+            GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Ink, reserveLabelSpace: false);
             DrawString(font, new Vector2(slot.Position.X + 4, slot.End.Y - 10), def.Name, HorizontalAlignment.Center, slot.Size.X - 8, 20,
-                lifted ? Palette.Muted : Colors.White);
+                lifted ? Palette.Muted : Palette.Ink);
             if (!lifted && piece.Id == SelectedPieceId)
             {
-                DrawRect(slot.Grow(-2), Colors.White, filled: false, width: 4);
+                DrawRect(slot.Grow(-2), Palette.Selectable, filled: false, width: 3);
             }
         }
     }
@@ -268,8 +273,9 @@ public partial class FittingBoard : Control
         var shape = PieceShape(session, drag.PieceId, drag.Rotation);
         var layout = new GridLayout(g.CellSize, FloatingTopLeft(shape, g, drag.Pointer), 0, shape.Height);
         var def = session.Content.Piece(PieceInstanceOf(session.State, drag.PieceId).DefId);
-        GridPainter.DrawPiece(this, layout, shape.Cells, Palette.ForPiece(def) with { A = 0.85f });
-        GridPainter.DrawOutline(this, layout, shape.Cells, Colors.White, 3);
+        GridPainter.DrawPiece(this, layout, shape.Cells, Palette.ForPiece(def) with { A = 0.9f });
+        GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), Palette.Ink, reserveLabelSpace: false);
+        GridPainter.DrawOutline(this, layout, shape.Cells, Palette.Selectable, 3);
     }
 
     private void UpdateDrag(RunSession session, Vector2 pointer, Drag? drag = null)

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Arc Cutter: twin crescent solar blades -->
+  <path d="M 14 50 C 12 26 26 12 50 14 C 36 22 24 34 14 50 Z" fill="#ffffff"/>
+  <path d="M 24 54 C 34 46 46 34 54 24 C 52 40 40 52 24 54 Z" fill="#ffffff" fill-opacity="0.7"/>
+</svg>

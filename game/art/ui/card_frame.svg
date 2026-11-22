@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <!-- 9-slice Art Nouveau card frame: safe 24px corners, clean stretchable edges -->
+  <rect x="3" y="3" width="90" height="90" rx="10" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+  <rect x="8" y="8" width="80" height="80" rx="6" fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.5"/>
+  <!-- Corner botanical diamond filigree -->
+  <g fill="#ffffff">
+    <polygon points="12,5 15,12 12,15 5,12"/>
+    <polygon points="84,5 91,12 84,15 81,12"/>
+    <polygon points="12,91 5,84 12,81 15,84"/>
+    <polygon points="84,91 81,84 84,81 91,84"/>
+  </g>
+  <!-- Delicate inner corner arcs -->
+  <g fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.85">
+    <path d="M 8 22 C 8 14, 14 8, 22 8"/>
+    <path d="M 74 8 C 82 8, 88 14, 88 22"/>
+    <path d="M 8 74 C 8 82, 14 88, 22 88"/>
+    <path d="M 74 88 C 82 88, 88 82, 88 74"/>
+  </g>
+</svg>

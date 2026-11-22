@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Sun Sail: unfurled solar wing & sun core -->
+  <path d="M 32 8 L 54 48 L 32 40 L 10 48 Z" fill="#ffffff" fill-opacity="0.3" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+  <line x1="32" y1="8" x2="32" y2="56" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="32" cy="24" r="5" fill="#ffffff"/>
+</svg>

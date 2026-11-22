@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Lens Grinder: optical prism & beam -->
+  <polygon points="32,10 52,48 12,48" fill="#ffffff" fill-opacity="0.28" stroke="#ffffff" stroke-width="3.2" stroke-linejoin="round"/>
+  <line x1="6" y1="34" x2="24" y2="30" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <line x1="40" y1="28" x2="58" y2="20" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+  <line x1="42" y1="33" x2="58" y2="33" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+  <line x1="40" y1="38" x2="58" y2="46" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+</svg>

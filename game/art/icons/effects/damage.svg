@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Bold 8-point solar damage burst with clean spacious interior for the value -->
+  <polygon points="32,3 39,15 53,11 49,25 61,32 49,39 53,53 39,49 32,61 25,49 11,53 15,39 3,32 15,25 11,11 25,15"
+           fill="#ffffff" fill-opacity="0.28" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="16" fill="#0d161b" fill-opacity="0.45" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.6"/>
+</svg>

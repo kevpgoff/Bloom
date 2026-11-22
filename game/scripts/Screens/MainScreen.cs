@@ -1,5 +1,6 @@
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -21,6 +22,7 @@ public partial class MainScreen : Control
 
     public override void _Ready()
     {
+        Theme = BloomTheme.Build();
         _host = GetNode<Control>("Layout/ScreenHost");
         _status = GetNode<Label>("Layout/Status");
         _status.Text = GameRoot.Instance.Status;

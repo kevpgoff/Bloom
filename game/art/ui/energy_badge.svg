@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Sunburst diamond medallion for energy cost -->
+  <polygon points="32,4 58,32 32,60 6,32" fill="#ffffff" fill-opacity="0.22" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="32,12 50,32 32,52 14,32" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.65"/>
+</svg>

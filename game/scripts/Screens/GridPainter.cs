@@ -43,111 +43,208 @@ internal readonly record struct GridLayout(float CellSize, Vector2 Origin, int M
     }
 }
 
-/// <summary>Drawing shared by the combat grid and the fitting board. Placeholder shapes and colors until there is art.</summary>
+/// <summary>
+/// Option A geometric vector grid drawing shared by the combat grid, fitting board, and reward previews.
+/// Draws crisp solar hull deck plates, connected polyomino pieces with bevels, and upright centered icons.
+/// </summary>
 internal static class GridPainter
 {
     public static void DrawLanes(CanvasItem canvas, GridLayout g)
     {
+        var bounds = g.Bounds;
+        var guide = Palette.BrassLine with { A = 0.14f };
+        var tick = Palette.BrassLine with { A = 0.32f };
+
         for (int x = 0; x < Rules.GridColumns; x++)
         {
-            canvas.DrawRect(g.LaneRect(x), x % 2 == 0 ? Palette.LaneEven : Palette.LaneOdd);
+            var lane = g.LaneRect(x);
+            var wash = x % 2 == 0 ? Palette.LaneEven : Palette.LaneOdd;
+            if (wash.A > 0f)
+            {
+                canvas.DrawRect(lane, wash);
+            }
+
+            // Small navigation tick at the top of each lane so columns remain scannable in open space.
+            float cx = lane.GetCenter().X;
+            canvas.DrawLine(new Vector2(cx - 5f, bounds.Position.Y - 4f), new Vector2(cx + 5f, bounds.Position.Y - 4f), tick, 1.5f);
+        }
+
+        // Faint dashed vertical lane guides without a closed outer frame, so empty lanes read as open space.
+        for (int x = 1; x < Rules.GridColumns; x++)
+        {
+            float lx = bounds.Position.X + (x * g.CellSize);
+            canvas.DrawDashedLine(
+                new Vector2(lx, bounds.Position.Y),
+                new Vector2(lx, bounds.End.Y),
+                guide,
+                width: 1.2f,
+                dash: 6f);
         }
     }
 
-    /// <summary>Tints a lane that a heavy attack names and puts a marker above it.</summary>
+    /// <summary>Tints a lane that a heavy attack names and draws a vector warning chevron above it.</summary>
     public static void DrawHeavyLane(CanvasItem canvas, GridLayout g, int lane)
     {
         var laneRect = g.LaneRect(lane);
         canvas.DrawRect(laneRect, Palette.HeavyLane);
+        canvas.DrawDashedLine(laneRect.Position, new Vector2(laneRect.Position.X, laneRect.End.Y), Palette.Heavy with { A = 0.55f }, width: 2f, dash: 8f);
+        canvas.DrawDashedLine(new Vector2(laneRect.End.X, laneRect.Position.Y), laneRect.End, Palette.Heavy with { A = 0.55f }, width: 2f, dash: 8f);
+
         float cx = laneRect.GetCenter().X;
         float top = laneRect.Position.Y;
-        canvas.DrawColoredPolygon([new Vector2(cx - 16, top - 32), new Vector2(cx + 16, top - 32), new Vector2(cx, top - 6)], Palette.Heavy);
+        canvas.DrawColoredPolygon([new Vector2(cx - 15, top - 30), new Vector2(cx + 15, top - 30), new Vector2(cx, top - 7)], Palette.Heavy);
+        canvas.DrawPolyline([new Vector2(cx - 19, top - 22), new Vector2(cx, top - 3), new Vector2(cx + 19, top - 22)], Palette.Heavy with { A = 0.65f }, 2.2f, antialiased: true);
     }
 
     public static void DrawHull(CanvasItem canvas, GridLayout g, IEnumerable<Cell> cells)
     {
-        foreach (var cell in cells)
-        {
-            canvas.DrawRect(g.CellRect(cell).Grow(-2), Palette.Hull);
-        }
-    }
+        var hullSet = cells.ToHashSet();
 
-    /// <summary>Fills each cell and the gaps between neighboring cells, so the piece reads as one shape.</summary>
-    public static void DrawPiece(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells, Color color)
-    {
-        float inset = Mathf.Max(2, g.CellSize * 0.04f);
-        var set = cells.ToHashSet();
-        foreach (var cell in cells)
+        // Grounded drop shadow + solid hull backing so the playable ship silhouette pops from open space.
+        foreach (var cell in hullSet)
         {
             var r = g.CellRect(cell);
-            canvas.DrawRect(r.Grow(-inset), color);
+            canvas.DrawRect(new Rect2(r.Position + new Vector2(0, 5f), r.Size), Palette.HullShadow);
+        }
+
+        foreach (var cell in hullSet)
+        {
+            var r = g.CellRect(cell);
+            canvas.DrawRect(r, Palette.SurfaceDeep);
+            var plate = r.Grow(-2.5f);
+            canvas.DrawRect(plate, Palette.Hull);
+            canvas.DrawRect(plate.Grow(-1f), Palette.HullBorder with { A = 0.6f }, filled: false, width: 1.2f);
+
+            // Subtle geometric rivet dot at deck-plate center.
+            canvas.DrawCircle(plate.GetCenter(), Mathf.Clamp(g.CellSize * 0.04f, 1.5f, 3f), Palette.BrassLine with { A = 0.3f });
+        }
+
+        DrawOutline(canvas, g, hullSet, Palette.BrassBright with { A = 0.78f }, 2.5f);
+    }
+
+    /// <summary>Fills each cell and the gaps between neighboring cells, adding a clean vector bevel and dark seam.</summary>
+    public static void DrawPiece(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells, Color color)
+    {
+        float inset = Mathf.Max(2f, g.CellSize * 0.045f);
+        var set = cells.ToHashSet();
+
+        // Dark botanical-slate interior base with luminous commune-tinted fill.
+        var body = color.Darkened(0.08f);
+        foreach (var cell in set)
+        {
+            var r = g.CellRect(cell);
+            canvas.DrawRect(r.Grow(-inset), body);
             if (set.Contains(new Cell(cell.X + 1, cell.Y)))
             {
-                canvas.DrawRect(new Rect2(r.End.X - inset, r.Position.Y + inset, inset * 2, g.CellSize - (inset * 2)), color);
+                canvas.DrawRect(new Rect2(r.End.X - inset, r.Position.Y + inset, inset * 2, g.CellSize - (inset * 2)), body);
             }
 
             if (set.Contains(new Cell(cell.X, cell.Y + 1)))
             {
-                canvas.DrawRect(new Rect2(r.Position.X + inset, r.End.Y - inset, g.CellSize - (inset * 2), inset * 2), color);
+                canvas.DrawRect(new Rect2(r.Position.X + inset, r.End.Y - inset, g.CellSize - (inset * 2), inset * 2), body);
             }
         }
-    }
 
-    /// <summary>Draws the piece's outer edges only.</summary>
-    public static void DrawOutline(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells, Color color, float width)
-    {
-        var set = cells.ToHashSet();
-        foreach (var cell in cells)
+        // Subtle internal cell seam marks so multi-cell geometry stays legible.
+        var seam = color.Darkened(0.32f) with { A = color.A * 0.45f };
+        foreach (var cell in set)
         {
             var r = g.CellRect(cell);
-            var tl = r.Position;
-            var tr = new Vector2(r.End.X, r.Position.Y);
-            var bl = new Vector2(r.Position.X, r.End.Y);
-            var br = r.End;
-            if (!set.Contains(new Cell(cell.X, cell.Y - 1)))
+            if (set.Contains(new Cell(cell.X + 1, cell.Y)))
             {
-                canvas.DrawLine(tl, tr, color, width);
+                canvas.DrawLine(new Vector2(r.End.X, r.Position.Y + inset + 6), new Vector2(r.End.X, r.End.Y - inset - 6), seam, 1.2f);
             }
 
-            if (!set.Contains(new Cell(cell.X, cell.Y + 1)))
+            if (set.Contains(new Cell(cell.X, cell.Y + 1)))
             {
-                canvas.DrawLine(bl, br, color, width);
+                canvas.DrawLine(new Vector2(r.Position.X + inset + 6, r.End.Y), new Vector2(r.End.X - inset - 6, r.End.Y), seam, 1.2f);
+            }
+        }
+
+        // Top-left solar sheen highlight & crisp outer dark contour.
+        var highlight = color.Lightened(0.32f) with { A = color.A * 0.7f };
+        var edge = color.Darkened(0.55f) with { A = color.A * 0.85f };
+        foreach (var cell in set)
+        {
+            var r = g.CellRect(cell).Grow(-inset);
+            if (!set.Contains(new Cell(cell.X, cell.Y - 1)))
+            {
+                canvas.DrawLine(new Vector2(r.Position.X + 2, r.Position.Y + 1.5f), new Vector2(r.End.X - 2, r.Position.Y + 1.5f), highlight, 2f);
             }
 
             if (!set.Contains(new Cell(cell.X - 1, cell.Y)))
             {
-                canvas.DrawLine(tl, bl, color, width);
+                canvas.DrawLine(new Vector2(r.Position.X + 1.5f, r.Position.Y + 2), new Vector2(r.Position.X + 1.5f, r.End.Y - 2), highlight, 1.5f);
             }
+        }
 
-            if (!set.Contains(new Cell(cell.X + 1, cell.Y)))
-            {
-                canvas.DrawLine(tr, br, color, width);
-            }
+        DrawInsetOutline(canvas, g, set, inset, edge, 2f);
+    }
+
+    /// <summary>
+    /// Draws a piece's monochrome vector icon upright at the visual center of its polyomino, so
+    /// L-, T-, S-, and U-shapes remain instantly recognizable at every rotation.
+    /// </summary>
+    public static void DrawPieceIcon(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells, Texture2D? icon, Color tint, bool reserveLabelSpace = true)
+    {
+        if (icon is null || cells.Count == 0)
+        {
+            return;
+        }
+
+        var (center, span) = IconAnchor(g, cells);
+        float maxSide = reserveLabelSpace ? span * 0.56f : span * 0.70f;
+        float iconSize = Mathf.Clamp(maxSide, 14f, g.CellSize * 1.15f);
+        var drawCenter = reserveLabelSpace && g.CellSize >= 46f
+            ? center + new Vector2(0, -g.CellSize * 0.11f)
+            : center;
+        var rect = new Rect2(drawCenter - new Vector2(iconSize / 2f, iconSize / 2f), new Vector2(iconSize, iconSize));
+
+        // Subtle dark medallion halo behind the vector glyph for contrast on bright commune colors.
+        canvas.DrawCircle(drawCenter, iconSize * 0.54f, new Color(0.06f, 0.10f, 0.12f, 0.24f * tint.A));
+        canvas.DrawTextureRect(icon, rect, tile: false, modulate: tint);
+    }
+
+    /// <summary>Draws diagonal offline striping across a disabled piece.</summary>
+    public static void DrawDisabledOverlay(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells)
+    {
+        float inset = Mathf.Max(2f, g.CellSize * 0.045f);
+        var lineColor = Palette.DisabledText with { A = 0.22f };
+        foreach (var cell in cells)
+        {
+            var r = g.CellRect(cell).Grow(-inset - 2f);
+            canvas.DrawLine(r.Position, r.End, lineColor, 1.5f);
+            canvas.DrawLine(new Vector2(r.Position.X, r.End.Y), new Vector2(r.End.X, r.Position.Y), lineColor, 1.5f);
         }
     }
 
-    /// <summary>Writes the text on the piece's first cell and across the cells to its right in the same row.</summary>
+    /// <summary>Draws the piece's outer edges only.</summary>
+    public static void DrawOutline(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells, Color color, float width) =>
+        DrawInsetOutline(canvas, g, cells.ToHashSet(), 0f, color, width);
+
+    /// <summary>Writes a compact label along the piece's bottom/first row so it complements the upright icon.</summary>
     public static void DrawLabel(CanvasItem canvas, Font font, GridLayout g, IReadOnlyCollection<Cell> cells, string text, Color color)
     {
         var set = cells.ToHashSet();
-        var first = Cell.RowMajor(cells).First();
+        int maxY = cells.Max(c => c.Y);
+        var anchorRow = Cell.RowMajor(cells.Where(c => c.Y == maxY)).First();
         int width = 1;
-        while (set.Contains(new Cell(first.X + width, first.Y)))
+        while (set.Contains(new Cell(anchorRow.X + width, anchorRow.Y)))
         {
             width++;
         }
 
-        int fontSize = (int)Mathf.Clamp(g.CellSize * 0.17f, 14, 24);
-        var rect = g.CellRect(first).Grow(-8);
-        canvas.DrawMultilineString(
+        int fontSize = (int)Mathf.Clamp(g.CellSize * 0.18f, 14, 20);
+        var rect = g.CellRect(anchorRow);
+        float yPos = rect.End.Y - Mathf.Max(6f, g.CellSize * 0.10f);
+        canvas.DrawString(
             font,
-            rect.Position + new Vector2(0, font.GetAscent(fontSize)),
+            new Vector2(rect.Position.X + 4f, yPos),
             text,
             HorizontalAlignment.Center,
-            (width * g.CellSize) - 16,
+            (width * g.CellSize) - 8f,
             fontSize,
-            maxLines: 3,
-            modulate: color);
+            color);
     }
 
     /// <summary>The "+" badge on a piece that receives an adjacency bonus, in the corner of its first cell.</summary>
@@ -155,7 +252,78 @@ internal static class GridPainter
     {
         var corner = g.CellRect(Cell.RowMajor(cells).First());
         var center = new Vector2(corner.End.X - 14, corner.Position.Y + 14);
-        canvas.DrawCircle(center, 11, color);
-        canvas.DrawString(font, center + new Vector2(-7, 8), "+", HorizontalAlignment.Center, 14, 22, Palette.PieceText);
+        canvas.DrawCircle(center, 11, Palette.SurfaceDeep);
+        canvas.DrawCircle(center, 9.5f, color);
+        canvas.DrawString(font, center + new Vector2(-7, 7), "+", HorizontalAlignment.Center, 14, 20, Palette.PieceText);
+    }
+
+    private static (Vector2 Center, float Span) IconAnchor(GridLayout g, IReadOnlyCollection<Cell> cells)
+    {
+        var set = cells.ToHashSet();
+        int minX = set.Min(c => c.X);
+        int maxX = set.Max(c => c.X);
+        int minY = set.Min(c => c.Y);
+        int maxY = set.Max(c => c.Y);
+        int width = maxX - minX + 1;
+        int height = maxY - minY + 1;
+
+        // Solid rectangles (1x1, 1x2, 1x3, 2x2) center cleanly across the whole block.
+        if (set.Count == width * height)
+        {
+            var tl = g.CellRect(new Cell(minX, minY)).Position;
+            var br = g.CellRect(new Cell(maxX, maxY)).End;
+            float span = Mathf.Min(width, height) * g.CellSize;
+            return ((tl + br) * 0.5f, span);
+        }
+
+        // Non-rectangular polyominoes (L, T, S, U) anchor on their hub cell (most neighbors, closest to centroid).
+        var centroid = new Vector2((float)set.Average(c => c.X), (float)set.Average(c => c.Y));
+        var hub = set
+            .OrderByDescending(c => NeighborCount(set, c))
+            .ThenBy(c => new Vector2(c.X, c.Y).DistanceSquaredTo(centroid))
+            .First();
+        return (g.CellRect(hub).GetCenter(), g.CellSize);
+    }
+
+    private static int NeighborCount(HashSet<Cell> set, Cell c)
+    {
+        int n = 0;
+        if (set.Contains(new Cell(c.X + 1, c.Y))) n++;
+        if (set.Contains(new Cell(c.X - 1, c.Y))) n++;
+        if (set.Contains(new Cell(c.X, c.Y + 1))) n++;
+        if (set.Contains(new Cell(c.X, c.Y - 1))) n++;
+        return n;
+    }
+
+    private static void DrawInsetOutline(CanvasItem canvas, GridLayout g, HashSet<Cell> set, float inset, Color color, float width)
+    {
+        foreach (var cell in set)
+        {
+            var r = g.CellRect(cell);
+            float left = set.Contains(new Cell(cell.X - 1, cell.Y)) ? r.Position.X : r.Position.X + inset;
+            float right = set.Contains(new Cell(cell.X + 1, cell.Y)) ? r.End.X : r.End.X - inset;
+            float top = set.Contains(new Cell(cell.X, cell.Y - 1)) ? r.Position.Y : r.Position.Y + inset;
+            float bottom = set.Contains(new Cell(cell.X, cell.Y + 1)) ? r.End.Y : r.End.Y - inset;
+
+            if (!set.Contains(new Cell(cell.X, cell.Y - 1)))
+            {
+                canvas.DrawLine(new Vector2(left, top), new Vector2(right, top), color, width);
+            }
+
+            if (!set.Contains(new Cell(cell.X, cell.Y + 1)))
+            {
+                canvas.DrawLine(new Vector2(left, bottom), new Vector2(right, bottom), color, width);
+            }
+
+            if (!set.Contains(new Cell(cell.X - 1, cell.Y)))
+            {
+                canvas.DrawLine(new Vector2(left, top), new Vector2(left, bottom), color, width);
+            }
+
+            if (!set.Contains(new Cell(cell.X + 1, cell.Y)))
+            {
+                canvas.DrawLine(new Vector2(right, top), new Vector2(right, bottom), color, width);
+            }
+        }
     }
 }

@@ -30,6 +30,32 @@ internal static class CardText
         };
     }
 
+    /// <summary>Full-word label paired underneath a large card effect symbol.</summary>
+    public static string EffectWord(Effect effect) => effect switch
+    {
+        DamageEffect => "Damage",
+        BlockEffect => "Block",
+        GainEnergyEffect => "Energy",
+        DrawEffect => "Draw",
+        RepairEffect => "Repair",
+        FocusEffect => "Focus",
+        GrowEffect => "Grow",
+        _ => effect.GetType().Name,
+    };
+
+    /// <summary>Value displayed inside a large card effect symbol, and whether bonuses/focus/growth boosted it.</summary>
+    public static (string Value, bool Boosted) EffectNumber(Effect effect, Effect? baseEffect = null) => effect switch
+    {
+        DamageEffect d => (d.Amount.ToString(), d.Amount > ((baseEffect as DamageEffect)?.Amount ?? d.Amount)),
+        BlockEffect b => (b.Amount.ToString(), b.Amount > ((baseEffect as BlockEffect)?.Amount ?? b.Amount)),
+        GainEnergyEffect e => ($"+{e.Amount}", false),
+        DrawEffect d => ($"+{d.Count}", false),
+        RepairEffect r => (r.Count.ToString(), false),
+        FocusEffect f => ($"+{f.Amount}", false),
+        GrowEffect g => ($"+{g.Amount}", false),
+        _ => ("?", false),
+    };
+
     /// <summary>"Lance (2 energy): Deal 12 damage."</summary>
     public static string Card(CardDef card) =>
         $"{card.Name} ({card.Cost} energy): {string.Join(". ", card.Effects.Select(e => Describe(e)))}.";

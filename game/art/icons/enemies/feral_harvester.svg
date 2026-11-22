@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Feral Harvester: angular twin-scythe agricultural automaton -->
+  <polygon points="32,12 46,24 42,46 22,46 18,24" fill="#ffffff" fill-opacity="0.22" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="32" cy="28" r="5" fill="#ffffff"/>
+  <path d="M 18 24 C 8 22 6 36 14 52 C 12 40 16 33 22 32" fill="#ffffff"/>
+  <path d="M 46 24 C 56 22 58 36 50 52 C 52 40 48 33 42 32" fill="#ffffff"/>
+  <line x1="25" y1="52" x2="39" y2="52" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+</svg>

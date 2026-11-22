@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Botanical sprouting seedpod with twin leaves and spacious pod interior for the value -->
+  <path d="M 32 22 C 21 20 13 13 13 5 C 23 5 31 11 32 22 Z" fill="#ffffff" fill-opacity="0.9"/>
+  <path d="M 32 22 C 43 20 51 13 51 5 C 41 5 33 11 32 22 Z" fill="#ffffff" fill-opacity="0.72"/>
+  <path d="M 32 19 C 47 21 55 31 54 43 C 53 53 44 60 32 60 C 20 60 11 53 10 43 C 9 31 17 21 32 19 Z"
+        fill="#ffffff" fill-opacity="0.28" stroke="#ffffff" stroke-width="3.4" stroke-linejoin="round"/>
+  <ellipse cx="32" cy="40" rx="15" ry="14" fill="#0d161b" fill-opacity="0.4"/>
+</svg>

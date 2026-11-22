@@ -2,6 +2,7 @@ using Bloom.Core.Cards;
 using Bloom.Core.Combat;
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -19,20 +20,22 @@ namespace Bloom.Game.Screens;
 public partial class CombatScreen : Control
 {
     private const int HandGap = 8;
-    private const float MinCardWidth = 88;
+    private const float MinCardWidth = 108;
     private const float MaxCardWidth = 136;
-    private const float CardHeight = 208;
+    private const float CardHeight = 220;
 
     private readonly List<int> _chosenTargets = [];
     private int? _targetingCardId;
     private int _targetsNeeded;
     private bool _refreshQueued;
 
+    private TextureRect _enemyIcon = null!;
     private Label _enemyName = null!;
     private Label _turn = null!;
     private ProgressBar _enemyHullBar = null!;
     private Label _enemyHull = null!;
     private Label _enemyBlock = null!;
+    private TextureRect _intentIcon = null!;
     private Label _intent = null!;
     private ShipGridView _grid = null!;
     private Label _ship = null!;
@@ -51,12 +54,17 @@ public partial class CombatScreen : Control
 
     public override void _Ready()
     {
+        _enemyIcon = GetNode<TextureRect>("%EnemyIcon");
         _enemyName = GetNode<Label>("%EnemyName");
         _turn = GetNode<Label>("%TurnLabel");
         _enemyHullBar = GetNode<ProgressBar>("%EnemyHullBar");
         _enemyHull = GetNode<Label>("%EnemyHullLabel");
         _enemyBlock = GetNode<Label>("%EnemyBlockLabel");
+        _intentIcon = GetNode<TextureRect>("%IntentIcon");
         _intent = GetNode<Label>("%IntentLabel");
+
+        BloomTheme.AttachPanelFrame(GetNode<Control>("Layout/EnemyPanel"));
+        BloomTheme.AttachPanelFrame(GetNode<Control>("ResultOverlay/Center/ResultPanel"), Palette.BrassBright with { A = 0.7f });
         _grid = GetNode<ShipGridView>("%ShipGrid");
         _ship = GetNode<Label>("%ShipLabel");
         _energy = GetNode<Label>("%EnergyLabel");
@@ -139,16 +147,21 @@ public partial class CombatScreen : Control
     {
         if (combat is null)
         {
-            _enemyName.Text = run.LastFight is { } last ? session.Content.Enemy(last.EnemyId).Name : "";
+            _enemyIcon.Texture = run.LastFight is { } last ? ArtLibrary.EnemyIcon(last.EnemyId) : null;
+            _enemyIcon.Modulate = Palette.Muted;
+            _enemyName.Text = run.LastFight is { } lastFight ? session.Content.Enemy(lastFight.EnemyId).Name : "";
             _turn.Text = "";
             _enemyHullBar.Value = 0;
             _enemyHull.Text = "";
             _enemyBlock.Text = "";
+            _intentIcon.Texture = null;
             _intent.Text = "";
             return;
         }
 
         var enemy = combat.Enemy;
+        _enemyIcon.Texture = ArtLibrary.EnemyIcon(enemy.DefId);
+        _enemyIcon.Modulate = Palette.Heavy;
         _enemyName.Text = session.Content.Enemy(enemy.DefId).Name;
         _turn.Text = $"Turn {combat.Turn}";
         _enemyHullBar.MaxValue = enemy.MaxHull;
@@ -167,6 +180,8 @@ public partial class CombatScreen : Control
             IntentKind.Block => ($"Next: block {intent.Amount}", Palette.Block),
             _ => (intent.Kind.ToString(), Colors.White),
         };
+        _intentIcon.Texture = ArtLibrary.IntentIcon(intent.Kind);
+        _intentIcon.Modulate = color;
         _intent.Text = text;
         _intent.AddThemeColorOverride("font_color", color);
     }
@@ -220,39 +235,100 @@ public partial class CombatScreen : Control
     {
         bool targetingThis = _targetingCardId == preview.Card.Id;
         bool enabled = preview.Playable && (_targetingCardId is null || targetingThis);
+        var source = run.Ship.Find(preview.Card.SourcePieceId);
+        var sourceDef = source is null ? null : session.Content.Piece(source.Piece.DefId);
+        var accent = sourceDef is null ? Palette.Muted : Palette.ForPiece(sourceDef);
+
         var button = new Button
         {
             CustomMinimumSize = new Vector2(MaxCardWidth, CardHeight),
             Disabled = !enabled,
             ClipContents = true,
             FocusMode = FocusModeEnum.None,
-            Modulate = targetingThis ? Palette.Selectable : enabled ? Colors.White : new Color(1, 1, 1, 0.4f),
+            Modulate = enabled ? Colors.White : new Color(1, 1, 1, 0.65f),
+            TooltipText = string.Join("\n", preview.Effects.Zip(preview.Def.Effects, (e, b) => CardText.Describe(e))),
         };
+        button.AddThemeStyleboxOverride("normal", BloomTheme.CardSurface(accent, targetingThis, hovered: false, !enabled));
+        button.AddThemeStyleboxOverride("hover", BloomTheme.CardSurface(accent, targetingThis, hovered: true, !enabled));
+        button.AddThemeStyleboxOverride("pressed", BloomTheme.CardSurface(accent, highlighted: true, hovered: true, !enabled));
+        button.AddThemeStyleboxOverride("disabled", BloomTheme.CardSurface(accent, highlighted: false, hovered: false, disabled: true));
+        button.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
 
-        var source = run.Ship.Find(preview.Card.SourcePieceId);
+        if (BloomTheme.CreateFrameOverlay(ArtLibrary.CardFrame, targetingThis ? Palette.Selectable : accent with { A = 0.85f }) is { } frame)
+        {
+            button.AddChild(frame);
+        }
+
         var box = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
-        box.AddThemeConstantOverride("separation", 4);
+        box.AddThemeConstantOverride("separation", 6);
+
+        // Top strip: sunburst energy medallion + source piece emblem share one compact row,
+        // freeing the full width below for large, legible card title and effect numbers.
+        var topRow = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+        topRow.AddThemeConstantOverride("separation", 6);
+        topRow.AddChild(BuildEnergyBadge(preview.Def.Cost));
+
+        var artPanel = new PanelContainer
+        {
+            CustomMinimumSize = new Vector2(0, 44),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+        artPanel.AddThemeStyleboxOverride("panel", BloomTheme.FlatBox(
+            Palette.SurfaceDeep.Lerp(accent, 0.16f),
+            accent with { A = 0.45f },
+            border: 1,
+            radius: 8,
+            padX: 4,
+            padY: 3));
+        var emblem = new TextureRect
+        {
+            Texture = sourceDef is not null
+                ? ArtLibrary.PieceIcon(sourceDef)
+                : preview.Def.Effects.Count > 0
+                    ? ArtLibrary.EffectIcon(preview.Def.Effects[0])
+                    : null,
+            CustomMinimumSize = new Vector2(34, 34),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
+            SizeFlagsVertical = SizeFlags.ShrinkCenter,
+            Modulate = accent.Lightened(0.24f),
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+        artPanel.AddChild(emblem);
+        topRow.AddChild(artPanel);
+        box.AddChild(topRow);
+
+        // Full-width card title for high legibility on narrow portrait cards.
+        var title = MakeLabel(preview.Def.Name, 24, Colors.White);
+        title.HorizontalAlignment = HorizontalAlignment.Center;
+        title.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        title.AutowrapMode = TextServer.AutowrapMode.Off;
+        box.AddChild(title);
+
         box.AddChild(new ColorRect
         {
-            Color = source is null ? Palette.Muted : Palette.ForPiece(session.Content.Piece(source.Piece.DefId)),
-            CustomMinimumSize = new Vector2(0, 10),
+            Color = accent with { A = 0.55f },
+            CustomMinimumSize = new Vector2(0, 2),
             MouseFilter = MouseFilterEnum.Ignore,
         });
-        box.AddChild(MakeLabel(preview.Def.Name, 24, Colors.White));
-        box.AddChild(MakeLabel($"{preview.Def.Cost} energy", 20, Palette.Energy));
 
-        var effects = new RichTextLabel
+        // Bottom effects area: large effect symbols with bold numbers inside + full-word captions.
+        bool single = preview.Effects.Count == 1;
+        var effectsRow = new HBoxContainer
         {
-            BbcodeEnabled = true,
-            FitContent = true,
-            ScrollActive = false,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
             MouseFilter = MouseFilterEnum.Ignore,
             SizeFlagsVertical = SizeFlags.ExpandFill,
-            Text = string.Join("\n", preview.Effects.Zip(preview.Def.Effects, CardText.Describe)),
+            Alignment = BoxContainer.AlignmentMode.Center,
         };
-        effects.AddThemeFontSizeOverride("normal_font_size", 20);
-        box.AddChild(effects);
+        effectsRow.AddThemeConstantOverride("separation", single ? 0 : 4);
+        foreach (var (current, original) in preview.Effects.Zip(preview.Def.Effects))
+        {
+            effectsRow.AddChild(BuildEffectBadge(current, original, single));
+        }
+
+        box.AddChild(effectsRow);
 
         button.AddChild(box);
         box.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
@@ -269,6 +345,115 @@ public partial class CombatScreen : Control
         button.ButtonUp += () => _grid.HighlightPieceId = null;
         button.Pressed += () => OnCardPressed(preview);
         return button;
+    }
+
+    private static Control BuildEffectBadge(Effect current, Effect original, bool single)
+    {
+        var column = new VBoxContainer
+        {
+            MouseFilter = MouseFilterEnum.Ignore,
+            SizeFlagsHorizontal = single ? SizeFlags.ShrinkCenter : SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ShrinkCenter,
+            Alignment = BoxContainer.AlignmentMode.Center,
+        };
+        column.AddThemeConstantOverride("separation", 2);
+
+        float symbolSize = single ? 76f : 50f;
+        int numberFontSize = single ? 32 : 22;
+        int captionFontSize = single ? 17 : 14;
+        var tint = Palette.ForEffect(current);
+        var (valueText, boosted) = CardText.EffectNumber(current, original);
+
+        var symbol = new Control
+        {
+            CustomMinimumSize = new Vector2(symbolSize, symbolSize),
+            SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+        if (ArtLibrary.EffectIcon(current) is { } iconTex)
+        {
+            var bg = new TextureRect
+            {
+                Texture = iconTex,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                Modulate = tint,
+                MouseFilter = MouseFilterEnum.Ignore,
+            };
+            bg.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+            symbol.AddChild(bg);
+        }
+
+        var number = new Label
+        {
+            Text = valueText,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+        number.AddThemeFontSizeOverride("font_size", numberFontSize);
+        number.AddThemeColorOverride("font_color", boosted ? Palette.Boosted : Colors.White);
+        number.AddThemeColorOverride("font_outline_color", Palette.SurfaceDeep);
+        number.AddThemeConstantOverride("outline_size", single ? 7 : 5);
+        number.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        if (current is GrowEffect)
+        {
+            // Center the number inside the lower seedpod chamber below the twin leaves.
+            number.OffsetTop = single ? 14f : 9f;
+        }
+        else if (current is DrawEffect)
+        {
+            // Center inside the front fanned card face.
+            number.OffsetLeft = single ? 6f : 4f;
+        }
+
+        symbol.AddChild(number);
+        column.AddChild(symbol);
+
+        var caption = MakeLabel(CardText.EffectWord(current), captionFontSize, tint.Lightened(0.28f));
+        caption.HorizontalAlignment = HorizontalAlignment.Center;
+        caption.AutowrapMode = TextServer.AutowrapMode.Off;
+        column.AddChild(caption);
+
+        return column;
+    }
+
+    private static Control BuildEnergyBadge(int cost)
+    {
+        var badge = new Control
+        {
+            CustomMinimumSize = new Vector2(40, 40),
+            SizeFlagsVertical = SizeFlags.ShrinkCenter,
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+        if (ArtLibrary.EnergyBadge is { } tex)
+        {
+            var bg = new TextureRect
+            {
+                Texture = tex,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                Modulate = Palette.Energy,
+                MouseFilter = MouseFilterEnum.Ignore,
+            };
+            bg.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+            badge.AddChild(bg);
+        }
+
+        var costLabel = new Label
+        {
+            Text = cost.ToString(),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+        costLabel.AddThemeFontSizeOverride("font_size", 24);
+        costLabel.AddThemeColorOverride("font_color", Colors.White);
+        costLabel.AddThemeColorOverride("font_outline_color", Palette.SurfaceDeep);
+        costLabel.AddThemeConstantOverride("outline_size", 5);
+        costLabel.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        badge.AddChild(costLabel);
+        return badge;
     }
 
     private static Label MakeLabel(string text, int fontSize, Color color)

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Seed Drone: winged botanical seedpod bot -->
+  <ellipse cx="32" cy="36" rx="9" ry="14" fill="#ffffff"/>
+  <path d="M 23 30 C 10 24 6 16 14 14 C 22 12 27 20 27 27" fill="#ffffff" fill-opacity="0.72"/>
+  <path d="M 41 30 C 54 24 58 16 50 14 C 42 12 37 20 37 27" fill="#ffffff" fill-opacity="0.72"/>
+  <circle cx="32" cy="32" r="3" fill="#182329" fill-opacity="0.5"/>
+</svg>
