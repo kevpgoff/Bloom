@@ -83,7 +83,12 @@ public partial class ShipGridView : Control
             }
 
             GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), off ? Palette.DisabledText with { A = 0.55f } : Palette.Ink);
-            GridPainter.DrawLabel(this, font, g, cells, off ? "OFF" : def.Name, off ? Palette.DisabledText : Palette.PieceText);
+            GridPainter.DrawLabel(this, font, g, cells, def.Name, off ? Palette.DisabledText : Palette.PieceText);
+            if (off)
+            {
+                GridPainter.DrawOffTag(this, font, g, cells);
+            }
+
             if (bonusReceivers.Contains(id))
             {
                 GridPainter.DrawBonusBadge(this, font, g, cells, Palette.Badge);

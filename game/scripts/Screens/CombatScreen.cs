@@ -20,14 +20,16 @@ namespace Bloom.Game.Screens;
 public partial class CombatScreen : Control
 {
     private const int HandGap = 8;
-    private const float MinCardWidth = 108;
+    private const float MinCardWidth = 88;
     private const float MaxCardWidth = 136;
     private const float CardHeight = 220;
+    private const float CardPadding = 8;
 
     private readonly List<int> _chosenTargets = [];
     private int? _targetingCardId;
     private int _targetsNeeded;
     private bool _refreshQueued;
+    private float _cardWidth = MaxCardWidth;
 
     private TextureRect _enemyIcon = null!;
     private Label _enemyName = null!;
@@ -82,7 +84,7 @@ public partial class CombatScreen : Control
         GetNode<Button>("%CancelButton").Pressed += CancelTargeting;
         GetNode<Button>("%NewRunButton").Pressed += StartNewRun;
         _grid.PieceTapped += OnPieceTapped;
-        _handScroll.Resized += FitCardWidths;
+        _handScroll.Resized += OnHandResized;
         GameRoot.Instance.Changed += QueueRefresh;
 
         Refresh();
@@ -223,16 +225,22 @@ public partial class CombatScreen : Control
             return;
         }
 
+        _cardWidth = CardWidth(combat.Hand.Count);
         foreach (var card in combat.Hand)
         {
-            _hand.AddChild(BuildCard(session, run, session.Combat.Preview(run, card)));
+            _hand.AddChild(BuildCard(session, run, session.Combat.Preview(run, card), _cardWidth));
         }
-
-        FitCardWidths();
     }
 
-    private Button BuildCard(RunSession session, RunState run, CardPreview preview)
+    /// <summary>
+    /// Builds one card at the given width. Everything inside is sized from the width, so a hand of 7
+    /// still fits on screen and two effects fit side by side on the narrowest card.
+    /// </summary>
+    private Button BuildCard(RunSession session, RunState run, CardPreview preview, float width)
     {
+        float inner = width - (CardPadding * 2);
+        float badgeSize = Mathf.Clamp(inner * 0.34f, 28f, 40f);
+
         bool targetingThis = _targetingCardId == preview.Card.Id;
         bool enabled = preview.Playable && (_targetingCardId is null || targetingThis);
         var source = run.Ship.Find(preview.Card.SourcePieceId);
@@ -241,12 +249,11 @@ public partial class CombatScreen : Control
 
         var button = new Button
         {
-            CustomMinimumSize = new Vector2(MaxCardWidth, CardHeight),
+            CustomMinimumSize = new Vector2(width, CardHeight),
             Disabled = !enabled,
             ClipContents = true,
             FocusMode = FocusModeEnum.None,
-            Modulate = enabled ? Colors.White : new Color(1, 1, 1, 0.65f),
-            TooltipText = string.Join("\n", preview.Effects.Zip(preview.Def.Effects, (e, b) => CardText.Describe(e))),
+            Modulate = enabled ? Colors.White : new Color(1, 1, 1, 0.45f),
         };
         button.AddThemeStyleboxOverride("normal", BloomTheme.CardSurface(accent, targetingThis, hovered: false, !enabled));
         button.AddThemeStyleboxOverride("hover", BloomTheme.CardSurface(accent, targetingThis, hovered: true, !enabled));
@@ -265,12 +272,12 @@ public partial class CombatScreen : Control
         // Top strip: sunburst energy medallion + source piece emblem share one compact row,
         // freeing the full width below for large, legible card title and effect numbers.
         var topRow = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
-        topRow.AddThemeConstantOverride("separation", 6);
-        topRow.AddChild(BuildEnergyBadge(preview.Def.Cost));
+        topRow.AddThemeConstantOverride("separation", inner > 100 ? 6 : 4);
+        topRow.AddChild(BuildEnergyBadge(preview.Def.Cost, badgeSize));
 
         var artPanel = new PanelContainer
         {
-            CustomMinimumSize = new Vector2(0, 44),
+            CustomMinimumSize = new Vector2(0, badgeSize + 4),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             MouseFilter = MouseFilterEnum.Ignore,
         };
@@ -288,7 +295,7 @@ public partial class CombatScreen : Control
                 : preview.Def.Effects.Count > 0
                     ? ArtLibrary.EffectIcon(preview.Def.Effects[0])
                     : null,
-            CustomMinimumSize = new Vector2(34, 34),
+            CustomMinimumSize = new Vector2(badgeSize - 6, badgeSize - 6),
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
             SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
@@ -301,7 +308,7 @@ public partial class CombatScreen : Control
         box.AddChild(topRow);
 
         // Full-width card title for high legibility on narrow portrait cards.
-        var title = MakeLabel(preview.Def.Name, 24, Colors.White);
+        var title = MakeLabel(preview.Def.Name, FitFontSize(preview.Def.Name, inner, 24, 15), Colors.White);
         title.HorizontalAlignment = HorizontalAlignment.Center;
         title.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         title.AutowrapMode = TextServer.AutowrapMode.Off;
@@ -315,27 +322,30 @@ public partial class CombatScreen : Control
         });
 
         // Bottom effects area: large effect symbols with bold numbers inside + full-word captions.
-        bool single = preview.Effects.Count == 1;
+        int effectCount = preview.Effects.Count;
+        bool single = effectCount == 1;
+        float gap = single ? 0 : 4;
+        float columnWidth = (inner - (gap * (effectCount - 1))) / Math.Max(1, effectCount);
         var effectsRow = new HBoxContainer
         {
             MouseFilter = MouseFilterEnum.Ignore,
             SizeFlagsVertical = SizeFlags.ExpandFill,
             Alignment = BoxContainer.AlignmentMode.Center,
         };
-        effectsRow.AddThemeConstantOverride("separation", single ? 0 : 4);
+        effectsRow.AddThemeConstantOverride("separation", (int)gap);
         foreach (var (current, original) in preview.Effects.Zip(preview.Def.Effects))
         {
-            effectsRow.AddChild(BuildEffectBadge(current, original, single));
+            effectsRow.AddChild(BuildEffectBadge(current, original, single, columnWidth));
         }
 
         box.AddChild(effectsRow);
 
         button.AddChild(box);
         box.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        box.OffsetLeft = 8;
-        box.OffsetTop = 8;
-        box.OffsetRight = -8;
-        box.OffsetBottom = -8;
+        box.OffsetLeft = CardPadding;
+        box.OffsetTop = CardPadding;
+        box.OffsetRight = -CardPadding;
+        box.OffsetBottom = -CardPadding;
 
         // The spec: touching a card highlights the piece that adds it, because the ship is the deck.
         int pieceId = preview.Card.SourcePieceId;
@@ -347,7 +357,8 @@ public partial class CombatScreen : Control
         return button;
     }
 
-    private static Control BuildEffectBadge(Effect current, Effect original, bool single)
+    /// <summary>An effect symbol with its number inside and its name under it, sized to fit <paramref name="columnWidth"/>.</summary>
+    private Control BuildEffectBadge(Effect current, Effect original, bool single, float columnWidth)
     {
         var column = new VBoxContainer
         {
@@ -358,9 +369,10 @@ public partial class CombatScreen : Control
         };
         column.AddThemeConstantOverride("separation", 2);
 
-        float symbolSize = single ? 76f : 50f;
-        int numberFontSize = single ? 32 : 22;
-        int captionFontSize = single ? 17 : 14;
+        float symbolSize = Mathf.Min(single ? 76f : 50f, columnWidth);
+        int numberFontSize = Math.Max(13, Mathf.RoundToInt(symbolSize * 0.43f));
+        string word = CardText.EffectWord(current);
+        int captionFontSize = FitFontSize(word, columnWidth, single ? 17 : 14, 10);
         var tint = Palette.ForEffect(current);
         var (valueText, boosted) = CardText.EffectNumber(current, original);
 
@@ -394,23 +406,23 @@ public partial class CombatScreen : Control
         number.AddThemeFontSizeOverride("font_size", numberFontSize);
         number.AddThemeColorOverride("font_color", boosted ? Palette.Boosted : Colors.White);
         number.AddThemeColorOverride("font_outline_color", Palette.SurfaceDeep);
-        number.AddThemeConstantOverride("outline_size", single ? 7 : 5);
+        number.AddThemeConstantOverride("outline_size", symbolSize >= 60 ? 7 : symbolSize >= 40 ? 5 : 4);
         number.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         if (current is GrowEffect)
         {
             // Center the number inside the lower seedpod chamber below the twin leaves.
-            number.OffsetTop = single ? 14f : 9f;
+            number.OffsetTop = symbolSize * 0.18f;
         }
         else if (current is DrawEffect)
         {
             // Center inside the front fanned card face.
-            number.OffsetLeft = single ? 6f : 4f;
+            number.OffsetLeft = symbolSize * 0.08f;
         }
 
         symbol.AddChild(number);
         column.AddChild(symbol);
 
-        var caption = MakeLabel(CardText.EffectWord(current), captionFontSize, tint.Lightened(0.28f));
+        var caption = MakeLabel(word, captionFontSize, tint.Lightened(0.28f));
         caption.HorizontalAlignment = HorizontalAlignment.Center;
         caption.AutowrapMode = TextServer.AutowrapMode.Off;
         column.AddChild(caption);
@@ -418,11 +430,11 @@ public partial class CombatScreen : Control
         return column;
     }
 
-    private static Control BuildEnergyBadge(int cost)
+    private static Control BuildEnergyBadge(int cost, float size)
     {
         var badge = new Control
         {
-            CustomMinimumSize = new Vector2(40, 40),
+            CustomMinimumSize = new Vector2(size, size),
             SizeFlagsVertical = SizeFlags.ShrinkCenter,
             MouseFilter = MouseFilterEnum.Ignore,
         };
@@ -447,7 +459,7 @@ public partial class CombatScreen : Control
             VerticalAlignment = VerticalAlignment.Center,
             MouseFilter = MouseFilterEnum.Ignore,
         };
-        costLabel.AddThemeFontSizeOverride("font_size", 24);
+        costLabel.AddThemeFontSizeOverride("font_size", Mathf.RoundToInt(size * 0.6f));
         costLabel.AddThemeColorOverride("font_color", Colors.White);
         costLabel.AddThemeColorOverride("font_outline_color", Palette.SurfaceDeep);
         costLabel.AddThemeConstantOverride("outline_size", 5);
@@ -469,23 +481,36 @@ public partial class CombatScreen : Control
         return label;
     }
 
-    /// <summary>Cards share the hand's width, between 88 and 136 px each; past that the hand scrolls.</summary>
-    private void FitCardWidths()
+    /// <summary>The largest font size from <paramref name="largest"/> down to <paramref name="smallest"/> at which the text fits the width.</summary>
+    private int FitFontSize(string text, float maxWidth, int largest, int smallest)
     {
-        int count = _hand.GetChildCount();
-        if (count == 0)
+        var font = GetThemeFont("font", "Label");
+        for (int size = largest; size > smallest; size--)
         {
-            return;
+            if (font.GetStringSize(text, HorizontalAlignment.Left, -1, size).X <= maxWidth)
+            {
+                return size;
+            }
         }
 
+        return smallest;
+    }
+
+    /// <summary>Cards share the hand's width, between 88 and 136 px each; past that the hand scrolls.</summary>
+    private float CardWidth(int count)
+    {
         float available = _handScroll.Size.X > 0 ? _handScroll.Size.X : MaxCardWidth * 5;
-        float width = Mathf.Clamp((available - (HandGap * (count - 1))) / count, MinCardWidth, MaxCardWidth);
-        foreach (var child in _hand.GetChildren())
+        return count == 0
+            ? MaxCardWidth
+            : Mathf.Clamp((available - (HandGap * (count - 1))) / count, MinCardWidth, MaxCardWidth);
+    }
+
+    /// <summary>The cards are sized from the hand's width when built, so a new width rebuilds them.</summary>
+    private void OnHandResized()
+    {
+        if (Session?.State.Combat is { } combat && !Mathf.IsEqualApprox(CardWidth(combat.Hand.Count), _cardWidth))
         {
-            if (child is Control card)
-            {
-                card.CustomMinimumSize = new Vector2(width, CardHeight);
-            }
+            QueueRefresh();
         }
     }
 

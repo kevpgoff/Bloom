@@ -69,8 +69,9 @@ internal static class GridPainter
             canvas.DrawLine(new Vector2(cx - 5f, bounds.Position.Y - 4f), new Vector2(cx + 5f, bounds.Position.Y - 4f), tick, 1.5f);
         }
 
-        // Faint dashed vertical lane guides without a closed outer frame, so empty lanes read as open space.
-        for (int x = 1; x < Rules.GridColumns; x++)
+        // Faint dashed guides on both sides of every lane, with no top or bottom edge, so empty lanes
+        // read as open space but all 6 lanes can still be counted.
+        for (int x = 0; x <= Rules.GridColumns; x++)
         {
             float lx = bounds.Position.X + (x * g.CellSize);
             canvas.DrawDashedLine(
@@ -222,7 +223,10 @@ internal static class GridPainter
     public static void DrawOutline(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells, Color color, float width) =>
         DrawInsetOutline(canvas, g, cells.ToHashSet(), 0f, color, width);
 
-    /// <summary>Writes a compact label along the piece's bottom/first row so it complements the upright icon.</summary>
+    /// <summary>
+    /// Writes the name along the piece's bottom row, under the icon. The font shrinks to fit that row,
+    /// down to 12 px; a name still too long there wraps onto two lines.
+    /// </summary>
     public static void DrawLabel(CanvasItem canvas, Font font, GridLayout g, IReadOnlyCollection<Cell> cells, string text, Color color)
     {
         var set = cells.ToHashSet();
@@ -234,17 +238,43 @@ internal static class GridPainter
             width++;
         }
 
+        const int smallest = 12;
+        float maxWidth = (width * g.CellSize) - 8f;
         int fontSize = (int)Mathf.Clamp(g.CellSize * 0.18f, 14, 20);
+        while (fontSize > smallest && font.GetStringSize(text, HorizontalAlignment.Left, -1, fontSize).X > maxWidth)
+        {
+            fontSize--;
+        }
+
         var rect = g.CellRect(anchorRow);
-        float yPos = rect.End.Y - Mathf.Max(6f, g.CellSize * 0.10f);
-        canvas.DrawString(
+        var baseline = new Vector2(rect.Position.X + 4f, rect.End.Y - Mathf.Max(6f, g.CellSize * 0.10f));
+        if (font.GetStringSize(text, HorizontalAlignment.Left, -1, fontSize).X <= maxWidth)
+        {
+            canvas.DrawString(font, baseline, text, HorizontalAlignment.Center, maxWidth, fontSize, color);
+            return;
+        }
+
+        // Two lines whose last baseline sits where the single line would.
+        canvas.DrawMultilineString(
             font,
-            new Vector2(rect.Position.X + 4f, yPos),
+            baseline - new Vector2(0, font.GetHeight(fontSize)),
             text,
             HorizontalAlignment.Center,
-            (width * g.CellSize) - 8f,
+            maxWidth,
             fontSize,
-            color);
+            maxLines: 2,
+            modulate: color);
+    }
+
+    /// <summary>An "OFF" tag in the top-left corner of a disabled piece's first cell; the name stays readable for repair picks.</summary>
+    public static void DrawOffTag(CanvasItem canvas, Font font, GridLayout g, IReadOnlyCollection<Cell> cells)
+    {
+        const int fontSize = 14;
+        var corner = g.CellRect(Cell.RowMajor(cells).First());
+        var textSize = font.GetStringSize("OFF", HorizontalAlignment.Left, -1, fontSize);
+        var tag = new Rect2(corner.Position + new Vector2(6, 6), textSize + new Vector2(10, 4));
+        canvas.DrawRect(tag, Palette.Refused);
+        canvas.DrawString(font, tag.Position + new Vector2(5, 2 + font.GetAscent(fontSize)), "OFF", HorizontalAlignment.Left, -1, fontSize, Colors.White);
     }
 
     /// <summary>The "+" badge on a piece that receives an adjacency bonus, in the corner of its first cell.</summary>
