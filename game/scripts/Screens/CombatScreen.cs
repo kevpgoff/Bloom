@@ -66,7 +66,7 @@ public partial class CombatScreen : Control
         _intent = GetNode<Label>("%IntentLabel");
 
         BloomTheme.AttachPanelFrame(GetNode<Control>("Layout/EnemyPanel"));
-        BloomTheme.AttachPanelFrame(GetNode<Control>("ResultOverlay/Center/ResultPanel"), Palette.BrassBright with { A = 0.7f });
+        BloomTheme.AttachPanelFrame(GetNode<Control>("ResultOverlay/Center/ResultPanel"), Palette.HoloBright with { A = 0.7f });
         _grid = GetNode<ShipGridView>("%ShipGrid");
         _ship = GetNode<Label>("%ShipLabel");
         _energy = GetNode<Label>("%EnergyLabel");
@@ -282,10 +282,10 @@ public partial class CombatScreen : Control
             MouseFilter = MouseFilterEnum.Ignore,
         };
         artPanel.AddThemeStyleboxOverride("panel", BloomTheme.FlatBox(
-            Palette.SurfaceDeep.Lerp(accent, 0.16f),
-            accent with { A = 0.45f },
+            Palette.SurfaceDeep.Lerp(accent, 0.08f),
+            accent with { A = 0.4f },
             border: 1,
-            radius: 8,
+            radius: 2,
             padX: 4,
             padY: 3));
         var emblem = new TextureRect
@@ -300,15 +300,17 @@ public partial class CombatScreen : Control
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
             SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
             SizeFlagsVertical = SizeFlags.ShrinkCenter,
-            Modulate = accent.Lightened(0.24f),
+            Modulate = Palette.Glyph(accent),
             MouseFilter = MouseFilterEnum.Ignore,
         };
         artPanel.AddChild(emblem);
         topRow.AddChild(artPanel);
         box.AddChild(topRow);
 
-        // Full-width card title for high legibility on narrow portrait cards.
-        var title = MakeLabel(preview.Def.Name, FitFontSize(preview.Def.Name, inner, 24, 15), Colors.White);
+        // Full-width card title in tracked capitals, for legibility on narrow portrait cards.
+        string name = preview.Def.Name.ToUpperInvariant();
+        var title = MakeLabel(name, FitFontSize(name, inner, 21, 14, BloomTheme.Hud), Palette.Ink);
+        title.AddThemeFontOverride("font", BloomTheme.Hud);
         title.HorizontalAlignment = HorizontalAlignment.Center;
         title.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         title.AutowrapMode = TextServer.AutowrapMode.Off;
@@ -316,8 +318,8 @@ public partial class CombatScreen : Control
 
         box.AddChild(new ColorRect
         {
-            Color = accent with { A = 0.55f },
-            CustomMinimumSize = new Vector2(0, 2),
+            Color = accent with { A = 0.5f },
+            CustomMinimumSize = new Vector2(0, 1),
             MouseFilter = MouseFilterEnum.Ignore,
         });
 
@@ -371,8 +373,8 @@ public partial class CombatScreen : Control
 
         float symbolSize = Mathf.Min(single ? 76f : 50f, columnWidth);
         int numberFontSize = Math.Max(13, Mathf.RoundToInt(symbolSize * 0.43f));
-        string word = CardText.EffectWord(current);
-        int captionFontSize = FitFontSize(word, columnWidth, single ? 17 : 14, 10);
+        string word = CardText.EffectWord(current).ToUpperInvariant();
+        int captionFontSize = FitFontSize(word, columnWidth, single ? 15 : 13, 10, BloomTheme.Hud);
         var tint = Palette.ForEffect(current);
         var (valueText, boosted) = CardText.EffectNumber(current, original);
 
@@ -403,6 +405,7 @@ public partial class CombatScreen : Control
             VerticalAlignment = VerticalAlignment.Center,
             MouseFilter = MouseFilterEnum.Ignore,
         };
+        number.AddThemeFontOverride("font", BloomTheme.DisplayBold);
         number.AddThemeFontSizeOverride("font_size", numberFontSize);
         number.AddThemeColorOverride("font_color", boosted ? Palette.Boosted : Colors.White);
         number.AddThemeColorOverride("font_outline_color", Palette.SurfaceDeep);
@@ -423,6 +426,7 @@ public partial class CombatScreen : Control
         column.AddChild(symbol);
 
         var caption = MakeLabel(word, captionFontSize, tint.Lightened(0.28f));
+        caption.AddThemeFontOverride("font", BloomTheme.Hud);
         caption.HorizontalAlignment = HorizontalAlignment.Center;
         caption.AutowrapMode = TextServer.AutowrapMode.Off;
         column.AddChild(caption);
@@ -459,6 +463,7 @@ public partial class CombatScreen : Control
             VerticalAlignment = VerticalAlignment.Center,
             MouseFilter = MouseFilterEnum.Ignore,
         };
+        costLabel.AddThemeFontOverride("font", BloomTheme.DisplayBold);
         costLabel.AddThemeFontSizeOverride("font_size", Mathf.RoundToInt(size * 0.6f));
         costLabel.AddThemeColorOverride("font_color", Colors.White);
         costLabel.AddThemeColorOverride("font_outline_color", Palette.SurfaceDeep);
@@ -481,10 +486,13 @@ public partial class CombatScreen : Control
         return label;
     }
 
-    /// <summary>The largest font size from <paramref name="largest"/> down to <paramref name="smallest"/> at which the text fits the width.</summary>
-    private int FitFontSize(string text, float maxWidth, int largest, int smallest)
+    /// <summary>
+    /// The largest font size from <paramref name="largest"/> down to <paramref name="smallest"/> at which the text
+    /// fits the width, in <paramref name="font"/> or else the theme's label font.
+    /// </summary>
+    private int FitFontSize(string text, float maxWidth, int largest, int smallest, Font? font = null)
     {
-        var font = GetThemeFont("font", "Label");
+        font ??= GetThemeFont("font", "Label");
         for (int size = largest; size > smallest; size--)
         {
             if (font.GetStringSize(text, HorizontalAlignment.Left, -1, size).X <= maxWidth)

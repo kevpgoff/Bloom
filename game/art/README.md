@@ -1,6 +1,6 @@
 # Art
 
-This is prototype art for "Option A", a vector solarpunk look. No art direction has been decided yet. Every file is a white (`#ffffff`) SVG on a transparent background. The game tints it at runtime with colors from `scripts/Screens/Palette.cs`. `scripts/Visuals/ArtLibrary.cs` finds each file by name, so new art needs no code change.
+This is prototype art for "Option A", a vector solarpunk look in the "Holo Grove" style: a dark teal night, with the ship drawn as a lit hologram. No art direction has been decided yet. Every image is a white (`#ffffff`) SVG on a transparent background. The game tints it at runtime with colors from `scripts/Screens/Palette.cs`. `scripts/Visuals/ArtLibrary.cs` finds each file by name, so new art needs no code change.
 
 | Path | Holds |
 | --- | --- |
@@ -11,6 +11,8 @@ This is prototype art for "Option A", a vector solarpunk look. No art direction 
 | `ui/energy_badge.svg` | The cost medallion on a card, 64×64. |
 | `ui/card_frame.svg`, `ui/panel_frame.svg` | 9-slice borders, 96×96. The corner margin is a quarter of the texture's width (`BloomTheme.CreateFrameOverlay`). |
 | `ui/button_frame.svg` | A 9-slice button border. Not used yet. |
+| `textures/glow.svg` | A soft white radial glow, 128×128, tinted and drawn behind glyphs. Imported at `svg/scale=1.0` with mipmaps. |
+| `fonts/Saira.ttf` | The one typeface, a variable font with width and weight axes. `BloomTheme` makes every font from it: Saira at width 100 for text, Saira Semi Condensed (width 87.5) for headings, numbers and labels. Godot ignores the axis names, so `BloomTheme` keys them by their numeric OpenType tags. |
 
 A `.png` with the same name works in place of an `.svg`.
 

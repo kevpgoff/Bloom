@@ -26,6 +26,9 @@ internal static class ArtLibrary
 
     public static Texture2D? EnergyBadge => Load("res://art/ui/energy_badge");
 
+    /// <summary>A soft white radial glow, tinted and drawn behind glyphs and the enemy.</summary>
+    public static Texture2D? Glow => Load("res://art/textures/glow", isIcon: false);
+
     public static Texture2D? PieceIcon(PieceDef def)
     {
         if (Load($"res://art/icons/pieces/{def.Id}") is { } exact)

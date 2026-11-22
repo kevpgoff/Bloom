@@ -5,57 +5,61 @@ using Godot;
 namespace Bloom.Game.Screens;
 
 /// <summary>
-/// Option A solarpunk palette: deep botanical-slate surfaces paired with warm parchment ink,
-/// muted brass linework, and luminous commune/tag accents.
+/// Option A "Holo Grove" palette: a near-black teal night, cyan hologram lines, and tag colors that read
+/// as light. A piece's color is used for its outline, glyph and label, never as a solid fill.
 /// </summary>
 internal static class Palette
 {
-    public static readonly Color BackdropTop = new("0d161b");
-    public static readonly Color BackdropMid = new("132026");
-    public static readonly Color BackdropGlow = new("243b36");
-    public static readonly Color SurfaceDeep = new("111a20");
-    public static readonly Color Surface = new("172329");
-    public static readonly Color CardSurface = new("1b2931");
-    public static readonly Color ButtonBg = new("203038");
-    public static readonly Color ButtonHover = new("293e47");
-    public static readonly Color ButtonPressed = new("16242b");
+    public static readonly Color BackdropTop = new("020a0a");
+    public static readonly Color BackdropMid = new("051416");
+    public static readonly Color BackdropGlow = new("08262a");
+    public static readonly Color SurfaceDeep = new("030e0f");
+    public static readonly Color Surface = new("051516");
+    public static readonly Color CardSurface = new("061a1b");
+    public static readonly Color ButtonBg = new("06191a");
+    public static readonly Color ButtonHover = new("0a2627");
+    public static readonly Color ButtonPressed = new("0d3233");
 
-    public static readonly Color Ink = new("f2ede4");
-    public static readonly Color BrassLine = new("9ea88e");
-    public static readonly Color BrassBright = new("e9c46a");
-    public static readonly Color LineMuted = new("35474f");
-    public static readonly Color GardenGlow = new("7bc47f");
+    public static readonly Color Ink = new("e6fbf6");
+    public static readonly Color Muted = new("7fb3ad");
 
-    public static readonly Color LaneEven = new(0.08f, 0.14f, 0.18f, 0.0f);
-    public static readonly Color LaneOdd = new(0.62f, 0.72f, 0.68f, 0.045f);
-    public static readonly Color HullShadow = new(0.02f, 0.05f, 0.07f, 0.55f);
-    public static readonly Color Hull = new("243740");
-    public static readonly Color HullBorder = new("4f6c75");
-    public static readonly Color PieceText = new("131a1e");
-    public static readonly Color DisabledText = new("cfd6d9");
+    /// <summary>The hologram line color: panel borders, grid marks, brackets.</summary>
+    public static readonly Color HoloLine = new("5fe8e0");
 
-    public static readonly Color Attack = new("ff8a80");
-    public static readonly Color Heavy = new("ffb74d");
-    public static readonly Color Block = new("81d4fa");
-    public static readonly Color HeavyLane = new(1f, 0.58f, 0.22f, 0.18f);
+    /// <summary>A brighter hologram line, for hovered and emphasized edges.</summary>
+    public static readonly Color HoloBright = new("a6fff7");
+    public static readonly Color LineMuted = new("1d4644");
 
-    public static readonly Color Selectable = new("ffe066");
-    public static readonly Color Chosen = new("7cfc9a");
-    public static readonly Color Badge = new("fff3b0");
-    public static readonly Color Boosted = new("7cfc9a");
-    public static readonly Color Energy = new("ffe066");
-    public static readonly Color Muted = new("9fb0b5");
+    /// <summary>The open deck between pieces, and the root traces that run across it.</summary>
+    public static readonly Color Deck = new(0.024f, 0.098f, 0.098f, 0.78f);
+    public static readonly Color Trace = new("1f5a57");
 
-    public static readonly Color FitOk = new(0.49f, 0.99f, 0.6f, 0.45f);
-    public static readonly Color FitBad = new(1f, 0.32f, 0.32f, 0.45f);
-    public static readonly Color Refused = new("ff5252");
-    public static readonly Color CargoBack = new(0.08f, 0.12f, 0.15f, 0.92f);
-    public static readonly Color CargoSlot = new("1c2930");
-    public static readonly Color CargoOver = new("4a2326");
-    public static readonly Color CargoDrop = new(1f, 0.88f, 0.4f, 0.18f);
+    public static readonly Color Attack = new("ff6f7d");
+    public static readonly Color Heavy = new("ffb347");
+    public static readonly Color Block = new("5ff0ff");
 
-    private static readonly Color Crew = new("d8a7ca");
-    private static readonly Color Untagged = new("9e9e9e");
+    /// <summary>The enemy: anomalies and feral machines, in a hot ember that no ship part uses.</summary>
+    public static readonly Color Threat = new("ff6a5c");
+
+    public static readonly Color Selectable = new("ffe27a");
+    public static readonly Color Chosen = new("6dffa8");
+    public static readonly Color Badge = new("6dffa8");
+    public static readonly Color Boosted = new("6dffa8");
+    public static readonly Color Energy = new("ffd36b");
+    public static readonly Color GardenGlow = new("6dffa8");
+
+    /// <summary>A disabled piece and a refused move.</summary>
+    public static readonly Color Refused = new("ff5a6e");
+
+    public static readonly Color FitOk = new(0.43f, 1f, 0.66f, 0.8f);
+    public static readonly Color FitBad = new(1f, 0.35f, 0.43f, 0.8f);
+    public static readonly Color CargoBack = new(0.012f, 0.055f, 0.06f, 0.9f);
+    public static readonly Color CargoSlot = new(0.024f, 0.098f, 0.098f, 0.8f);
+    public static readonly Color CargoOver = new(0.25f, 0.06f, 0.09f, 0.8f);
+    public static readonly Color CargoDrop = new(1f, 0.89f, 0.48f, 0.12f);
+
+    private static readonly Color Crew = new("ff8ff0");
+    private static readonly Color Untagged = new("b9c7c4");
 
     public static Color ForPiece(PieceDef def)
     {
@@ -66,12 +70,12 @@ internal static class Palette
 
         return def.Tags[0] switch
         {
-            Tag.Core => new Color("e9c46a"),
-            Tag.Weapon => new Color("e76f51"),
-            Tag.Shield => new Color("8ab6d6"),
-            Tag.Solar => new Color("f4a261"),
-            Tag.Garden => new Color("7bc47f"),
-            Tag.Drone => new Color("b39ddb"),
+            Tag.Core => new Color("fff0b0"),
+            Tag.Weapon => new Color("ff6f7d"),
+            Tag.Shield => new Color("5ff0ff"),
+            Tag.Solar => new Color("ffd36b"),
+            Tag.Garden => new Color("6dffa8"),
+            Tag.Drone => new Color("a99bff"),
             _ => Untagged,
         };
     }
@@ -82,9 +86,15 @@ internal static class Palette
         BlockEffect => Block,
         GainEnergyEffect => Energy,
         DrawEffect => Crew,
-        RepairEffect => BrassBright,
-        FocusEffect => Heavy,
+        RepairEffect => new Color("7ee0d6"),
+        FocusEffect => new Color("fff0b0"),
         GrowEffect => GardenGlow,
         _ => Ink,
     };
+
+    /// <summary>The glyph on a piece: its color, a little whiter. Keeps the color's alpha.</summary>
+    public static Color Glyph(Color piece) => piece.Lerp(Colors.White, 0.2f) with { A = piece.A };
+
+    /// <summary>The name on a piece: its color, much whiter, so it stays readable over scanlines.</summary>
+    public static Color Label(Color piece) => piece.Lerp(Colors.White, 0.45f) with { A = piece.A };
 }

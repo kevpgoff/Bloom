@@ -152,7 +152,7 @@ public partial class FittingBoard : Control
         var font = GetThemeDefaultFont();
         if (GridLayoutFor(session) is { } g)
         {
-            DrawShip(session, run, g, font);
+            DrawShip(session, run, g);
         }
 
         DrawCargo(session, run, font);
@@ -162,19 +162,20 @@ public partial class FittingBoard : Control
         }
     }
 
-    private void DrawShip(RunSession session, RunState run, GridLayout g, Font font)
+    private void DrawShip(RunSession session, RunState run, GridLayout g)
     {
-        GridPainter.DrawLanes(this, g);
-        if (session.Refit.NextEnemy(run) is { } enemy)
+        var heavyLanes = session.Refit.NextEnemy(run) is { } enemy
+            ? enemy.Pattern.Where(i => i.Kind == IntentKind.HeavyAttack).Select(i => i.Lane!.Value).Distinct().ToList()
+            : [];
+        GridPainter.DrawLanes(this, g, heavyLanes);
+        GridPainter.DrawHull(this, g, run.Ship.Grid.Cells);
+        foreach (int lane in heavyLanes)
         {
-            foreach (int lane in enemy.Pattern.Where(i => i.Kind == IntentKind.HeavyAttack).Select(i => i.Lane!.Value).Distinct())
-            {
-                GridPainter.DrawHeavyLane(this, g, lane);
-            }
+            GridPainter.DrawHeavyLane(this, g, lane);
         }
 
-        GridPainter.DrawHull(this, g, run.Ship.Grid.Cells);
-        var receivers = session.Fitter.ActiveBonuses(run.Ship, []).Select(b => b.ReceiverId).ToHashSet();
+        var bonuses = session.Fitter.ActiveBonuses(run.Ship, []);
+        var receivers = bonuses.Select(b => b.ReceiverId).ToHashSet();
         foreach (var fitted in run.Ship.Fitted)
         {
             int id = fitted.Piece.Id;
@@ -183,11 +184,11 @@ public partial class FittingBoard : Control
             bool lifted = _drag?.PieceId == id;
             var color = Palette.ForPiece(def);
             GridPainter.DrawPiece(this, g, cells, lifted ? color with { A = 0.25f } : color);
-            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Ink);
-            GridPainter.DrawLabel(this, font, g, cells, def.Name, lifted ? Palette.Muted : Palette.PieceText);
+            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Glyph(color));
+            GridPainter.DrawLabel(this, g, cells, def.Name, lifted ? Palette.Muted with { A = 0.5f } : Palette.Label(color));
             if (!lifted && receivers.Contains(id))
             {
-                GridPainter.DrawBonusBadge(this, font, g, cells, Palette.Badge);
+                GridPainter.DrawBonusBadge(this, g, cells, Palette.Badge);
             }
 
             if (!lifted && id == SelectedPieceId)
@@ -198,6 +199,15 @@ public partial class FittingBoard : Control
             if (id == _flashPieceId)
             {
                 GridPainter.DrawOutline(this, g, cells, Palette.Refused, 6);
+            }
+        }
+
+        foreach (var bonus in bonuses)
+        {
+            if (bonus.GiverId != _drag?.PieceId && bonus.ReceiverId != _drag?.PieceId
+                && run.Ship.Find(bonus.GiverId) is { } giver && run.Ship.Find(bonus.ReceiverId) is { } receiver)
+            {
+                GridPainter.DrawBonusLink(this, g, session.Fitter.CellsOf(giver), session.Fitter.CellsOf(receiver), Palette.Boosted);
             }
         }
 
@@ -223,7 +233,7 @@ public partial class FittingBoard : Control
     {
         var area = CargoArea;
         DrawRect(area, Palette.CargoBack);
-        DrawRect(area, Palette.BrassLine with { A = 0.45f }, filled: false, width: 1.5f);
+        DrawRect(area, Palette.HoloLine with { A = 0.35f }, filled: false, width: 1.2f);
         if (_drag is { FromCargo: false, OverCargo: true })
         {
             DrawRect(area, Palette.CargoDrop);
@@ -257,9 +267,9 @@ public partial class FittingBoard : Control
             bool lifted = _drag?.PieceId == piece.Id;
             var color = Palette.ForPiece(def);
             GridPainter.DrawPiece(this, layout, shape.Cells, lifted ? color with { A = 0.25f } : color);
-            GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Ink, reserveLabelSpace: false);
-            DrawString(font, new Vector2(slot.Position.X + 4, slot.End.Y - 10), def.Name, HorizontalAlignment.Center, slot.Size.X - 8, 20,
-                lifted ? Palette.Muted : Palette.Ink);
+            GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Glyph(color), reserveLabelSpace: false);
+            DrawString(BloomTheme.Hud, new Vector2(slot.Position.X + 4, slot.End.Y - 10), def.Name.ToUpperInvariant(), HorizontalAlignment.Center, slot.Size.X - 8, 15,
+                lifted ? Palette.Muted with { A = 0.5f } : Palette.Label(color));
             if (!lifted && piece.Id == SelectedPieceId)
             {
                 DrawRect(slot.Grow(-2), Palette.Selectable, filled: false, width: 3);
@@ -274,7 +284,7 @@ public partial class FittingBoard : Control
         var layout = new GridLayout(g.CellSize, FloatingTopLeft(shape, g, drag.Pointer), 0, shape.Height);
         var def = session.Content.Piece(PieceInstanceOf(session.State, drag.PieceId).DefId);
         GridPainter.DrawPiece(this, layout, shape.Cells, Palette.ForPiece(def) with { A = 0.9f });
-        GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), Palette.Ink, reserveLabelSpace: false);
+        GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), Palette.Glyph(Palette.ForPiece(def)), reserveLabelSpace: false);
         GridPainter.DrawOutline(this, layout, shape.Cells, Palette.Selectable, 3);
     }
 

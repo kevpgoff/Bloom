@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- A soft white radial glow. The game tints it and draws it behind glyphs and the enemy. -->
+  <defs>
+    <radialGradient id="g" cx="64" cy="64" r="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="0.25" stop-color="#ffffff" stop-opacity="0.72"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.32"/>
+      <stop offset="0.75" stop-color="#ffffff" stop-opacity="0.09"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="64" fill="url(#g)"/>
+</svg>

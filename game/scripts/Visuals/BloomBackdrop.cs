@@ -66,13 +66,13 @@ public partial class BloomBackdrop : Control
         // Subtle Art Nouveau celestial astrolabe arcs behind the ship grid.
         var center = new Vector2(size.X * 0.5f, size.Y * 0.42f);
         float maxR = Mathf.Max(size.X, size.Y) * 0.68f;
-        DrawArc(center, maxR * 0.36f, 0f, Mathf.Tau, 72, Palette.BrassLine with { A = 0.11f }, 1.5f, antialiased: true);
-        DrawArc(center, maxR * 0.56f, 0f, Mathf.Tau, 84, Palette.BrassLine with { A = 0.08f }, 1.2f, antialiased: true);
+        DrawArc(center, maxR * 0.36f, 0f, Mathf.Tau, 72, Palette.HoloLine with { A = 0.11f }, 1.5f, antialiased: true);
+        DrawArc(center, maxR * 0.56f, 0f, Mathf.Tau, 84, Palette.HoloLine with { A = 0.08f }, 1.2f, antialiased: true);
         DrawArc(center, maxR * 0.78f, 0f, Mathf.Tau, 96, Palette.GardenGlow with { A = 0.07f }, 1.2f, antialiased: true);
 
         // Diagonal harmonic meridian lines.
-        DrawLine(new Vector2(center.X, 0), new Vector2(center.X, size.Y), Palette.BrassLine with { A = 0.05f }, 1f);
-        DrawLine(new Vector2(0, center.Y), new Vector2(size.X, center.Y), Palette.BrassLine with { A = 0.05f }, 1f);
+        DrawLine(new Vector2(center.X, 0), new Vector2(center.X, size.Y), Palette.HoloLine with { A = 0.05f }, 1f);
+        DrawLine(new Vector2(0, center.Y), new Vector2(size.X, center.Y), Palette.HoloLine with { A = 0.05f }, 1f);
 
         // Gently drifting golden pollen & bioluminescent spore motes.
         foreach (var mote in _motes)

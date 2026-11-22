@@ -59,16 +59,19 @@ public partial class ShipGridView : Control
         var run = _session.State;
         var combat = run.Combat;
         IReadOnlyCollection<int> disabled = combat?.DisabledPieceIds ?? [];
-        var font = GetThemeDefaultFont();
 
-        GridPainter.DrawLanes(this, g);
-        if (combat is not null && _session.Combat.CurrentIntent(combat) is { Kind: IntentKind.HeavyAttack, Lane: int lane })
+        int? heavyLane = combat is not null && _session.Combat.CurrentIntent(combat) is { Kind: IntentKind.HeavyAttack, Lane: int lane }
+            ? lane
+            : null;
+        GridPainter.DrawLanes(this, g, heavyLane is int marked ? [marked] : []);
+        GridPainter.DrawHull(this, g, run.Ship.Grid.Cells);
+        if (heavyLane is int heavy)
         {
-            GridPainter.DrawHeavyLane(this, g, lane);
+            GridPainter.DrawHeavyLane(this, g, heavy);
         }
 
-        GridPainter.DrawHull(this, g, run.Ship.Grid.Cells);
-        var bonusReceivers = _session.Fitter.ActiveBonuses(run.Ship, disabled).Select(b => b.ReceiverId).ToHashSet();
+        var bonuses = _session.Fitter.ActiveBonuses(run.Ship, disabled);
+        var bonusReceivers = bonuses.Select(b => b.ReceiverId).ToHashSet();
         int? targetId = combat is null ? null : _session.Combat.HeavyAttackTarget(run)?.Piece.Id;
         foreach (var fitted in run.Ship.Fitted)
         {
@@ -76,22 +79,18 @@ public partial class ShipGridView : Control
             var def = _session.Content.Piece(fitted.Piece.DefId);
             var cells = _session.Fitter.CellsOf(fitted);
             bool off = disabled.Contains(id);
-            GridPainter.DrawPiece(this, g, cells, off ? Palette.ForPiece(def).Darkened(0.65f) : Palette.ForPiece(def));
+            var color = Palette.ForPiece(def);
+            GridPainter.DrawPiece(this, g, cells, color, offline: off);
+            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), off ? Palette.Refused with { A = 0.5f } : Palette.Glyph(color));
+            GridPainter.DrawLabel(this, g, cells, def.Name, off ? Palette.Label(Palette.Refused) : Palette.Label(color));
             if (off)
             {
-                GridPainter.DrawDisabledOverlay(this, g, cells);
-            }
-
-            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), off ? Palette.DisabledText with { A = 0.55f } : Palette.Ink);
-            GridPainter.DrawLabel(this, font, g, cells, def.Name, off ? Palette.DisabledText : Palette.PieceText);
-            if (off)
-            {
-                GridPainter.DrawOffTag(this, font, g, cells);
+                GridPainter.DrawOffTag(this, g, cells);
             }
 
             if (bonusReceivers.Contains(id))
             {
-                GridPainter.DrawBonusBadge(this, font, g, cells, Palette.Badge);
+                GridPainter.DrawBonusBadge(this, g, cells, Palette.Badge);
             }
 
             if (id == targetId)
@@ -108,6 +107,14 @@ public partial class ShipGridView : Control
             if (id == _highlightPieceId)
             {
                 GridPainter.DrawOutline(this, g, cells, Colors.White, 4);
+            }
+        }
+
+        foreach (var bonus in bonuses)
+        {
+            if (run.Ship.Find(bonus.GiverId) is { } giver && run.Ship.Find(bonus.ReceiverId) is { } receiver)
+            {
+                GridPainter.DrawBonusLink(this, g, _session.Fitter.CellsOf(giver), _session.Fitter.CellsOf(receiver), Palette.Boosted);
             }
         }
     }

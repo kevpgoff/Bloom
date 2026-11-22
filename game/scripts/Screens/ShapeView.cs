@@ -32,7 +32,8 @@ public partial class ShapeView : Control
         float cell = Mathf.Floor(Mathf.Min(48, Mathf.Min(Size.X / shape.Width, Size.Y / shape.Height)));
         var origin = (Size - (new Vector2(shape.Width, shape.Height) * cell)) / 2;
         var layout = new GridLayout(cell, origin, 0, shape.Height);
-        GridPainter.DrawPiece(this, layout, shape.Cells, Palette.ForPiece(piece));
-        GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(piece), Palette.Ink, reserveLabelSpace: false);
+        var color = Palette.ForPiece(piece);
+        GridPainter.DrawPiece(this, layout, shape.Cells, color);
+        GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(piece), Palette.Glyph(color), reserveLabelSpace: false);
     }
 }
