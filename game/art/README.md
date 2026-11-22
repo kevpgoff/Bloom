@@ -1,6 +1,6 @@
 # Art
 
-This is prototype art for "Option A", a vector solarpunk look in the "Holo Grove" style: a dark teal night, with the ship drawn as a lit hologram. No art direction has been decided yet. Every image is a white (`#ffffff`) SVG on a transparent background. The game tints it at runtime with colors from `scripts/Screens/Palette.cs`. `scripts/Visuals/ArtLibrary.cs` finds each file by name, so new art needs no code change.
+The game's art is "Option A", a vector solarpunk look in the "Holo Grove" style: a dark teal night, with the ship drawn as a lit hologram (see `docs/decisions.md`). Every image is a white (`#ffffff`) SVG on a transparent background. The game tints it at runtime with colors from `scripts/Screens/Palette.cs`. `scripts/Visuals/ArtLibrary.cs` finds each file by name, so new art needs no code change.
 
 | Path | Holds |
 | --- | --- |
@@ -15,6 +15,16 @@ This is prototype art for "Option A", a vector solarpunk look in the "Holo Grove
 | `fonts/Saira.ttf` | The one typeface, a variable font with width and weight axes. `BloomTheme` makes every font from it: Saira at width 100 for text, Saira Semi Condensed (width 87.5) for headings, numbers and labels. Godot ignores the axis names, so `BloomTheme` keys them by their numeric OpenType tags. |
 
 A `.png` with the same name works in place of an `.svg`.
+
+## Icon style
+
+Icons are line art on a 64×64 view box, drawn like the ship's hologram:
+
+- **Strokes:** main lines 2.8, secondary lines 1.4–1.9 at 60–95% opacity, round caps and joins. Thinner lines vanish on the card's emblem, which is about 34 px.
+- **Accents:** dashed halos and inner rims (dashes about 2.3 on, 2.9 off), and filled nodes (radius about 2) at joints and line ends, like the root traces on the deck.
+- **Fills:** none, or white at 6–8% opacity behind a main outline. The only dark fill is `#0a1512`, which tinting leaves dark.
+- **Effect icons** keep a dark well (`#0a1512` at 45–70% opacity) centered on (32, 32): the card draws the number there, centered, at 43% of the icon's size.
+- **Enemy icons** carry more detail than the rest, because the combat screen shows the enemy large.
 
 ## Import settings
 

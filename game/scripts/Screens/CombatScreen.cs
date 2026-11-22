@@ -287,7 +287,10 @@ public partial class CombatScreen : Control
             border: 1,
             radius: 2,
             padX: 4,
-            padY: 3));
+            padY: 1));
+
+        // The emblem fills the strip's height (the line-art icons need every pixel at this size), and it takes
+        // only the width the strip has, so a narrow card draws it smaller instead of growing wider.
         var emblem = new TextureRect
         {
             Texture = sourceDef is not null
@@ -295,10 +298,10 @@ public partial class CombatScreen : Control
                 : preview.Def.Effects.Count > 0
                     ? ArtLibrary.EffectIcon(preview.Def.Effects[0])
                     : null,
-            CustomMinimumSize = new Vector2(badgeSize - 6, badgeSize - 6),
+            CustomMinimumSize = new Vector2(0, badgeSize + 2),
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-            SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
             SizeFlagsVertical = SizeFlags.ShrinkCenter,
             Modulate = Palette.Glyph(accent),
             MouseFilter = MouseFilterEnum.Ignore,
@@ -410,18 +413,8 @@ public partial class CombatScreen : Control
         number.AddThemeColorOverride("font_color", boosted ? Palette.Boosted : Colors.White);
         number.AddThemeColorOverride("font_outline_color", Palette.SurfaceDeep);
         number.AddThemeConstantOverride("outline_size", symbolSize >= 60 ? 7 : symbolSize >= 40 ? 5 : 4);
+        // Every effect icon keeps its dark well at the center (game/art/README.md), so the number is centered too.
         number.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        if (current is GrowEffect)
-        {
-            // Center the number inside the lower seedpod chamber below the twin leaves.
-            number.OffsetTop = symbolSize * 0.18f;
-        }
-        else if (current is DrawEffect)
-        {
-            // Center inside the front fanned card face.
-            number.OffsetLeft = symbolSize * 0.08f;
-        }
-
         symbol.AddChild(number);
         column.AddChild(symbol);
 

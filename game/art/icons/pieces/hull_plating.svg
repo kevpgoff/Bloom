@@ -1,5 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Hull Plating: layered interlocking armor hexagons -->
-  <polygon points="32,8 52,19 52,41 32,56 12,41 12,19" fill="#ffffff" fill-opacity="0.25" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round"/>
-  <polygon points="32,16 44,23 44,37 32,46 20,37 20,23" fill="#ffffff" fill-opacity="0.8"/>
+  <!-- Hull Plating: three interlocked armor hexes with riveted centers -->
+  <polygon points="42.39,29 32,35 21.61,29 21.61,17 32,11 42.39,17" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-width="2.6" stroke-linejoin="round"/>
+  <polygon points="38.06,26.5 32,30 25.94,26.5 25.94,19.5 32,16 38.06,19.5" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.6" stroke-dasharray="2.3 2.3"/>
+  <circle cx="32" cy="23" r="1.8" fill="#ffffff" fill-opacity="0.85"/>
+  <polygon points="32,47 21.61,53 11.22,47 11.22,35 21.61,29 32,35" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-width="2.6" stroke-linejoin="round"/>
+  <polygon points="27.67,44.5 21.61,48 15.55,44.5 15.55,37.5 21.61,34 27.67,37.5" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.6" stroke-dasharray="2.3 2.3"/>
+  <circle cx="21.61" cy="41" r="1.8" fill="#ffffff" fill-opacity="0.85"/>
+  <polygon points="52.78,47 42.39,53 32,47 32,35 42.39,29 52.78,35" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-width="2.6" stroke-linejoin="round"/>
+  <polygon points="48.45,44.5 42.39,48 36.33,44.5 36.33,37.5 42.39,34 48.45,37.5" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.6" stroke-dasharray="2.3 2.3"/>
+  <circle cx="42.39" cy="41" r="1.8" fill="#ffffff" fill-opacity="0.85"/>
+  <circle cx="32" cy="11" r="2" fill="#ffffff"/>
+  <circle cx="11.22" cy="47" r="2" fill="#ffffff"/>
+  <circle cx="32" cy="47" r="2" fill="#ffffff"/>
 </svg>

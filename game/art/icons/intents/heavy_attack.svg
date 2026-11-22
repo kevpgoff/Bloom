@@ -1,5 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Heavy lane-disabling strike chevron -->
-  <polygon points="32,56 12,26 24,26 24,10 40,10 40,26 52,26" fill="#ffffff"/>
-  <path d="M 10 42 L 32 60 L 54 42" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.7"/>
+  <!-- Heavy attack: a double chevron driving down onto a marked lane -->
+  <polyline points="17,7 32,19 47,7" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
+  <polyline points="12,18 32,35 52,18" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="8" y1="49" x2="56" y2="49" fill="none" stroke="#ffffff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="8" y1="56" x2="56" y2="56" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.7" stroke-dasharray="3.45 2.88"/>
+  <line x1="8" y1="44" x2="8" y2="60" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="56" y1="44" x2="56" y2="60" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="32" y1="39.5" x2="32" y2="44.5" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="25" y1="40.5" x2="21.5" y2="44" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="39" y1="40.5" x2="42.5" y2="44" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

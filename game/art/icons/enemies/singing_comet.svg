@@ -1,7 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Singing Comet: crystalline core with harmonic arcs -->
-  <polygon points="42,10 50,24 42,38 28,24" fill="#ffffff"/>
-  <circle cx="39" cy="24" r="14" fill="none" stroke="#ffffff" stroke-width="2" stroke-opacity="0.55"/>
-  <path d="M 28 34 L 10 52 M 34 40 L 18 56 M 22 28 L 8 42" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-opacity="0.85"/>
-  <path d="M 48 36 C 54 32 57 26 57 18" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.7"/>
+  <!-- Singing Comet: a crystal comet with a streaming tail, singing ahead of itself -->
+  <line x1="37.88" y1="25.15" x2="23.74" y2="11.01" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.6" stroke-dasharray="3.45 2.88"/>
+  <line x1="34.7" y1="28.33" x2="13.48" y2="7.12" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.95"/>
+  <line x1="31.51" y1="31.51" x2="13.13" y2="13.13" fill="none" stroke="#ffffff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.8"/>
+  <line x1="28.33" y1="34.7" x2="7.12" y2="13.48" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.95"/>
+  <line x1="25.15" y1="37.88" x2="12.42" y2="25.15" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.6" stroke-dasharray="3.45 2.88"/>
+  <polygon points="49.19,49.19 36.82,48.84 29.39,40.71 31.16,31.16 40.71,29.39 48.84,36.82" fill="#0a1512" fill-opacity="0.45" stroke="#ffffff" stroke-width="2.8" stroke-linejoin="round"/>
+  <line x1="49.19" y1="49.19" x2="31.16" y2="31.16" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.7"/>
+  <line x1="36.82" y1="48.84" x2="48.84" y2="36.82" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.7"/>
+  <line x1="29.39" y1="40.71" x2="40.71" y2="29.39" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55"/>
+  <circle cx="40" cy="40" r="1.8" fill="#ffffff"/>
+  <path d="M 58.71 43.3 A 19 19 0 0 1 43.3 58.71" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.95"/>
+  <path d="M 64.13 44.25 A 24.5 24.5 0 0 1 44.25 64.13" fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
+  <path d="M 10.8 30 L 17.2 30 M 14 26.8 L 14 33.2" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
+  <path d="M 27.4 12 L 32.6 12 M 30 9.4 L 30 14.6" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
+  <path d="M 6 13 L 10 13 M 8 11 L 8 15" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
 </svg>
