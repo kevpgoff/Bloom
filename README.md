@@ -15,6 +15,7 @@ dotnet test                     # runs the rule tests, including validation of g
 godot --path game               # runs the game (portrait window, 405×720)
 godot -e --path game            # opens the project in the editor
 godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 16, …" and a screen line ("FittingScreen: …" on a new run)
+godot --path game -- --fx-demo                 # debug builds: plays the first fight by itself to show the combat feedback; add =lose to show a defeat. The run stays in memory, so the save is untouched
 ```
 
 ## Layout
@@ -33,7 +34,7 @@ docs/decisions.md             decisions made so far
 
 ## Architecture in one paragraph
 
-`Bloom.Core` owns every rule and all state. A run is one `RunState` object that serializes to JSON and holds its own random number generator (`Pcg32`). Saving after every action therefore needs only one thing: every player action goes through `RunSession.Do`, which writes the state through an `ISaveStore`. The Godot project is a thin layer on top. `GameRoot` (an autoload) loads content from `res://data`, resumes or starts a run, and saves to `user://run.json`. Screens draw the state and forward input. Rules stay out of them, so that the tests cover everything that matters.
+`Bloom.Core` owns every rule and all state. A run is one `RunState` object that serializes to JSON and holds its own random number generator (`Pcg32`). Saving after every action therefore needs only one thing: every player action goes through `RunSession.Do`, which writes the state through an `ISaveStore`. The combat rules also report what happened, in order, as `CombatEvent`s (`RunSession.LastEvents`); these are not saved, and the game uses them only for feedback. The Godot project is a thin layer on top. `GameRoot` (an autoload) loads content from `res://data`, resumes or starts a run, and saves to `user://run.json`. Screens draw the state and forward input. Rules stay out of them, so that the tests cover everything that matters.
 
 ## Status
 
@@ -54,5 +55,6 @@ The loop of a run, before the sector map: a new run opens on the Fitting screen;
 | Combat screen | Done: enemy and intent, ship grid, hand, End Turn, defeat or voyage complete and New Run |
 | Reward screen | Done: 3 offered pieces with their shapes and cards, Take and Skip |
 | Fitting screen | Done: drag and drop with the piece floating above the finger, fit and bonus preview, tap to select and tap again to turn, cargo hold, Compost, Undo, next enemy's heavy lanes |
+| Combat feedback | Done: particles, screen shake and haptics for every card effect, enemy action and the end of a fight (`game/scripts/Feedback/`). Shake strength and haptics are set in `user://settings.cfg`; there is no settings screen yet. Timings are placeholders in `CombatFeedback.Tuning` |
 | Map screen | Placeholder, not shown |
-| Mobile export presets | Not set up. When they are, check that `data/*.json` is included in the export. |
+| Mobile export presets | Not set up. When they are, check that `data/*.json` is included in the export, and turn on the Android `VIBRATE` permission (`permissions/vibrate`), without which haptics do nothing. |

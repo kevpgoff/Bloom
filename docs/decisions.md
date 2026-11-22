@@ -57,6 +57,29 @@ Taken as defaults, not raised by the owner:
 - A piece in the cargo hold turns on screen only, since it has no position yet; that turn is not saved.
 - The Fitting screen names the next enemy and marks the lanes of its heavy attacks.
 
+## Combat feedback decided on 2026-11-21
+
+The owner decided these for the feedback on abilities in combat.
+
+| Topic | Decision |
+| --- | --- |
+| Scope | Combat only, for now: every card effect, every enemy action, and winning or losing a fight. |
+| Kinds of feedback | Particles and screen shake, plus haptics on phones. |
+| Intensity | Punchy. An attack fires a bolt from the card's source piece on the grid to the enemy. The screen shakes on big hits and on any hull damage. Every effect has its own particles. |
+| Settings | Shake strength (0 to 1) and haptics on or off, saved in `user://settings.cfg` apart from the run. No settings screen yet. |
+| Ending a turn | Staggered: the screen updates at once, and the effects are timed so the enemy's hit plays first and the new hand deals in about 0.4 s later. Input is never blocked. |
+| Winning a fight | The combat screen stays up about 1 s, so the killing blow and the enemy's shatter play before the Reward screen. |
+| Double taps on End Turn | End Turn ignores a second press within 0.3 s, so a double tap can't end two turns while the new hand deals in. Nothing else is guarded. |
+
+Taken as defaults, not raised by the owner:
+- The Defeat and Voyage complete overlays appear about 0.9 s after the last hit.
+- New cards can be tapped while they deal in.
+- The opening hand of a fight deals in too.
+- Resuming a saved run replays nothing: the events of an action are not saved.
+- Effects are drawn in code over the combat screen, not with Godot's particle nodes.
+- The shake moves the screen's content, not the backdrop. Strength 1 moves it at most 14 px.
+- All timings and strengths are placeholders, in `CombatFeedback.Tuning` and the code next to it.
+
 ## Proposed in the spec, not yet confirmed
 
 - Three sectors for each run, about 8 nodes and 25 minutes for each sector.

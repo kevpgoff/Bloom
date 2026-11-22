@@ -22,11 +22,13 @@ public sealed record PlacementPreview(FitError Error, IReadOnlyList<ActiveBonus>
 /// <remarks>
 /// Each method that changes the ship validates first, then saves a <see cref="ShipSnapshot"/> to
 /// <see cref="RunState.UndoStack"/>, then changes it. The undo stack is cleared when the next fight starts.
+/// Fights start through <paramref name="combat"/>, so a session passes its own engine to get the fight's
+/// first events.
 /// </remarks>
-public sealed class RefitEngine(ContentDb content)
+public sealed class RefitEngine(ContentDb content, CombatEngine? combat = null)
 {
     private readonly ShipFitter _fitter = new(content);
-    private readonly CombatEngine _combat = new(content);
+    private readonly CombatEngine _combat = combat ?? new(content);
 
     /// <summary>The enemy of the next fight, or null when none is left.</summary>
     public EnemyDef? NextEnemy(RunState run) =>

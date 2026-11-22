@@ -28,6 +28,8 @@ Icons are line art on a 64×64 view box, drawn like the ship's hologram:
 
 The backdrop is drawn in code: `Visuals/BloomBackdrop.cs` draws the sky, horizon glow, root veins, HUD rings and scanlines once, and `Visuals/BackdropMotes.cs` animates the pollen motes and the radar sweep. The motes, the sweep and the enemy's reticle all stand still in low-processor mode, so the engine can idle.
 
+Combat effects are drawn in code too, by `Feedback/FxLayer.cs`: glowing motes, streaks and hex shards made from `textures/glow.svg`, plus rings, bolts, flashes and ghost cards, all in Palette colors and blended additively so they read as light. Floating numbers use Saira bold with a dark outline. `Feedback/CombatFeedback.cs` decides which effect plays for each thing that happens in a fight. These effects still play in low-processor mode, because each one ends on its own; the layer stops updating once nothing is playing.
+
 ## Import settings
 
 `ArtLibrary` loads only through Godot's importer, so the editor, a run from the command line and an exported build all use the same textures. Commit each file's `.import` next to it.

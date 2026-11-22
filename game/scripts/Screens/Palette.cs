@@ -48,6 +48,15 @@ internal static class Palette
     public static readonly Color Energy = new("ffd36b");
     public static readonly Color GardenGlow = new("6dffa8");
 
+    /// <summary>The draw effect: cards coming into the hand.</summary>
+    public static readonly Color Draw = new("ff8ff0");
+
+    /// <summary>The repair effect: a disabled piece coming back online.</summary>
+    public static readonly Color Repair = new("7ee0d6");
+
+    /// <summary>The focus effect: a pale gold lens light.</summary>
+    public static readonly Color Focus = new("fff0b0");
+
     /// <summary>A disabled piece and a refused move.</summary>
     public static readonly Color Refused = new("ff5a6e");
 
@@ -85,9 +94,9 @@ internal static class Palette
         DamageEffect => Attack,
         BlockEffect => Block,
         GainEnergyEffect => Energy,
-        DrawEffect => Crew,
-        RepairEffect => new Color("7ee0d6"),
-        FocusEffect => new Color("fff0b0"),
+        DrawEffect => Draw,
+        RepairEffect => Repair,
+        FocusEffect => Focus,
         GrowEffect => GardenGlow,
         _ => Ink,
     };

@@ -12,6 +12,7 @@ namespace Bloom.Core.Run;
 public sealed class RunSession
 {
     private readonly ISaveStore _store;
+    private readonly List<CombatEvent> _pending = [];
 
     public RunSession(ContentDb content, RunState state, ISaveStore store)
     {
@@ -19,9 +20,9 @@ public sealed class RunSession
         State = state;
         _store = store;
         Fitter = new ShipFitter(content);
-        Combat = new CombatEngine(content);
+        Combat = new CombatEngine(content, _pending.Add);
         Rewards = new RewardEngine(content);
-        Refit = new RefitEngine(content);
+        Refit = new RefitEngine(content, Combat);
     }
 
     public ContentDb Content { get; }
@@ -35,6 +36,12 @@ public sealed class RunSession
     public RewardEngine Rewards { get; }
 
     public RefitEngine Refit { get; }
+
+    /// <summary>
+    /// What happened in the fight during the last <see cref="Do(Action{RunSession})"/>, in order, for the game to
+    /// show. Empty after an action that was rejected or changed nothing in a fight. Not saved, so empty after a resume.
+    /// </summary>
+    public IReadOnlyList<CombatEvent> LastEvents { get; private set; } = [];
 
     public static RunSession StartNew(ContentDb content, ISaveStore store, string shipClassId, ulong seed)
     {
@@ -53,16 +60,31 @@ public sealed class RunSession
     /// </summary>
     public T Do<T>(Func<RunSession, T> action)
     {
+        BeginAction();
         var result = action(this);
-        Save();
+        EndAction();
         return result;
     }
 
     public void Do(Action<RunSession> action)
     {
+        BeginAction();
         action(this);
-        Save();
+        EndAction();
     }
 
     public void Save() => _store.Save(SaveSerializer.Serialize(State));
+
+    private void BeginAction()
+    {
+        _pending.Clear();
+        LastEvents = [];
+    }
+
+    private void EndAction()
+    {
+        LastEvents = _pending.ToArray();
+        _pending.Clear();
+        Save();
+    }
 }

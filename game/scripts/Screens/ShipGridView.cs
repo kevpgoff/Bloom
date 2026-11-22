@@ -136,6 +136,34 @@ public partial class ShipGridView : Control
         }
     }
 
+    /// <summary>The cells of a fitted piece, in local coordinates. Empty when the piece is not fitted or nothing is drawn yet.</summary>
+    public IReadOnlyList<Rect2> PieceCellRects(int pieceId) =>
+        _session is not null && ComputeLayout() is { } g && _session.State.Ship.Find(pieceId) is { } fitted
+            ? _session.Fitter.CellsOf(fitted).Select(g.CellRect).ToList()
+            : [];
+
+    /// <summary>Where a piece's glyph sits, in local coordinates: the point effects start from and land on.</summary>
+    public Vector2? PieceCenter(int pieceId) =>
+        _session is not null && ComputeLayout() is { } g && _session.State.Ship.Find(pieceId) is { } fitted
+            ? GridPainter.IconAnchor(g, _session.Fitter.CellsOf(fitted)).Center
+            : null;
+
+    /// <summary>A lane's column over the hull's rows, in local coordinates.</summary>
+    public Rect2? LaneRect(int lane) => ComputeLayout()?.LaneRect(lane);
+
+    /// <summary>The box around the hull's cells, in local coordinates; the ship's outline for shield effects.</summary>
+    public Rect2? HullBounds()
+    {
+        if (_session is null || ComputeLayout() is not { } g)
+        {
+            return null;
+        }
+
+        var cells = _session.State.Ship.Grid.Cells;
+        var first = g.CellRect(cells.First());
+        return cells.Aggregate(first, (box, cell) => box.Merge(g.CellRect(cell)));
+    }
+
     /// <summary>All lanes are drawn, but only the rows the hull covers, so the cells stay large.</summary>
     private GridLayout? ComputeLayout() =>
         _session is null ? null : GridLayout.ForHull(new Rect2(Vector2.Zero, Size), _session.State.Ship.Grid.Cells, MarkerHeight);
