@@ -19,6 +19,7 @@ Recorded on 2026-11-20. The full design spec is a doc at https://claude.ai/artif
 | Orientation | Portrait, for play with one hand. |
 | Tone | Hopeful and strange solarpunk. Threats are anomalies and feral machines. |
 | Engine | Godot 4 (.NET build) with C#. Game rules live in a plain C# library, `Bloom.Core`, with no Godot dependency. Decided 2026-11-20. |
+| Art direction | Option A, vector art in the "Holo Grove" style: a dark teal night, the ship drawn as a lit hologram (glowing outlines in each piece's tag color, scanlines, corner brackets, root traces on the deck), and the Saira typeface. The owner picked it over Option B (pixel art) and over two other takes on A. Decided 2026-11-21. Conventions are in `game/art/README.md`. |
 
 ## Combat rules decided on 2026-11-21
 
