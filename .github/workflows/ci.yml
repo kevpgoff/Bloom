@@ -1,7 +1,7 @@
 # Builds everything and runs the rule tests on each pull request.
 # Kept cheap on purpose (free while the repo is public, billed per minute if it goes private): one job on the
-# 1-vCPU runner, which costs a third of
-# ubuntu-latest; pull requests only; docs-only changes skipped; a newer push cancels the run it replaces.
+# 1-vCPU runner, which costs a third of ubuntu-latest; pull requests only; docs-only changes skipped; a newer
+# push cancels the run it replaces.
 # If this check is ever made required in branch protection, remove paths-ignore, or docs-only PRs will wait forever.
 name: CI
 
