@@ -6,23 +6,25 @@ using Godot;
 namespace Bloom.Game.Visuals;
 
 /// <summary>
-/// Loads and caches Option A vector icons and 9-slice UI frames from <c>res://art/</c>.
-/// Supports both <c>.svg</c> and <c>.png</c> drop-in replacements; SVGs rasterize cleanly at
-/// high DPI even before Godot Editor has generated <c>.import</c> files.
+/// Loads and caches the icons and 9-slice UI frames in <c>res://art/</c>, as <c>.svg</c> or <c>.png</c>.
+/// Everything goes through Godot's importer, so the editor, a run from the command line and an exported
+/// build all get the same textures. The size comes from each file's <c>.import</c>: icons import at
+/// <c>svg/scale=3.0</c> with mipmaps, and frames at 1.0 because a 9-slice draws its corners in texture pixels.
+/// A file that has not been imported yet (no <c>.import</c> next to it) is treated as missing.
 /// </summary>
 internal static class ArtLibrary
 {
-    private const float IconSvgScale = 3f;
-    private const float FrameSvgScale = 1f;
+    /// <summary>Icons are drawn up to about 76 px; a narrower texture was imported at the default scale.</summary>
+    private const int MinIconWidth = 128;
     private static readonly Dictionary<string, Texture2D?> Cache = [];
 
-    public static Texture2D? CardFrame => Load("res://art/ui/card_frame", FrameSvgScale);
+    public static Texture2D? CardFrame => Load("res://art/ui/card_frame", isIcon: false);
 
-    public static Texture2D? PanelFrame => Load("res://art/ui/panel_frame", FrameSvgScale);
+    public static Texture2D? PanelFrame => Load("res://art/ui/panel_frame", isIcon: false);
 
-    public static Texture2D? ButtonFrame => Load("res://art/ui/button_frame", FrameSvgScale);
+    public static Texture2D? ButtonFrame => Load("res://art/ui/button_frame", isIcon: false);
 
-    public static Texture2D? EnergyBadge => Load("res://art/ui/energy_badge", IconSvgScale);
+    public static Texture2D? EnergyBadge => Load("res://art/ui/energy_badge");
 
     public static Texture2D? PieceIcon(PieceDef def)
     {
@@ -78,49 +80,22 @@ internal static class ArtLibrary
     public static Texture2D? EnemyIcon(string enemyDefId) =>
         Load($"res://art/icons/enemies/{enemyDefId}") ?? Load("res://art/icons/enemies/feral_harvester");
 
-    private static Texture2D? Load(string basePath, float svgScale = IconSvgScale)
+    private static Texture2D? Load(string basePath, bool isIcon = true)
     {
         if (Cache.TryGetValue(basePath, out var cached))
         {
             return cached;
         }
 
-        var texture = TryLoadTexture($"{basePath}.svg", svgScale) ?? TryLoadTexture($"{basePath}.png", svgScale);
+        string? path = new[] { $"{basePath}.svg", $"{basePath}.png" }.FirstOrDefault(p => ResourceLoader.Exists(p));
+        var texture = path is null ? null : GD.Load<Texture2D>(path);
+        if (texture is not null && isIcon && texture.GetWidth() < MinIconWidth)
+        {
+            GD.PushWarning($"ArtLibrary: {path} is {texture.GetWidth()} px wide and will look soft. " +
+                           "Import icons at svg/scale=3.0 with mipmaps on; see game/art/README.md.");
+        }
+
         Cache[basePath] = texture;
         return texture;
-    }
-
-    private static Texture2D? TryLoadTexture(string path, float svgScale)
-    {
-        if (path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) && Godot.FileAccess.FileExists(path))
-        {
-            byte[] bytes = Godot.FileAccess.GetFileAsBytes(path);
-            if (bytes.Length > 0)
-            {
-                var image = new Image();
-                if (image.LoadSvgFromBuffer(bytes, svgScale) == Error.Ok)
-                {
-                    image.GenerateMipmaps();
-                    return ImageTexture.CreateFromImage(image);
-                }
-            }
-        }
-
-        if (ResourceLoader.Exists(path))
-        {
-            return GD.Load<Texture2D>(path);
-        }
-
-        if (Godot.FileAccess.FileExists(path))
-        {
-            var image = Image.LoadFromFile(path);
-            if (image is not null)
-            {
-                image.GenerateMipmaps();
-                return ImageTexture.CreateFromImage(image);
-            }
-        }
-
-        return null;
     }
 }
