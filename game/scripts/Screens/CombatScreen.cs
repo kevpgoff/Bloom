@@ -31,7 +31,7 @@ public partial class CombatScreen : Control
     private bool _refreshQueued;
     private float _cardWidth = MaxCardWidth;
 
-    private TextureRect _enemyIcon = null!;
+    private EnemyEmblem _enemyEmblem = null!;
     private Label _enemyName = null!;
     private Label _turn = null!;
     private ProgressBar _enemyHullBar = null!;
@@ -56,7 +56,7 @@ public partial class CombatScreen : Control
 
     public override void _Ready()
     {
-        _enemyIcon = GetNode<TextureRect>("%EnemyIcon");
+        _enemyEmblem = GetNode<EnemyEmblem>("%EnemyEmblem");
         _enemyName = GetNode<Label>("%EnemyName");
         _turn = GetNode<Label>("%TurnLabel");
         _enemyHullBar = GetNode<ProgressBar>("%EnemyHullBar");
@@ -149,8 +149,9 @@ public partial class CombatScreen : Control
     {
         if (combat is null)
         {
-            _enemyIcon.Texture = run.LastFight is { } last ? ArtLibrary.EnemyIcon(last.EnemyId) : null;
-            _enemyIcon.Modulate = Palette.Muted;
+            _enemyEmblem.Icon = run.LastFight is { } last ? ArtLibrary.EnemyIcon(last.EnemyId) : null;
+            _enemyEmblem.Tint = Palette.Muted;
+            _enemyEmblem.Active = false;
             _enemyName.Text = run.LastFight is { } lastFight ? session.Content.Enemy(lastFight.EnemyId).Name : "";
             _turn.Text = "";
             _enemyHullBar.Value = 0;
@@ -162,8 +163,9 @@ public partial class CombatScreen : Control
         }
 
         var enemy = combat.Enemy;
-        _enemyIcon.Texture = ArtLibrary.EnemyIcon(enemy.DefId);
-        _enemyIcon.Modulate = Palette.Heavy;
+        _enemyEmblem.Icon = ArtLibrary.EnemyIcon(enemy.DefId);
+        _enemyEmblem.Tint = Palette.Threat;
+        _enemyEmblem.Active = true;
         _enemyName.Text = session.Content.Enemy(enemy.DefId).Name;
         _turn.Text = $"Turn {combat.Turn}";
         _enemyHullBar.MaxValue = enemy.MaxHull;
@@ -501,9 +503,11 @@ public partial class CombatScreen : Control
     private float CardWidth(int count)
     {
         float available = _handScroll.Size.X > 0 ? _handScroll.Size.X : MaxCardWidth * 5;
+
+        // Whole units: the hand rounds each card up, so a fractional width can push the last card off screen.
         return count == 0
             ? MaxCardWidth
-            : Mathf.Clamp((available - (HandGap * (count - 1))) / count, MinCardWidth, MaxCardWidth);
+            : Mathf.Floor(Mathf.Clamp((available - (HandGap * (count - 1))) / count, MinCardWidth, MaxCardWidth));
     }
 
     /// <summary>The cards are sized from the hand's width when built, so a new width rebuilds them.</summary>

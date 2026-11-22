@@ -50,7 +50,7 @@ The loop of a run, before the sector map: a new run opens on the Fitting screen;
 | A run is 4 fights in a fixed order (`RunState.Encounters`) | Done; replaced when the map exists |
 | Sector map | Types only; no generation |
 | Docks, shipyards, groves, events, salvage, renown | Not started |
-| Art | Option A, "Holo Grove" (see `docs/decisions.md` and `game/art/README.md`). Done: palette, Saira font, ship drawing, icons. Still to redraw: card and panel frames, backdrop, a larger enemy |
+| Art | Option A, "Holo Grove" (see `docs/decisions.md` and `game/art/README.md`). Done: palette, Saira font, ship drawing, icons, card, panel and button frames, backdrop, and the enemy shown large in a target-lock reticle |
 | Combat screen | Done: enemy and intent, ship grid, hand, End Turn, defeat or voyage complete and New Run |
 | Reward screen | Done: 3 offered pieces with their shapes and cards, Take and Skip |
 | Fitting screen | Done: drag and drop with the piece floating above the finger, fit and bonus preview, tap to select and tap again to turn, cargo hold, Compost, Undo, next enemy's heavy lanes |

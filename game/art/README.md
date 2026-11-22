@@ -8,9 +8,9 @@ The game's art is "Option A", a vector solarpunk look in the "Holo Grove" style:
 | `icons/enemies/<id>.svg` | One icon per enemy; `<id>` is its `id` in `data/enemies.json`. |
 | `icons/effects/<name>.svg` | `damage`, `block`, `energy`, `draw`, `repair`, `focus`, `grow`. Card faces draw the number inside it. |
 | `icons/intents/heavy_attack.svg` | The enemy's heavy attack. Attack and block intents reuse the `damage` and `block` icons. |
-| `ui/energy_badge.svg` | The cost medallion on a card, 64×64. |
-| `ui/card_frame.svg`, `ui/panel_frame.svg` | 9-slice borders, 96×96. The corner margin is a quarter of the texture's width (`BloomTheme.CreateFrameOverlay`). |
-| `ui/button_frame.svg` | A 9-slice button border. Not used yet. |
+| `ui/energy_badge.svg` | The cost badge on a card: a hex cell, 64×64. The card draws the cost on it. |
+| `ui/card_frame.svg`, `ui/panel_frame.svg` | 9-slice corner brackets laid over cards and panels, 96×96. Their edges are empty, because the card or panel draws its own border. The corner margin is a quarter of the texture's width (`BloomTheme.CreateFrameOverlay`). |
+| `ui/button_frame.svg` | Every button in the theme: a dark chamfered plate with brackets on two corners, 96×96. `BloomTheme` uses it as a `StyleBoxTexture` with 20 px margins and tints it for each state. |
 | `textures/glow.svg` | A soft white radial glow, 128×128, tinted and drawn behind glyphs. Imported at `svg/scale=1.0` with mipmaps. |
 | `fonts/Saira.ttf` | The one typeface, a variable font with width and weight axes. `BloomTheme` makes every font from it: Saira at width 100 for text, Saira Semi Condensed (width 87.5) for headings, numbers and labels. Godot ignores the axis names, so `BloomTheme` keys them by their numeric OpenType tags. |
 
@@ -24,7 +24,9 @@ Icons are line art on a 64×64 view box, drawn like the ship's hologram:
 - **Accents:** dashed halos and inner rims (dashes about 2.3 on, 2.9 off), and filled nodes (radius about 2) at joints and line ends, like the root traces on the deck.
 - **Fills:** none, or white at 6–8% opacity behind a main outline. The only dark fill is `#0a1512`, which tinting leaves dark.
 - **Effect icons** keep a dark well (`#0a1512` at 45–70% opacity) centered on (32, 32): the card draws the number there, centered, at 43% of the icon's size.
-- **Enemy icons** carry more detail than the rest, because the combat screen shows the enemy large.
+- **Enemy icons** carry more detail than the rest, because the combat screen shows the enemy large, in a target-lock reticle (`Screens/EnemyEmblem.cs`).
+
+The backdrop is drawn in code: `Visuals/BloomBackdrop.cs` draws the sky, horizon glow, root veins, HUD rings and scanlines once, and `Visuals/BackdropMotes.cs` animates the pollen motes and the radar sweep. The motes, the sweep and the enemy's reticle all stand still in low-processor mode, so the engine can idle.
 
 ## Import settings
 

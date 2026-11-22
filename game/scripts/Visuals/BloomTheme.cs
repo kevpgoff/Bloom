@@ -52,11 +52,12 @@ internal static class BloomTheme
         // Panels: dark glass with a thin hologram border; AttachPanelFrame adds the corner brackets.
         theme.SetStylebox("panel", "PanelContainer", FlatBox(Palette.Surface with { A = 0.9f }, Palette.HoloLine with { A = 0.3f }, border: 1, radius: 3));
 
+        // Buttons: a dark chamfered plate with bracketed corners (ui/button_frame), tinted per state.
         theme.SetFont("font", "Button", Display);
-        theme.SetStylebox("normal", "Button", FlatBox(Palette.ButtonBg with { A = 0.92f }, Palette.HoloLine with { A = 0.5f }, border: 2, radius: 3, padX: 14, padY: 10));
-        theme.SetStylebox("hover", "Button", FlatBox(Palette.ButtonHover, Palette.HoloLine, border: 2, radius: 3, padX: 14, padY: 10));
-        theme.SetStylebox("pressed", "Button", FlatBox(Palette.ButtonPressed, Palette.HoloBright, border: 2, radius: 3, padX: 14, padY: 10));
-        theme.SetStylebox("disabled", "Button", FlatBox(Palette.SurfaceDeep with { A = 0.85f }, Palette.LineMuted, border: 1, radius: 3, padX: 14, padY: 10));
+        theme.SetStylebox("normal", "Button", ButtonBox(Palette.HoloLine with { A = 0.85f }, FlatBox(Palette.ButtonBg with { A = 0.92f }, Palette.HoloLine with { A = 0.5f }, border: 2, radius: 3, padX: 14, padY: 10)));
+        theme.SetStylebox("hover", "Button", ButtonBox(Palette.HoloBright, FlatBox(Palette.ButtonHover, Palette.HoloLine, border: 2, radius: 3, padX: 14, padY: 10)));
+        theme.SetStylebox("pressed", "Button", ButtonBox(Colors.White, FlatBox(Palette.ButtonPressed, Palette.HoloBright, border: 2, radius: 3, padX: 14, padY: 10)));
+        theme.SetStylebox("disabled", "Button", ButtonBox(Palette.LineMuted.Lightened(0.15f), FlatBox(Palette.SurfaceDeep with { A = 0.85f }, Palette.LineMuted, border: 1, radius: 3, padX: 14, padY: 10)));
         theme.SetStylebox("focus", "Button", new StyleBoxEmpty());
         theme.SetColor("font_color", "Button", Palette.Ink);
         theme.SetColor("font_hover_color", "Button", Colors.White);
@@ -135,6 +136,31 @@ internal static class BloomTheme
         {
             panel.AddChild(overlay);
         }
+    }
+
+    /// <summary>
+    /// A button state drawn from <c>ui/button_frame</c>, tinted <paramref name="tint"/>. The texture's 20 px
+    /// margins keep its corners unscaled. Without the texture, the flat <paramref name="fallback"/> is used.
+    /// </summary>
+    private static StyleBox ButtonBox(Color tint, StyleBoxFlat fallback)
+    {
+        if (ArtLibrary.ButtonFrame is not { } texture)
+        {
+            return fallback;
+        }
+
+        var box = new StyleBoxTexture
+        {
+            Texture = texture,
+            ModulateColor = tint,
+            DrawCenter = true,
+            ContentMarginLeft = 14,
+            ContentMarginRight = 14,
+            ContentMarginTop = 10,
+            ContentMarginBottom = 10,
+        };
+        box.SetTextureMarginAll(20);
+        return box;
     }
 
     public static StyleBoxFlat FlatBox(Color bg, Color borderColor, int border = 2, int radius = 10, int padX = 0, int padY = 0)

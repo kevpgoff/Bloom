@@ -1,14 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
-  <!-- 9-slice Art Nouveau panel border: 24px corner margins -->
-  <path d="M 14 3 L 82 3 L 93 14 L 93 82 L 82 93 L 14 93 L 3 82 L 3 14 Z"
-        fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linejoin="round"/>
-  <path d="M 17 8 L 79 8 L 88 17 L 88 79 L 79 88 L 17 88 L 8 79 L 8 17 Z"
-        fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.45" stroke-linejoin="round"/>
-  <!-- Corner botanical dots -->
-  <g fill="#ffffff" opacity="0.9">
-    <circle cx="14" cy="14" r="2.4"/>
-    <circle cx="82" cy="14" r="2.4"/>
-    <circle cx="14" cy="82" r="2.4"/>
-    <circle cx="82" cy="82" r="2.4"/>
-  </g>
+  <!-- 9-slice panel frame: long corner brackets, a short inner bracket, end nodes. The edges stay empty; the panel's own border draws them. -->
+  <path d="M 1.5 23.5 L 1.5 1.5 L 23.5 1.5" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 72.5 1.5 L 94.5 1.5 L 94.5 23.5" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 94.5 72.5 L 94.5 94.5 L 72.5 94.5" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 23.5 94.5 L 1.5 94.5 L 1.5 72.5" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 6 14 L 6 6 L 14 6" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55"/>
+  <path d="M 82 6 L 90 6 L 90 14" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55"/>
+  <path d="M 90 82 L 90 90 L 82 90" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55"/>
+  <path d="M 14 90 L 6 90 L 6 82" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55"/>
+  <circle cx="23.5" cy="1.5" r="1.7" fill="#ffffff"/>
+  <circle cx="1.5" cy="23.5" r="1.7" fill="#ffffff"/>
+  <circle cx="72.5" cy="1.5" r="1.7" fill="#ffffff"/>
+  <circle cx="94.5" cy="23.5" r="1.7" fill="#ffffff"/>
+  <circle cx="94.5" cy="72.5" r="1.7" fill="#ffffff"/>
+  <circle cx="72.5" cy="94.5" r="1.7" fill="#ffffff"/>
+  <circle cx="23.5" cy="94.5" r="1.7" fill="#ffffff"/>
+  <circle cx="1.5" cy="72.5" r="1.7" fill="#ffffff"/>
 </svg>
