@@ -163,7 +163,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 0.878, 0.4, 1)
 theme_override_font_sizes/font_size = 26
-text = "Tap a disabled piece to repair it."
+text = "Repair 1 piece"
 autowrap_mode = 3
 
 [node name="CancelButton" type="Button" parent="Layout/TargetBanner"]

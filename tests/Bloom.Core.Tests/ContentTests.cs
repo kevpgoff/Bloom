@@ -12,11 +12,20 @@ public class ContentTests
     private static readonly PieceDef Bridge = new("bridge", "Bridge", PieceKind.Equipment, [Tag.Core], Rarity.Common, Shape.Parse(["##"]), [new CardGrant("ram", 2)]);
     private static readonly PieceDef Lance = new("lance", "Lance", PieceKind.Equipment, [Tag.Weapon], Rarity.Common, Shape.Parse(["###"]), [new CardGrant("ram", 1)]);
     private static readonly CardDef Ram = new("ram", "Ram", 1, [new DamageEffect(5)]);
-    private static readonly EnemyDef Dummy = new("dummy", "Dummy", 10, [new Intent(IntentKind.Attack, 1)]);
+    private static readonly EnemyDef Dummy = new("dummy", "Dummy", 10, [new Intent(IntentKind.Attack, 1)], EnemyPool.Early);
+
+    /// <summary>One enemy for each pool, which every sector needs.</summary>
+    private static readonly EnemyDef[] Enemies =
+    [
+        Dummy,
+        Dummy with { Id = "late", Pool = EnemyPool.Late },
+        Dummy with { Id = "hard", Pool = EnemyPool.Hard },
+        Dummy with { Id = "boss", Pool = EnemyPool.Boss },
+    ];
     private static readonly ShipClassDef Ship = new("ship", "Ship", 60, Shape.Parse(["###", "###"]), new Cell(0, 0), [new StartingPiece("bridge", new Cell(0, 0))]);
 
     private static ContentDb Create(PieceDef[]? pieces = null, CardDef[]? cards = null, EnemyDef[]? enemies = null, ShipClassDef[]? ships = null) =>
-        ContentDb.Create(pieces ?? [Bridge, Lance], cards ?? [Ram], enemies ?? [Dummy], ships ?? [Ship]);
+        ContentDb.Create(pieces ?? [Bridge, Lance], cards ?? [Ram], enemies ?? Enemies, ships ?? [Ship]);
 
     private static void AssertInvalid(string expectedError, PieceDef[]? pieces = null, CardDef[]? cards = null, EnemyDef[]? enemies = null, ShipClassDef[]? ships = null)
     {
@@ -26,6 +35,18 @@ public class ContentTests
 
     [Fact]
     public void ValidContentLoads() => Create();
+
+    [Fact]
+    public void AnEnemyWithoutAPoolIsReported() =>
+        AssertInvalid("enemy 'late': needs a pool", enemies: [.. Enemies, Dummy with { Id = "late", Pool = null }]);
+
+    [Fact]
+    public void AnEmptyPoolIsReported() =>
+        AssertInvalid("Sector 1 has no enemy in the Hard pool", enemies: [Enemies[0], Enemies[1], Enemies[3]]);
+
+    [Fact]
+    public void AnEnemyInASectorPastTheRunIsReported() =>
+        AssertInvalid($"sector {Rules.SectorsPerRun + 1} is outside", enemies: [.. Enemies, Dummy with { Id = "far", Sector = Rules.SectorsPerRun + 1 }]);
 
     [Fact]
     public void DuplicateIdsAreReported() =>
@@ -92,18 +113,30 @@ public class ShippedContentTests
         var db = TestContent.LoadShipped();
         Assert.Equal(16, db.Pieces.Count); // the spec's 7, the placeholder Tinker and 8 placeholder rewards
         Assert.Equal(17, db.Cards.Count);  // the spec's 8, the placeholder Patch and 8 for the rewards
-        Assert.Equal(4, db.Enemies.Count);
+        Assert.Equal(12, db.Enemies.Count);
         Assert.Single(db.Ships);
     }
 
-    /// <summary>Until the map exists, a run fights every enemy in the order of enemies.json (owner ruling, 2026-11-21).</summary>
+    /// <summary>The first sector (owner, 2026-11-22): 8 normal enemies, 3 hard ones and a boss.</summary>
     [Fact]
-    public void ARunFightsTheFourEnemiesInFileOrder()
+    public void TheFirstSectorHasEnemiesInEveryPool()
+    {
+        var db = TestContent.LoadShipped();
+        int Count(EnemyPool pool) => db.Enemies.Count(e => e.Pool == pool && e.Sector == 1);
+        Assert.Equal(4, Count(EnemyPool.Early));
+        Assert.Equal(4, Count(EnemyPool.Late));
+        Assert.Equal(3, Count(EnemyPool.Hard));
+        Assert.Equal(1, Count(EnemyPool.Boss));
+    }
+
+    [Fact]
+    public void ARunStartsOnTheMapOfTheFirstSector()
     {
         var db = TestContent.LoadShipped();
         var run = RunFactory.NewRun(db, "seedling", seed: 1);
-        Assert.Equal(["feral_harvester", "pollen_squall", "rogue_tiller", "singing_comet"], run.Encounters);
-        Assert.Equal(RunPhase.Refit, run.Phase);
+        Assert.Equal(RunPhase.Map, run.Phase);
+        Assert.Equal(1, run.Sector);
+        Assert.NotEmpty(new MapEngine(db).Reachable(run));
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using Bloom.Core.Map;
 using Bloom.Core.Pieces;
 
 namespace Bloom.Core;
@@ -44,4 +45,58 @@ public static class Rules
 
     /// <summary>Refit steps that Undo can take back. The oldest are dropped past this, to keep the save small.</summary>
     public const int MaxUndoSteps = 50;
+
+    // The sector map. Decided by the owner on 2026-11-22: one sector for now, built so that more is mostly content.
+
+    /// <summary>Sectors in a run. Beating the boss of the last one wins the run.</summary>
+    public const int SectorsPerRun = 1;
+
+    /// <summary>Rows of choices below the boss. A path visits one node per row, then the boss.</summary>
+    public const int MapRows = 7;
+
+    /// <summary>Columns of the map. Four keep every node large enough to tap on a phone.</summary>
+    public const int MapColumns = 4;
+
+    /// <summary>Paths walked up the map to make it; where they meet, they share nodes.</summary>
+    public const int MapPaths = 4;
+
+    /// <summary>The first rows hold only skirmishes, so a run opens with fights.</summary>
+    public const int MapOpeningRows = 2;
+
+    /// <summary>Skirmishes in the rows below this draw early enemies; above it, late ones.</summary>
+    public const int MapEarlyRows = 3;
+
+    /// <summary>The type of every node on the row just before the boss, or null for weighted types.</summary>
+    public static readonly NodeType? MapRowBeforeBoss = NodeType.Grove;
+
+    /// <summary>
+    /// How often each type appears on the other rows. A type with no weight is never placed; docks,
+    /// shipyards and events get theirs when they are built.
+    /// </summary>
+    public static readonly IReadOnlyList<(NodeType Type, int Weight)> MapNodeWeights =
+    [
+        (NodeType.Skirmish, 40),
+        (NodeType.HardFight, 15),
+        (NodeType.Grove, 5),
+    ];
+
+    /// <summary>Types that never follow themselves on a path.</summary>
+    public static readonly IReadOnlyList<NodeType> MapNoRepeatTypes = [NodeType.HardFight, NodeType.Dock, NodeType.Shipyard, NodeType.Grove];
+
+    /// <summary>Types that every map has at least once, among those with a weight.</summary>
+    public static readonly IReadOnlyList<NodeType> MapRequiredTypes = [NodeType.Dock, NodeType.Shipyard];
+
+    /// <summary>Salvage for a won fight, from the first number up to and including the second.</summary>
+    public static readonly (int Min, int Max) SkirmishSalvage = (20, 30);
+
+    public static readonly (int Min, int Max) HardFightSalvage = (40, 55);
+
+    /// <summary>For the boss of a sector that is not the last; the last one ends the run.</summary>
+    public static readonly (int Min, int Max) BossSalvage = (60, 80);
+
+    /// <summary>Salvage for composting a piece from the cargo hold.</summary>
+    public const int CompostSalvage = 10;
+
+    /// <summary>A grove repairs this share of the maximum hull, rounded up.</summary>
+    public const int GroveRepairPercent = 30;
 }

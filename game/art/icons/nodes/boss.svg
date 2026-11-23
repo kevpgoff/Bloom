@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Boss: a heavy reticle crowned with horns, one machine eye staring out -->
+  <path d="M 15 27 L 10 12 22 20 32 5 42 20 54 12 49 27 M 51.5 37 L 57.5 37 M 12.5 37 L 6.5 37 M 32 56.5 L 32 61.5" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="10" cy="12" r="2.4" fill="#ffffff"/>
+  <circle cx="32" cy="5" r="2.4" fill="#ffffff"/>
+  <circle cx="54" cy="12" r="2.4" fill="#ffffff"/>
+  <circle cx="32" cy="37" r="19.5" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-width="3.2" stroke-linejoin="round"/>
+  <circle cx="32" cy="37" r="14.5" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65" stroke-dasharray="2.3 2.88"/>
+  <path d="M 21 37 Q 32 28, 43 37 Q 32 46, 21 37 Z" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="32" cy="37" r="3.6" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="32" cy="37" r="1.6" fill="#ffffff"/>
+</svg>

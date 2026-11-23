@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Grove: a sapling with two broad leaves in a garden ring, and a mend mark -->
+  <path d="M 56.43 40.89 A 26 26 0 0 1 7.57 40.89 M 32 54 L 32 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 6 32 A 26 26 0 0 1 58 32" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65" stroke-dasharray="2.3 2.88"/>
+  <path d="M 32 25 C 29 14, 18 11, 11 14 C 14 22, 24 28, 32 25 Z M 32 25 C 42 28, 51 21, 53 13 C 46 11, 35 15, 32 25 Z" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-width="2.8" stroke-linejoin="round"/>
+  <path d="M 32 40 C 35 35, 41 34, 45 35.5 C 42 40, 36 42, 32 40 Z" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.9"/>
+  <path d="M 32 25 L 20 17.5 M 32 25 L 45 17" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.7"/>
+  <path d="M 32 54 L 25 58.5 M 32 54 L 39 58.5" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
+  <circle cx="32" cy="20.5" r="2.2" fill="#ffffff"/>
+  <path d="M 17 39 L 25 39 M 21 35 L 21 43" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

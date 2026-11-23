@@ -15,7 +15,7 @@ dotnet build Bloom.sln          # builds the rules, the tests and the Godot game
 dotnet test                     # runs the rule tests, including validation of game/data/*.json
 godot --path game               # runs the game (portrait window, 405×720)
 godot -e --path game            # opens the project in the editor
-godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 16, …" and a screen line ("FittingScreen: …" on a new run)
+godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 16, …" and a screen line ("MapScreen: …" on a new run)
 godot --path game -- --fx-demo                 # debug builds: plays the first fight by itself to show the combat feedback; add =lose to show a defeat. The run stays in memory, so the save is untouched
 tools/android-debug.sh                         # exports a debug APK, installs it on the phone connected by USB and starts it; --log follows its log, --no-install only exports
 ```
@@ -57,7 +57,7 @@ docs/decisions.md             decisions made so far
 
 ## Status
 
-The loop of a run, before the sector map: a new run opens on the Fitting screen; the player fights, picks 1 of 3 pieces after a win, refits the ship, and fights the next enemy. A placeholder run is the 4 enemies in `enemies.json`, in order, and winning the 4th wins it. The game saves after every action and resumes at the same point. Saves are written to `user://run.json` (on Linux, `~/.local/share/godot/app_userdata/Bloom/run.json`); a save from an older schema is copied to `user://run.unreadable.json` and a new run starts.
+A run is one sector: a branching map of about 20 nodes in 7 rows, ending in a boss. A new run opens on the Map screen. The player picks a node in the next row. Choosing a fight commits to it and shows its enemy on the Fitting screen, so the ship can be refitted against its heavy lanes before the fight starts. A won fight pays salvage and offers 1 of 3 pieces, and a hard fight's offer always includes a rare piece. A grove repairs 30% of the hull. Beating the boss wins the run. The ship can be refitted from the map at any time. The game saves after every action and resumes at the same point. Saves are written to `user://run.json` (on Linux, `~/.local/share/godot/app_userdata/Bloom/run.json`); a save from an older schema is copied to `user://run.unreadable.json` and a new run starts.
 
 | Area | State |
 | --- | --- |
@@ -67,13 +67,14 @@ The loop of a run, before the sector map: a new run opens on the Fitting screen;
 | Combat turn cycle (energy, draw, block, damage, heavy attacks that disable pieces) | Done, tested |
 | Card effects `repair`, `focus` and `grow`, and adjacency bonuses (`damageBonus`, `startGrown`) in combat | Done, tested; rulings in `docs/decisions.md` |
 | Rewards (1 of 3 pieces) and refitting (move, turn, fit, unfit, compost, undo) between fights | Done, tested; rulings in `docs/decisions.md` |
-| A run is 4 fights in a fixed order (`RunState.Encounters`) | Done; replaced when the map exists |
-| Sector map | Types only; no generation |
-| Docks, shipyards, groves, events, salvage, renown | Not started |
+| Sector map: generation, choosing nodes, skirmishes, hard fights, the boss, groves (repair), salvage from fights and composting | Done, tested; rulings in `docs/decisions.md`. One sector per run (`Rules.SectorsPerRun`) |
+| Docks and piece upgrades, then shipyards, events and the boss's parts | Next, one pull request each, in that order |
+| Renown, unlocks, logbook | Not started |
 | Art | Option A, "Holo Grove" (see `docs/decisions.md` and `game/art/README.md`). Done: palette, Saira font, ship drawing, icons, card, panel and button frames, backdrop, and the enemy shown large in a target-lock reticle |
 | Combat screen | Done: enemy and intent, ship grid, hand, End Turn, defeat or voyage complete and New Run |
 | Reward screen | Done: 3 offered pieces with their shapes and cards, Take and Skip |
-| Fitting screen | Done: drag and drop with the piece floating above the finger, fit and bonus preview, tap to select and tap again to turn, cargo hold, Compost, Undo, next enemy's heavy lanes |
+| Fitting screen | Done: drag and drop with the piece floating above the finger, fit and bonus preview, tap to select and tap again to turn, cargo hold, Compost (for salvage), Undo. Opened from the map it goes back to the map; after choosing a fight it names the enemy, marks its heavy lanes and starts the fight |
 | Combat feedback | Done: particles, screen shake and haptics for every card effect, enemy action and the end of a fight (`game/scripts/Feedback/`). Shake strength and haptics are set in `user://settings.cfg`; there is no settings screen yet. Timings are placeholders in `CombatFeedback.Tuning` |
-| Map screen | Placeholder, not shown |
+| Map screen | Done: the whole sector, with the path taken lit and the reachable nodes pulsing; tap a reachable node, then Set course (which names it) to go there, and Ship to refit. Node icons are in `art/icons/nodes/` |
+| Grove screen | Done: repair the hull (upgrades come later) |
 | Mobile export presets | Android: a debug preset (arm64, `VIBRATE` only, `data/*.json` included) and `tools/android-debug.sh`; see [Android debug build](#android-debug-build). Tested on a Pixel phone with Android 16 on 2026-11-22: the game runs at 60 fps, saves and resumes, haptics work, and the back gesture quits with the run saved. The layout keeps clear of the camera cutout and the rounded corners (`Platform/ScreenInsets.cs`). The C# is compiled ahead of time: a cold start reaches the fight in about 0.8 s, down from 1.25 s with Mono. The app icon is a placeholder (`art/app_icon/`). iOS is not set up. |

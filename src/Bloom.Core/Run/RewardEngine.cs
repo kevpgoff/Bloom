@@ -1,10 +1,14 @@
+using Bloom.Core.Combat;
 using Bloom.Core.Content;
 using Bloom.Core.Pieces;
 
 namespace Bloom.Core.Run;
 
-/// <summary>The pieces offered after a won fight, as piece def ids.</summary>
-public sealed record RewardOffer(IReadOnlyList<string> Pieces);
+/// <summary>
+/// The pieces offered after a won fight, as piece def ids, and the salvage the fight paid. The salvage is
+/// already added to the run; it is kept here only to show it.
+/// </summary>
+public sealed record RewardOffer(IReadOnlyList<string> Pieces, int Salvage = 0);
 
 /// <summary>
 /// The reward after a won fight: a choice of pieces, of which the player takes one or none.
@@ -14,26 +18,38 @@ public sealed record RewardOffer(IReadOnlyList<string> Pieces);
 /// <see cref="Rules.RewardRarityOdds"/>, then a piece of that rarity. A piece that shares a tag with a
 /// fitted piece is <see cref="Rules.RewardTagWeight"/> times as likely; crew count the tag their bonus
 /// targets. A piece is offered at most once per offer, and the bridge never. A taken piece goes to the
-/// cargo hold, even past its capacity.
+/// cargo hold, even past its capacity. Defaults taken on 2026-11-22: a fight also pays salvage
+/// (<see cref="Rules.SkirmishSalvage"/> and the like), and after a hard fight or a boss the first offered
+/// piece is always rare, as the spec's node table says.
 /// </remarks>
 public sealed class RewardEngine(ContentDb content)
 {
     /// <summary>
-    /// Rolls an offer from the run's random numbers, or returns null when there is nothing to offer.
-    /// Pieces are considered in content order, so the same run state always gives the same offer.
+    /// Rolls an offer and its salvage from the run's random numbers, for a fight against an enemy of
+    /// <paramref name="pool"/>. Pieces are considered in content order, so the same run state always gives
+    /// the same offer. The offer can be empty if no piece is left to offer.
     /// </summary>
-    public RewardOffer? Roll(RunState run)
+    public RewardOffer Roll(RunState run, EnemyPool pool = EnemyPool.Early)
     {
         var shipTags = run.Ship.Fitted
             .SelectMany(f => content.Piece(f.Piece.DefId).Tags)
             .ToHashSet();
         int Weight(PieceDef def) => Affinity(def).Any(shipTags.Contains) ? Rules.RewardTagWeight : 1;
 
+        var (min, max) = pool switch
+        {
+            EnemyPool.Hard => Rules.HardFightSalvage,
+            EnemyPool.Boss => Rules.BossSalvage,
+            _ => Rules.SkirmishSalvage,
+        };
+        int salvage = run.Rng.Next(min, max + 1);
+        bool rareFirst = pool is EnemyPool.Hard or EnemyPool.Boss;
+
         var remaining = content.Pieces.Where(p => !p.IsBridge).ToList();
         var offered = new List<string>();
         while (offered.Count < Rules.RewardChoices && remaining.Count > 0)
         {
-            var rarity = RollRarity(run);
+            var rarity = rareFirst && offered.Count == 0 ? Rarity.Rare : RollRarity(run);
             var candidates = remaining.Where(p => p.Rarity == rarity).ToList();
             if (candidates.Count == 0)
             {
@@ -45,7 +61,7 @@ public sealed class RewardEngine(ContentDb content)
             remaining.Remove(pick);
         }
 
-        return offered.Count == 0 ? null : new RewardOffer(offered);
+        return new RewardOffer(offered, salvage);
     }
 
     /// <summary>Takes the offered piece at <paramref name="index"/> into the cargo hold.</summary>
@@ -61,14 +77,17 @@ public sealed class RewardEngine(ContentDb content)
         run.Cargo.Add(piece);
         run.Reward = null;
         run.UndoStack.Clear();
+        MapEngine.FinishNode(run);
         return piece;
     }
 
+    /// <summary>Takes no piece. The salvage was already paid when the fight was won.</summary>
     public void Skip(RunState run)
     {
         RequireOffer(run);
         run.Reward = null;
         run.UndoStack.Clear();
+        MapEngine.FinishNode(run);
     }
 
     /// <summary>The tags a piece is favored for: its own, and for a piece with a bonus, the tag the bonus targets.</summary>

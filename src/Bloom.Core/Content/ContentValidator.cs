@@ -35,6 +35,8 @@ internal static class ContentValidator
             ValidateEnemy(enemy, errors);
         }
 
+        CheckEnemyPools(db, errors);
+
         foreach (var ship in db.Ships.Where(s => s is not null))
         {
             ValidateShip(db, ship, errors);
@@ -188,12 +190,37 @@ internal static class ContentValidator
         }
     }
 
+    /// <summary>Every sector needs an enemy in each pool, since its map can hold every kind of fight.</summary>
+    private static void CheckEnemyPools(ContentDb db, List<string> errors)
+    {
+        for (int sector = 1; sector <= Rules.SectorsPerRun; sector++)
+        {
+            foreach (var pool in Enum.GetValues<EnemyPool>())
+            {
+                if (!db.Enemies.Any(e => e?.Pool == pool && e.Sector == sector))
+                {
+                    errors.Add($"Sector {sector} has no enemy in the {pool} pool.");
+                }
+            }
+        }
+    }
+
     private static void ValidateEnemy(EnemyDef enemy, List<string> errors)
     {
         string where = $"enemy '{enemy.Id}'";
         if (enemy.Hull <= 0)
         {
             errors.Add($"{where}: hull must be above 0.");
+        }
+
+        if (enemy.Pool is null || !Enum.IsDefined(enemy.Pool.Value))
+        {
+            errors.Add($"{where}: needs a pool: {string.Join(", ", Enum.GetNames<EnemyPool>())}.");
+        }
+
+        if (enemy.Sector < 1 || enemy.Sector > Rules.SectorsPerRun)
+        {
+            errors.Add($"{where}: sector {enemy.Sector} is outside 1 to {Rules.SectorsPerRun}.");
         }
 
         if (enemy.Pattern is null || enemy.Pattern.Count == 0)

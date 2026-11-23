@@ -29,34 +29,46 @@ public class RefitTests
     }
 
     [Fact]
-    public void ANewRunStartsBetweenFights()
+    public void ANewRunStartsOnTheMapWithNoFightChosen()
     {
         var run = NewRun();
-        Assert.Equal(RunPhase.Refit, run.Phase);
+        Assert.Equal(RunPhase.Map, run.Phase);
         Assert.Null(run.Combat);
-        Assert.Equal(["dummy", "heavy", "blocker", "mixed"], run.Encounters);
-        Assert.Equal("dummy", _refit.NextEnemy(run)!.Id);
-        Assert.True(_refit.CanStartFight(run));
+        Assert.Null(_refit.NextEnemy(run));
+        Assert.False(_refit.CanStartFight(run));
+        Assert.True(RefitEngine.CanRefit(run));
+
+        string before = Json(run);
+        Assert.Throws<InvalidOperationException>(() => _refit.StartFight(run));
+        Assert.Equal(before, Json(run));
     }
 
     [Fact]
-    public void FightsFollowTheEncountersInOrder()
+    public void TheChosenFightIsTheOneThatStarts()
     {
-        var run = NewRun();
-        run.Encounters = ["dummy", "blocker"];
-        _refit.StartNextFight(run);
-        Assert.Equal("dummy", run.Combat!.Enemy.DefId);
-
-        WinFight(run);
-        _rewards.Skip(run);
+        var run = Prepare(NewRun(), "blocker");
+        Assert.Equal(RunPhase.Prepare, run.Phase);
         Assert.Equal("blocker", _refit.NextEnemy(run)!.Id);
-        _refit.StartNextFight(run);
-        Assert.Equal("blocker", run.Combat!.Enemy.DefId);
+        Assert.True(_refit.CanStartFight(run));
+        Assert.True(RefitEngine.CanRefit(run));
 
+        _refit.StartFight(run);
+        Assert.Equal("blocker", run.Combat!.Enemy.DefId);
         WinFight(run);
-        Assert.Equal(RunPhase.Won, run.Phase);
+        Assert.Null(run.Encounter);
         Assert.Null(_refit.NextEnemy(run));
-        Assert.False(_refit.CanStartFight(run));
+        _rewards.Skip(run);
+        Assert.Equal(RunPhase.Map, run.Phase);
+    }
+
+    [Fact]
+    public void TheShipCanBeRefittedBeforeAChosenFight()
+    {
+        var run = Prepare(NewRun());
+        var lance = Fit(run, "lance", 1, 1);
+        _refit.Move(run, lance.Id, new Cell(1, 2), Rotation.R0);
+        Assert.Equal(new Cell(1, 2), run.Ship.Find(lance.Id)!.Origin);
+        Assert.True(_refit.CanUndo(run));
     }
 
     /// <summary>The spec: the layout locks when a fight starts. It also waits while a reward is offered.</summary>
@@ -74,10 +86,10 @@ public class RefitTests
             r => _refit.FitFromCargo(r, held.Id, new Cell(0, 3), Rotation.R0),
             r => _refit.Compost(r, held.Id),
             r => _refit.Undo(r),
-            r => _refit.StartNextFight(r),
+            r => _refit.StartFight(r),
         ];
 
-        _refit.StartNextFight(run);
+        _refit.StartFight(Prepare(run));
         AssertAllRefused(run, actions);
 
         WinFight(run);
@@ -179,6 +191,31 @@ public class RefitTests
         Assert.Empty(run.Cargo.Pieces);
     }
 
+    /// <summary>Composting pays salvage, and Undo takes that back with the piece, so the same piece can't be composted twice.</summary>
+    [Fact]
+    public void CompostingPaysSalvageThatUndoTakesBack()
+    {
+        var run = NewRun();
+        var held = Hold(run, "tinker");
+        _refit.Compost(run, held.Id);
+        Assert.Equal(Rules.CompostSalvage, run.Salvage);
+
+        _refit.Undo(run);
+        Assert.Equal(0, run.Salvage);
+        Assert.Equal([held], run.Cargo.Pieces);
+    }
+
+    [Fact]
+    public void TheShipCannotBeChangedAtAGrove()
+    {
+        var run = UseTinyMap(NewRun());
+        run.Path.Add(0);
+        run.Grove = new GroveVisit();
+        var lance = Fit(run, "lance", 1, 1);
+        Assert.False(RefitEngine.CanRefit(run));
+        AssertAllRefused(run, [r => _refit.Move(r, lance.Id, new Cell(1, 2), Rotation.R0), r => _refit.StartFight(r)]);
+    }
+
     [Fact]
     public void TurningKeepsThePieceCentered()
     {
@@ -245,7 +282,7 @@ public class RefitTests
         var run = NewRun();
         var lance = Fit(run, "lance", 0, 0);
         _refit.Move(run, lance.Id, new Cell(0, 1), Rotation.R0);
-        _refit.StartNextFight(run);
+        _refit.StartFight(Prepare(run));
         Assert.Empty(run.UndoStack);
 
         WinFight(run);
@@ -269,18 +306,18 @@ public class RefitTests
     [Fact]
     public void TheNextFightWaitsUntilTheHoldIsWithinItsCapacity()
     {
-        var run = NewRun();
+        var run = Prepare(NewRun());
         var pieces = Enumerable.Range(0, Rules.CargoCapacity + 1).Select(_ => Hold(run, "tinker")).ToList();
         Assert.Equal(1, _refit.CargoExcess(run));
         Assert.False(_refit.CanStartFight(run));
 
         string before = Json(run);
-        Assert.Throws<InvalidOperationException>(() => _refit.StartNextFight(run));
+        Assert.Throws<InvalidOperationException>(() => _refit.StartFight(run));
         Assert.Equal(before, Json(run));
 
         _refit.Compost(run, pieces[0].Id);
         Assert.True(_refit.CanStartFight(run));
-        _refit.StartNextFight(run);
+        _refit.StartFight(run);
         Assert.Equal(RunPhase.Fight, run.Phase);
     }
 

@@ -3,6 +3,7 @@
     "id": "feral_harvester",
     "name": "Feral Harvester",
     "placeholder": true,
+    "pool": "Early",
     "hull": 40,
     "pattern": [
       { "kind": "Attack", "amount": 6 },
@@ -14,6 +15,7 @@
     "id": "pollen_squall",
     "name": "Pollen Squall",
     "placeholder": true,
+    "pool": "Early",
     "hull": 42,
     "pattern": [
       { "kind": "Attack", "amount": 5 },
@@ -22,9 +24,35 @@
     ]
   },
   {
+    "id": "rust_gleaner",
+    "name": "Rust Gleaner",
+    "placeholder": true,
+    "pool": "Early",
+    "hull": 36,
+    "pattern": [
+      { "kind": "Attack", "amount": 5 },
+      { "kind": "Attack", "amount": 5 },
+      { "kind": "HeavyAttack", "amount": 8, "lane": 3 }
+    ]
+  },
+  {
+    "id": "static_moths",
+    "name": "Static Moths",
+    "placeholder": true,
+    "pool": "Early",
+    "hull": 34,
+    "pattern": [
+      { "kind": "Attack", "amount": 4 },
+      { "kind": "Block", "amount": 6 },
+      { "kind": "Attack", "amount": 4 },
+      { "kind": "HeavyAttack", "amount": 9, "lane": 1 }
+    ]
+  },
+  {
     "id": "rogue_tiller",
     "name": "Rogue Tiller",
     "placeholder": true,
+    "pool": "Late",
     "hull": 50,
     "pattern": [
       { "kind": "Block", "amount": 10 },
@@ -36,12 +64,90 @@
     "id": "singing_comet",
     "name": "Singing Comet",
     "placeholder": true,
+    "pool": "Late",
     "hull": 60,
     "pattern": [
       { "kind": "Attack", "amount": 7 },
       { "kind": "HeavyAttack", "amount": 12, "lane": 3 },
       { "kind": "Block", "amount": 8 },
       { "kind": "HeavyAttack", "amount": 12, "lane": 5 }
+    ]
+  },
+  {
+    "id": "toll_beacon",
+    "name": "Toll Beacon",
+    "placeholder": true,
+    "pool": "Late",
+    "hull": 54,
+    "pattern": [
+      { "kind": "Block", "amount": 12 },
+      { "kind": "Attack", "amount": 9 },
+      { "kind": "HeavyAttack", "amount": 13, "lane": 4 }
+    ]
+  },
+  {
+    "id": "bramble_drift",
+    "name": "Bramble Drift",
+    "placeholder": true,
+    "pool": "Late",
+    "hull": 58,
+    "pattern": [
+      { "kind": "Attack", "amount": 6 },
+      { "kind": "Attack", "amount": 6 },
+      { "kind": "HeavyAttack", "amount": 11, "lane": 2 },
+      { "kind": "Block", "amount": 10 }
+    ]
+  },
+  {
+    "id": "strip_miner",
+    "name": "Strip Miner",
+    "placeholder": true,
+    "pool": "Hard",
+    "hull": 80,
+    "pattern": [
+      { "kind": "HeavyAttack", "amount": 14, "lane": 3 },
+      { "kind": "Attack", "amount": 10 },
+      { "kind": "Block", "amount": 12 },
+      { "kind": "HeavyAttack", "amount": 14, "lane": 1 }
+    ]
+  },
+  {
+    "id": "aurora_knot",
+    "name": "Aurora Knot",
+    "placeholder": true,
+    "pool": "Hard",
+    "hull": 72,
+    "pattern": [
+      { "kind": "Attack", "amount": 8 },
+      { "kind": "Attack", "amount": 8 },
+      { "kind": "HeavyAttack", "amount": 16, "lane": 5 },
+      { "kind": "Block", "amount": 10 }
+    ]
+  },
+  {
+    "id": "salvage_hound",
+    "name": "Salvage Hound",
+    "placeholder": true,
+    "pool": "Hard",
+    "hull": 76,
+    "pattern": [
+      { "kind": "Attack", "amount": 12 },
+      { "kind": "Block", "amount": 8 },
+      { "kind": "HeavyAttack", "amount": 15, "lane": 2 }
+    ]
+  },
+  {
+    "id": "grand_combine",
+    "name": "Grand Combine",
+    "placeholder": true,
+    "pool": "Boss",
+    "hull": 140,
+    "pattern": [
+      { "kind": "Attack", "amount": 10 },
+      { "kind": "HeavyAttack", "amount": 16, "lane": 2 },
+      { "kind": "Block", "amount": 15 },
+      { "kind": "Attack", "amount": 12 },
+      { "kind": "HeavyAttack", "amount": 16, "lane": 4 }
     ]
   }
 ]

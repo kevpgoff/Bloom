@@ -7,7 +7,8 @@ using Godot;
 namespace Bloom.Game.Screens;
 
 /// <summary>
-/// The shell that hosts one screen at a time: the one for the run's phase. Screens only draw state and
+/// The shell that hosts one screen at a time: the one for the run's phase, or the Fitting screen when the
+/// player opens the ship from the map (<see cref="GameRoot.ShipOpen"/>). Screens only draw state and
 /// forward input; game rules belong in Bloom.Core. After a won fight the combat screen stays up a moment
 /// (<see cref="CombatScreen.TakeExitHold"/>), so the last hit can play before the Reward screen.
 /// </summary>
@@ -16,6 +17,8 @@ public partial class MainScreen : Control
     private const string CombatScene = "res://scenes/Combat.tscn";
     private const string RewardScene = "res://scenes/Reward.tscn";
     private const string FittingScene = "res://scenes/Fitting.tscn";
+    private const string MapScene = "res://scenes/Map.tscn";
+    private const string GroveScene = "res://scenes/Grove.tscn";
 
     /// <summary>The layout's margin from the edges of a desktop window, as in Main.tscn.</summary>
     private const float EdgeMargin = 16f;
@@ -68,8 +71,10 @@ public partial class MainScreen : Control
 
     private static string SceneFor(RunPhase phase) => phase switch
     {
+        RunPhase.Map => GameRoot.Instance.ShipOpen ? FittingScene : MapScene,
+        RunPhase.Prepare => FittingScene,
         RunPhase.Reward => RewardScene,
-        RunPhase.Refit => FittingScene,
+        RunPhase.Grove => GroveScene,
         _ => CombatScene, // the fight, and its end: defeat or the voyage complete
     };
 

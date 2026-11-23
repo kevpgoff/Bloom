@@ -23,6 +23,8 @@ public sealed class RunSession
         Combat = new CombatEngine(content, _pending.Add);
         Rewards = new RewardEngine(content);
         Refit = new RefitEngine(content, Combat);
+        Map = new MapEngine(content);
+        Grove = new GroveEngine();
     }
 
     public ContentDb Content { get; }
@@ -36,6 +38,10 @@ public sealed class RunSession
     public RewardEngine Rewards { get; }
 
     public RefitEngine Refit { get; }
+
+    public MapEngine Map { get; }
+
+    public GroveEngine Grove { get; }
 
     /// <summary>
     /// What happened in the fight during the last <see cref="Do(Action{RunSession})"/>, in order, for the game to
