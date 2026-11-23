@@ -5,7 +5,7 @@
 #   tools/android-debug.sh --no-install  only export build/android/bloom-debug.apk
 #   tools/android-debug.sh --log         also follow the game's log after it starts (Ctrl+C to stop)
 #
-# The one-time setup (JDK, Android SDK, export templates, debug keystore) is in README.md.
+# The one-time setup (JDK, Android SDK and NDK, export templates, debug keystore) is in README.md.
 # Set GODOT or ANDROID_HOME if they are not in the default places below.
 set -euo pipefail
 
@@ -23,6 +23,18 @@ for arg in "$@"; do
     *) echo "Unknown option: $arg" >&2; exit 2 ;;
   esac
 done
+
+# The game is compiled ahead of time (NativeAOT) and linked with the Android NDK's clang. Bloom.csproj finds the
+# NDK through ANDROID_NDK_ROOT; without it, the newest NDK installed in the SDK is used.
+if [ -z "${ANDROID_NDK_ROOT:-}" ]; then
+  ANDROID_NDK_ROOT="$(ls -d "${ANDROID_HOME:-$HOME/Android/Sdk}"/ndk/*/ 2>/dev/null | sort -V | tail -n 1)"
+  ANDROID_NDK_ROOT="${ANDROID_NDK_ROOT%/}"
+fi
+if [ ! -x "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" ]; then
+  echo "Android NDK not found. Install it as README.md describes, or set ANDROID_NDK_ROOT." >&2
+  exit 1
+fi
+export ANDROID_NDK_ROOT
 
 cd "$(dirname "$0")/.."
 mkdir -p "$(dirname "$APK")"
