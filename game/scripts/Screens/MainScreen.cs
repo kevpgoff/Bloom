@@ -11,6 +11,7 @@ namespace Bloom.Game.Screens;
 /// the Fitting screen when the player opens the ship from the map or a dock (<see cref="GameRoot.ShipOpen"/>). Screens only draw state and
 /// forward input; game rules belong in Bloom.Core. After a won fight the combat screen stays up a moment
 /// (<see cref="CombatScreen.TakeExitHold"/>), so the last hit can play before the Reward screen.
+/// During a test run (<see cref="GameRoot.IsTest"/>) a row above the screen says so and has the button that ends it.
 /// </summary>
 public partial class MainScreen : Control
 {
@@ -31,6 +32,8 @@ public partial class MainScreen : Control
     private Control _layout = null!;
     private Control _host = null!;
     private Label _status = null!;
+    private Control _testRow = null!;
+    private Label _testLabel = null!;
     private string? _shownScene;
     private bool _swapQueued;
     private bool _holding;
@@ -44,6 +47,10 @@ public partial class MainScreen : Control
         _host = GetNode<Control>("Layout/ScreenHost");
         _status = GetNode<Label>("Layout/Status");
         _status.Text = GameRoot.Instance.Status;
+        _testRow = GetNode<Control>("%TestRow");
+        _testLabel = GetNode<Label>("%TestLabel");
+        _testLabel.AddThemeColorOverride("font_color", Palette.Muted);
+        GetNode<Button>("%EndTestButton").Pressed += GameRoot.Instance.LeaveRun;
         GameRoot.Instance.Changed += QueueSwap;
         GameRoot.Instance.Changed += ShowHullWarning;
         GetViewport().SizeChanged += FitToScreen;
@@ -123,6 +130,13 @@ public partial class MainScreen : Control
         if (GameRoot.Instance.Content is null)
         {
             return;
+        }
+
+        _testRow.Visible = GameRoot.Instance is { IsTest: true, Session: not null };
+        if (_testRow.Visible)
+        {
+            var run = GameRoot.Instance.Session!.State;
+            _testLabel.Text = $"Test run · {GameRoot.Instance.Content.Ship(run.ShipClassId).Name}";
         }
 
         // Without a run, the hangar shows: before the first voyage, and after one is finished or abandoned.

@@ -34,9 +34,8 @@ public sealed class MapEngine(ContentDb content)
     };
 
     /// <summary>
-    /// Moves the ship to a reachable node and starts what happens there: a fight node commits to a fight
-    /// against an enemy rolled from its pool, a dock rolls the pieces it sells, a shipyard the hull sections
-    /// it offers, an event node which event it is, and a grove waits for the player's choice. Refit steps can no longer be undone after this.
+    /// Moves the ship to a reachable node and starts what happens there (<see cref="Enter"/>). Refit steps can
+    /// no longer be undone after this.
     /// </summary>
     public void Choose(RunState run, int nodeId)
     {
@@ -51,6 +50,18 @@ public sealed class MapEngine(ContentDb content)
 
         var node = Reachable(run).FirstOrDefault(n => n.Id == nodeId)
                    ?? throw new InvalidOperationException($"Node {nodeId} cannot be reached from here.");
+        Enter(run, node);
+    }
+
+    /// <summary>
+    /// Puts the ship on a node and starts what happens there: a fight node commits to a fight against an enemy
+    /// rolled from its pool, a dock rolls the pieces it sells, a shipyard the hull sections it offers, an event
+    /// node which event it is, and a grove waits for the player's choice. Everything is checked before the run
+    /// changes. Whether the node can be reached is the caller's business: <see cref="Choose"/> checks it, and a
+    /// test run is put straight onto its node. With <paramref name="eventId"/>, an event node holds that event.
+    /// </summary>
+    internal void Enter(RunState run, MapNode node, string? eventId = null)
+    {
         var pool = PoolFor(node);
         var candidates = pool is { } p ? EnemiesIn(run, p) : [];
         if (pool is not null && candidates.Count == 0)
@@ -63,7 +74,14 @@ public sealed class MapEngine(ContentDb content)
             throw new InvalidOperationException($"{node.Type} nodes are not built yet.");
         }
 
-        if (node.Type == NodeType.Event && !content.Events.Any(e => e.Sector == run.Sector))
+        if (eventId is not null && (node.Type != NodeType.Event || !content.Events.Any(e => e.Id == eventId)))
+        {
+            throw new InvalidOperationException(node.Type != NodeType.Event
+                ? $"Only an event node can hold the event '{eventId}'."
+                : $"There is no event '{eventId}'.");
+        }
+
+        if (node.Type == NodeType.Event && eventId is null && !content.Events.Any(e => e.Sector == run.Sector))
         {
             throw new InvalidOperationException($"Sector {run.Sector} has no event.");
         }
@@ -90,7 +108,7 @@ public sealed class MapEngine(ContentDb content)
         }
         else if (node.Type == NodeType.Event)
         {
-            run.Event = EventEngine.Roll(content, run);
+            run.Event = eventId is null ? EventEngine.Roll(content, run) : EventEngine.Visit(run, eventId);
         }
         else
         {

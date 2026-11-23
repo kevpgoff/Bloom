@@ -15,6 +15,9 @@ namespace Bloom.Game.Screens;
 /// Under the header are the voyage's seed, which a tap copies, and the Abandon button. Abandoning ends the
 /// voyage for good, so it takes two presses: the first arms the button for <see cref="AbandonArmedSeconds"/>,
 /// and only a second press in that time leaves for the hangar (<see cref="GameRoot.LeaveRun"/>).
+/// A debug build (<see cref="GameRoot.TestTools"/>) also has a Hangar button, which sets the voyage aside for
+/// testing without ending it (<see cref="GameRoot.ParkVoyage"/>). A test run has neither button: the row
+/// above every screen ends it.
 /// </remarks>
 public partial class MapScreen : Control
 {
@@ -58,6 +61,15 @@ public partial class MapScreen : Control
         _abandonTimer.Timeout += () => ArmAbandon(false);
         AddChild(_abandonTimer);
         ArmAbandon(false);
+        _abandon.Visible = !GameRoot.Instance.IsTest;
+        var hangar = GetNode<Button>("%HangarButton");
+        hangar.Visible = GameRoot.TestTools && !GameRoot.Instance.IsTest;
+        hangar.Pressed += GameRoot.Instance.ParkVoyage;
+        foreach (string state in new[] { "font_color", "font_hover_color", "font_pressed_color" })
+        {
+            hangar.AddThemeColorOverride(state, Palette.Muted);
+        }
+
         GameRoot.Instance.Changed += Refresh;
 
         // With a single way on, it is chosen already; the player still confirms it.
@@ -109,7 +121,8 @@ public partial class MapScreen : Control
         _map.SetState(session, _selected);
     }
 
-    private static string NodeName(NodeType type) => type switch
+    /// <summary>A node type as the player reads it.</summary>
+    internal static string NodeName(NodeType type) => type switch
     {
         NodeType.HardFight => "Hard fight",
         _ => type.ToString(),

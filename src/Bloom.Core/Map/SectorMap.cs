@@ -50,4 +50,20 @@ public sealed class SectorMap
 
     public IEnumerable<MapNode> PreviousNodes(int nodeId) =>
         Edges.Where(e => e.To == nodeId).Select(e => Node(e.From));
+
+    /// <summary>
+    /// A way from the first row to a node, as the ids of the nodes before it in travel order. Where several
+    /// nodes lead to one, the first in the order of <see cref="Edges"/> is taken. Empty for a node of the first row.
+    /// </summary>
+    public List<int> RouteTo(int nodeId)
+    {
+        var route = new List<int>();
+        for (var before = PreviousNodes(nodeId).FirstOrDefault(); before is not null; before = PreviousNodes(before.Id).FirstOrDefault())
+        {
+            route.Add(before.Id);
+        }
+
+        route.Reverse();
+        return route;
+    }
 }
