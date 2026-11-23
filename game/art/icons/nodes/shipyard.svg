@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Shipyard: a hull cell with a plus, a new cell for the ship -->
+  <polygon points="32,6 54.52,19 54.52,45 32,58 9.48,45 9.48,19" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="32,12.5 48.89,22.25 48.89,41.75 32,51.5 15.11,41.75 15.11,22.25" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65" stroke-dasharray="2.3 2.88"/>
+  <circle cx="32" cy="6" r="2.4" fill="#ffffff"/>
+  <circle cx="54.52" cy="19" r="2.4" fill="#ffffff"/>
+  <circle cx="54.52" cy="45" r="2.4" fill="#ffffff"/>
+  <circle cx="32" cy="58" r="2.4" fill="#ffffff"/>
+  <circle cx="9.48" cy="45" r="2.4" fill="#ffffff"/>
+  <circle cx="9.48" cy="19" r="2.4" fill="#ffffff"/>
+  <path d="M 32 21 L 32 43 M 21 32 L 43 32" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

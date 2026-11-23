@@ -7,6 +7,7 @@ The game's art is "Option A", a vector solarpunk look in the "Holo Grove" style:
 | `icons/pieces/<id>.svg` | One icon per piece; `<id>` is its `id` in `data/pieces.json`. A piece with no icon falls back to one for its first tag. |
 | `icons/enemies/<id>.svg` | One icon per enemy; `<id>` is its `id` in `data/enemies.json`. |
 | `icons/effects/<name>.svg` | `damage`, `block`, `energy`, `draw`, `repair`, `focus`, `grow`. Card faces draw the number inside it. |
+| `icons/nodes/<type>.svg` | One icon per kind of node on the sector map: `skirmish`, `hard_fight`, `boss`, `grove`, `dock`, `shipyard`, `event`. Bolder than the other icons (main strokes 3.0–3.6), because the map draws them at about 40 to 60 px. |
 | `icons/intents/heavy_attack.svg` | The enemy's heavy attack. Attack and block intents reuse the `damage` and `block` icons. |
 | `ui/energy_badge.svg` | The cost badge on a card: a hex cell, 64×64. The card draws the cost on it. |
 | `ui/card_frame.svg`, `ui/panel_frame.svg` | 9-slice corner brackets laid over cards and panels, 96×96. Their edges are empty, because the card or panel draws its own border. The corner margin is a quarter of the texture's width (`BloomTheme.CreateFrameOverlay`). |
