@@ -7,8 +7,8 @@ using Godot;
 namespace Bloom.Game.Screens;
 
 /// <summary>
-/// The shell that hosts one screen at a time: the one for the run's phase, or the Fitting screen when the
-/// player opens the ship from the map or a dock (<see cref="GameRoot.ShipOpen"/>). Screens only draw state and
+/// The shell that hosts one screen at a time: the hangar while there is no run, the one for the run's phase, or
+/// the Fitting screen when the player opens the ship from the map or a dock (<see cref="GameRoot.ShipOpen"/>). Screens only draw state and
 /// forward input; game rules belong in Bloom.Core. After a won fight the combat screen stays up a moment
 /// (<see cref="CombatScreen.TakeExitHold"/>), so the last hit can play before the Reward screen.
 /// </summary>
@@ -22,6 +22,7 @@ public partial class MainScreen : Control
     private const string DockScene = "res://scenes/Dock.tscn";
     private const string ShipyardScene = "res://scenes/Shipyard.tscn";
     private const string EventScene = "res://scenes/Event.tscn";
+    private const string HangarScene = "res://scenes/Hangar.tscn";
 
     /// <summary>The layout's margin from the edges of a desktop window, as in Main.tscn.</summary>
     private const float EdgeMargin = 16f;
@@ -117,14 +118,15 @@ public partial class MainScreen : Control
 
     private void ShowScreenForPhase()
     {
-        // Without a run (the content failed to load), only the status message shows.
-        _status.Visible = GameRoot.Instance.Session is null;
-        if (GameRoot.Instance.Session is not { } session)
+        // When the content failed to load, only the status message shows.
+        _status.Visible = GameRoot.Instance.Content is null;
+        if (GameRoot.Instance.Content is null)
         {
             return;
         }
 
-        string scene = SceneFor(session.State.Phase);
+        // Without a run, the hangar shows: before the first voyage, and after one is finished or abandoned.
+        string scene = GameRoot.Instance.Session is { } session ? SceneFor(session.State.Phase) : HangarScene;
         if (scene == _shownScene || _holding)
         {
             return;

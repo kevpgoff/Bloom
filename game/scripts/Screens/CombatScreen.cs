@@ -129,7 +129,7 @@ public partial class CombatScreen : Control
 
         _endTurn.Pressed += OnEndTurnPressed;
         GetNode<Button>("%CancelButton").Pressed += CancelTargeting;
-        GetNode<Button>("%NewRunButton").Pressed += StartNewRun;
+        GetNode<Button>("%HangarButton").Pressed += LeaveForHangar;
         _grid.PieceTapped += OnPieceTapped;
         _handScroll.Resized += OnHandResized;
         GameRoot.Instance.Changed += QueueRefresh;
@@ -810,20 +810,23 @@ public partial class CombatScreen : Control
         {
             _resultTitle.Text = "Voyage complete";
             _resultMessage.Text = $"The {enemy} powers down and drifts away. The way to the dark habitat is open.\n" +
-                                  $"{run.FightsWon} fights won, with {run.Hull} / {run.MaxHull} hull left.";
+                                  $"{run.FightsWon} fights won, with {run.Hull} / {run.MaxHull} hull left.\n" +
+                                  $"Seed {GameRoot.SeedOf(run)}";
         }
         else
         {
             string won = run.FightsWon == 1 ? "1 fight" : $"{run.FightsWon} fights";
             _resultTitle.Text = "Defeat";
             _resultMessage.Text = $"The hull gives out against the {enemy} after {turns}.\n" +
-                                  $"The voyage ends here, after {won} won.";
+                                  $"The voyage ends here, after {won} won.\n" +
+                                  $"Seed {GameRoot.SeedOf(run)}";
         }
     }
 
-    private void StartNewRun()
+    /// <summary>The voyage is over: back to the hangar, where the next one is chosen.</summary>
+    private void LeaveForHangar()
     {
         ClearTargeting();
-        GameRoot.Instance.StartNewRun();
+        GameRoot.Instance.LeaveRun();
     }
 }

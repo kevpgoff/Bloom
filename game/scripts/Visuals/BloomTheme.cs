@@ -64,6 +64,14 @@ internal static class BloomTheme
         theme.SetColor("font_pressed_color", "Button", Palette.HoloBright);
         theme.SetColor("font_disabled_color", "Button", Palette.Muted with { A = 0.7f });
 
+        // Text fields (the hangar's seed): a dark well with the hologram's edge, brighter while it is being typed in.
+        theme.SetFont("font", "LineEdit", Hud);
+        theme.SetStylebox("normal", "LineEdit", FlatBox(Palette.SurfaceDeep with { A = 0.92f }, Palette.HoloLine with { A = 0.5f }, border: 2, radius: 3, padX: 14, padY: 8));
+        theme.SetStylebox("focus", "LineEdit", FlatBox(Palette.SurfaceDeep with { A = 0.92f }, Palette.HoloBright, border: 2, radius: 3, padX: 14, padY: 8));
+        theme.SetColor("font_color", "LineEdit", Palette.Ink);
+        theme.SetColor("caret_color", "LineEdit", Palette.HoloBright);
+        theme.SetColor("selection_color", "LineEdit", Palette.HoloLine with { A = 0.35f });
+
         // The enemy's hull bar, in the enemy's ember.
         theme.SetStylebox("background", "ProgressBar", FlatBox(Palette.SurfaceDeep, Palette.Threat with { A = 0.4f }, border: 1, radius: 1));
         theme.SetStylebox("fill", "ProgressBar", FlatBox(Palette.Threat with { A = 0.85f }, Palette.Threat.Lightened(0.25f), border: 1, radius: 1));

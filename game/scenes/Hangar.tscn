@@ -1,0 +1,178 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/Screens/HangarScreen.cs" id="1_screen"]
+[ext_resource type="Script" path="res://scripts/Screens/ShipPreview.cs" id="2_preview"]
+
+[node name="Hangar" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_screen")
+
+[node name="Layout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Layout"]
+layout_mode = 2
+theme_type_variation = &"Heading"
+theme_override_font_sizes/font_size = 40
+text = "Hangar"
+
+[node name="Preview" type="Control" parent="Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 260)
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+script = ExtResource("2_preview")
+
+[node name="NameRow" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ShipName" type="Label" parent="Layout/NameRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"Heading"
+theme_override_font_sizes/font_size = 40
+text = "Ship"
+
+[node name="Commune" type="Label" parent="Layout/NameRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_font_sizes/font_size = 26
+text = "Commune"
+
+[node name="Loadouts" type="HBoxContainer" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Info" type="RichTextLabel" parent="Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 102)
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/normal_font_size = 24
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 3
+
+[node name="Tabs" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PiecesTab" type="Button" parent="Layout/Tabs"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_font_sizes/font_size = 26
+text = "Pieces"
+
+[node name="DeckTab" type="Button" parent="Layout/Tabs"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_font_sizes/font_size = 26
+text = "Deck"
+
+[node name="VoyageTab" type="Button" parent="Layout/Tabs"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_font_sizes/font_size = 26
+text = "Voyage"
+
+[node name="TabPanel" type="PanelContainer" parent="Layout"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 2.0
+
+[node name="Margin" type="MarginContainer" parent="Layout/TabPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="TextPage" type="ScrollContainer" parent="Layout/TabPanel/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="TabText" type="RichTextLabel" parent="Layout/TabPanel/Margin/TextPage"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_font_sizes/normal_font_size = 22
+theme_override_font_sizes/bold_font_size = 28
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 3
+
+[node name="VoyagePage" type="VBoxContainer" parent="Layout/TabPanel/Margin"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SeedRow" type="HBoxContainer" parent="Layout/TabPanel/Margin/VoyagePage"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SeedLabel" type="Label" parent="Layout/TabPanel/Margin/VoyagePage/SeedRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Seed"
+
+[node name="SeedEdit" type="LineEdit" parent="Layout/TabPanel/Margin/VoyagePage/SeedRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+max_length = 16
+context_menu_enabled = false
+caret_blink = true
+
+[node name="NewSeedButton" type="Button" parent="Layout/TabPanel/Margin/VoyagePage/SeedRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 72)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 26
+text = "New"
+
+[node name="Rail" type="HBoxContainer" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="LaunchButton" type="Button" parent="Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Launch"
