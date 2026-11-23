@@ -6,8 +6,11 @@ TestResults/
 
 # Godot
 .godot/
-/android/
+/game/android/
 export_credentials.cfg
+
+# Exported builds
+/build/
 
 # Editors and OS
 .vs/
