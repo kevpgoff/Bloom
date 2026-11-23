@@ -1,0 +1,16 @@
+{
+  "id": "grow",
+  "family": "ship",
+  "description": "A garden card grows: a shoot unfurls with a soft rustle, and a high string is plucked.",
+  "level": -9,
+  "variants": 2,
+  "vary": { "pitch": 0.3, "time": 0.1, "tone": 0.2 },
+  "layers": [
+    { "wave": "crackle", "gain": -6, "attack": 40, "decay": 200, "curve": 1,
+      "density": { "from": 300, "to": 1200 },
+      "filter": { "type": "highpass", "cutoff": 3000 } },
+    { "wave": "string", "note": "D6", "at": 90, "decay": 350, "hardness": 0.35 },
+    { "wave": "glass", "note": "A6", "gain": -16, "at": 90, "decay": 300, "hardness": 0.2 }
+  ],
+  "master": { "highpass": 300, "lowpass": 9500, "reverb": { "decay": 260, "mix": -18, "damp": 5000, "predelay": 10 } }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "hand-discard",
+  "family": "cards",
+  "description": "The old hand is set aside: leaves slide off the table into a basket.",
+  "level": -12,
+  "layers": [
+    { "wave": "noise", "attack": 15, "decay": 180, "curve": 2,
+      "filter": { "type": "bandpass", "cutoff": 3000, "to": 1200, "time": 190, "curve": 0, "q": 1 } },
+    { "wave": "crackle", "gain": -6, "attack": 10, "decay": 160, "curve": 2,
+      "density": { "from": 1500, "to": 200 },
+      "filter": { "type": "highpass", "cutoff": 2000 } }
+  ],
+  "master": { "highpass": 400, "lowpass": 9000, "reverb": { "decay": 150, "mix": -22, "size": 0.5 } }
+}

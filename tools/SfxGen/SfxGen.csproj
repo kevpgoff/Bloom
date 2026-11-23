@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Renders the game's sound effects from the recipes in recipes/ into game/audio/sfx/. See README.md here.
+    It is a developer tool and never ships: Godot's export builds skip it (see Bloom.sln).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Bloom.SfxGen</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SfxGen.Tests" />
+  </ItemGroup>
+
+  <!-- Only for Pcg32, the seeded generator that makes the noise repeatable. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Bloom.Core\Bloom.Core.csproj" />
+  </ItemGroup>
+
+  <!-- The tool reads its recipes from the repo and writes the sounds into it, so it is told where the repo is. -->
+  <PropertyGroup>
+    <BloomRepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..'))</BloomRepoRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>BloomRepoRoot</_Parameter1>
+      <_Parameter2>$(BloomRepoRoot)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,20 @@
+{
+  "id": "hit-heavy",
+  "family": "attack",
+  "description": "Your attack lands for 20 damage or more: a maul comes down on a hollow log, which splits along its grain.",
+  "level": -2,
+  "variants": 2,
+  "vary": { "pitch": 0.4, "time": 0.1, "tone": 0.15 },
+  "layers": [
+    { "wave": "wood", "note": "D4", "gain": -4, "decay": 280, "hardness": 1 },
+    { "wave": "wood", "note": "A4", "decay": 240, "hardness": 1 },
+    { "wave": "skin", "note": "A4", "gain": -4, "decay": 300, "hardness": 0.9 },
+    { "wave": "noise", "gain": -5, "attack": 1, "decay": 120, "curve": 6,
+      "filter": { "type": "bandpass", "cutoff": 2000, "to": 600, "time": 90, "q": 0.8 } },
+    { "wave": "crackle", "gain": -4, "at": 20, "attack": 2, "decay": 420, "curve": 3,
+      "density": { "from": 4000, "to": 60 },
+      "filter": { "type": "highpass", "cutoff": 1500 } },
+    { "wave": "wood", "note": "D5", "gain": -6, "at": 90, "decay": 160, "hardness": 0.9 }
+  ],
+  "master": { "drive": 6, "highpass": 150, "lowpass": 7500, "reverb": { "decay": 420, "mix": -15, "damp": 3000, "predelay": 10 } }
+}

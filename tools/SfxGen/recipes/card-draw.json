@@ -1,0 +1,17 @@
+{
+  "id": "card-draw",
+  "family": "cards",
+  "description": "A card is dealt: a dry leaf slides off the deck and lands with a tiny wooden tick.",
+  "level": -10,
+  "variants": 3,
+  "vary": { "pitch": 0.6, "time": 0.12, "tone": 0.2 },
+  "layers": [
+    { "wave": "noise", "attack": 10, "decay": 55, "curve": 3,
+      "filter": { "type": "bandpass", "cutoff": 1800, "to": 3800, "time": 55, "curve": 0, "q": 1.2 } },
+    { "wave": "crackle", "gain": -4, "attack": 8, "decay": 60, "curve": 2,
+      "density": { "from": 2500, "to": 600 },
+      "filter": { "type": "highpass", "cutoff": 2500 } },
+    { "wave": "wood", "note": "A6", "gain": -6, "at": 42, "decay": 45, "hardness": 0.7 }
+  ],
+  "master": { "highpass": 400, "lowpass": 9000, "reverb": { "decay": 150, "mix": -22, "size": 0.5 } }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "ship-hit",
+  "family": "ship",
+  "description": "The hull takes damage: a mallet strikes the living wood, which creaks.",
+  "level": -4,
+  "variants": 3,
+  "vary": { "pitch": 0.4, "time": 0.1, "tone": 0.2 },
+  "layers": [
+    { "wave": "wood", "note": "D4", "decay": 220, "hardness": 0.9 },
+    { "wave": "skin", "note": "A4", "gain": -4, "decay": 200, "hardness": 0.7 },
+    { "wave": "noise", "gain": -6, "attack": 1, "decay": 80, "curve": 6,
+      "filter": { "type": "bandpass", "cutoff": 1800, "to": 700, "time": 70, "q": 0.8 } },
+    { "wave": "crackle", "gain": -8, "at": 60, "attack": 20, "decay": 300, "curve": 0,
+      "density": { "from": 50, "to": 20 },
+      "body": { "material": "wood", "note": "A4", "decay": 50, "dry": -12 } }
+  ],
+  "master": { "drive": 4, "highpass": 140, "lowpass": 7500, "reverb": { "decay": 350, "mix": -16, "damp": 3000, "predelay": 10 } }
+}

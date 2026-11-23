@@ -1,0 +1,20 @@
+{
+  "id": "fight-won",
+  "family": "flow",
+  "description": "The enemy is disabled: the ship lets out a long breath, and the grove answers with a bird and a low hum.",
+  "level": -3,
+  "layers": [
+    { "wave": "noise", "attack": 220, "decay": 720, "curve": 1,
+      "formant": { "from": "a", "to": "u", "time": 800, "curve": 0, "shift": 5 } },
+    { "wave": "saw", "note": "D4", "gain": -10, "attack": 250, "hold": 150, "decay": 600, "curve": 2,
+      "unison": { "voices": 3, "detune": 12 },
+      "drift": { "cents": 10 },
+      "formant": { "from": "u", "shift": 3 } },
+    { "wave": "sine", "notes": ["A6", "D7", "A6"], "step": 120, "at": 520, "attack": 3, "decay": 80, "curve": 3,
+      "gain": -6,
+      "pitch": { "from": -12, "time": 30, "curve": 2 },
+      "lfo": { "rate": 36, "amp": 0.5 } },
+    { "wave": "tine", "note": "D5", "gain": -6, "at": 380, "decay": 640, "hardness": 0.3 }
+  ],
+  "master": { "highpass": 250, "lowpass": 10000, "reverb": { "decay": 440, "mix": -14, "damp": 4500, "predelay": 15 } }
+}

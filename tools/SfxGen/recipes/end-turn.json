@@ -1,0 +1,14 @@
+{
+  "id": "end-turn",
+  "family": "flow",
+  "description": "End Turn is pressed: a wooden latch is knocked shut.",
+  "level": -8,
+  "layers": [
+    { "wave": "wood", "note": "D5", "decay": 110, "hardness": 0.85 },
+    { "wave": "skin", "note": "A4", "gain": -6, "decay": 90, "hardness": 0.7 },
+    { "wave": "noise", "gain": -10, "attack": 1, "decay": 12,
+      "filter": { "type": "bandpass", "cutoff": 3500, "q": 1.5 } },
+    { "wave": "wood", "note": "A5", "gain": -8, "at": 55, "decay": 70, "hardness": 0.9 }
+  ],
+  "master": { "highpass": 250, "lowpass": 8500, "reverb": { "decay": 180, "mix": -19, "size": 0.6, "damp": 4000, "predelay": 8 } }
+}

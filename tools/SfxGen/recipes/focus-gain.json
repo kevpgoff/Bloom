@@ -1,0 +1,13 @@
+{
+  "id": "focus-gain",
+  "family": "ship",
+  "description": "Focus is gained: a bow is drawn slowly across the rim of a glass, which starts to sing.",
+  "level": -8,
+  "layers": [
+    { "wave": "noise", "gain": -4, "attack": 180, "decay": 200, "curve": -1,
+      "filter": { "type": "bandpass", "cutoff": 1200, "q": 1 },
+      "body": { "material": "glass", "note": "D6", "decay": 320, "dry": -16 } },
+    { "wave": "tine", "note": "A5", "gain": -12, "attack": 150, "decay": 350, "hardness": 0.2 }
+  ],
+  "master": { "highpass": 300, "lowpass": 9500, "reverb": { "decay": 300, "mix": -17, "damp": 5000, "predelay": 12 } }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "target-lock",
+  "family": "attack",
+  "description": "The reticle locks onto the enemy or one of its parts: a wooden bead snaps into its slot.",
+  "level": -11,
+  "layers": [
+    { "wave": "wood", "note": "A6", "decay": 40, "hardness": 0.9 },
+    { "wave": "wood", "note": "D6", "gain": -3, "at": 28, "decay": 50, "hardness": 0.9 },
+    { "wave": "noise", "gain": -12, "attack": 1, "decay": 8,
+      "filter": { "type": "bandpass", "cutoff": 4000, "q": 1.5 } }
+  ],
+  "master": { "highpass": 500, "lowpass": 9000, "reverb": { "decay": 100, "mix": -22, "size": 0.4 } }
+}

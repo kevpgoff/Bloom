@@ -1,0 +1,16 @@
+{
+  "id": "repair",
+  "family": "ship",
+  "description": "A disabled piece comes back online: green wood knits together with quickening creaks, and its thumb-piano note sounds again.",
+  "level": -6,
+  "layers": [
+    { "wave": "crackle", "gain": -6, "attack": 150, "decay": 200, "curve": -1,
+      "density": { "from": 30, "to": 200, "time": 350 },
+      "body": { "material": "wood", "note": "A5", "decay": 50, "dry": -12 } },
+    { "wave": "noise", "gain": -14, "attack": 200, "decay": 150, "curve": -2,
+      "filter": { "type": "bandpass", "cutoff": 600, "to": 2000, "time": 350, "curve": 0, "q": 1.5 } },
+    { "wave": "tine", "note": "D5", "at": 330, "decay": 440, "hardness": 0.5 },
+    { "wave": "tine", "note": "A5", "gain": -10, "at": 330, "decay": 300, "hardness": 0.5 }
+  ],
+  "master": { "highpass": 250, "lowpass": 9000, "reverb": { "decay": 320, "mix": -17, "damp": 4500, "predelay": 12 } }
+}

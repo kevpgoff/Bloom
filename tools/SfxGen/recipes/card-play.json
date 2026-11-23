@@ -1,0 +1,14 @@
+{
+  "id": "card-play",
+  "family": "cards",
+  "description": "A card from a crew piece is played: one note of a thumb piano, with the soft buzz of its rattle.",
+  "level": -6,
+  "layers": [
+    { "wave": "tine", "note": "D5", "decay": 460, "hardness": 0.55 },
+    { "wave": "crackle", "gain": -14, "attack": 3, "decay": 220, "curve": 3,
+      "density": { "from": 700, "to": 120 },
+      "body": { "material": "tine", "note": "D5", "decay": 40, "dry": -10 } },
+    { "wave": "wood", "note": "D6", "gain": -16, "decay": 60, "hardness": 0.6 }
+  ],
+  "master": { "highpass": 250, "lowpass": 8000, "reverb": { "decay": 180, "mix": -18, "size": 0.8, "damp": 4000, "predelay": 10 } }
+}

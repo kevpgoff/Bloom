@@ -1,0 +1,20 @@
+{
+  "id": "hit-medium",
+  "family": "attack",
+  "description": "Your attack lands for 10 damage or more: a buzzy, overdriven thud whose filter drops shut.",
+  "level": -4,
+  "variants": 3,
+  "vary": { "pitch": 0.5, "time": 0.1, "tone": 0.2 },
+  "layers": [
+    { "wave": "saw", "note": "D4", "decay": 210,
+      "pitch": { "from": 7, "time": 40 },
+      "drift": { "cents": 10 },
+      "filter": { "type": "ladder", "cutoff": 5000, "to": 320, "time": 130, "q": 4 } },
+    { "wave": "square", "note": "A4", "gain": -6, "decay": 170,
+      "pitch": { "from": 7, "time": 40 },
+      "filter": { "type": "ladder", "cutoff": 4000, "to": 400, "time": 110, "q": 2 } },
+    { "wave": "noise", "gain": -8, "attack": 1, "decay": 55, "curve": 6,
+      "filter": { "type": "bandpass", "cutoff": 2000, "to": 900, "time": 50, "q": 0.9 } }
+  ],
+  "master": { "drive": 9, "highpass": 160, "lowpass": 7000, "reverb": { "decay": 240, "mix": -19, "size": 0.7 } }
+}

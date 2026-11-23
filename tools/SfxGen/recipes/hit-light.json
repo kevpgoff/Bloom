@@ -1,0 +1,15 @@
+{
+  "id": "hit-light",
+  "family": "attack",
+  "description": "Your attack lands for less than 10 damage: a light mallet on a hollow log.",
+  "level": -6,
+  "variants": 3,
+  "vary": { "pitch": 0.5, "time": 0.1, "tone": 0.2 },
+  "layers": [
+    { "wave": "wood", "note": "A4", "decay": 160, "hardness": 0.8 },
+    { "wave": "skin", "note": "D5", "gain": -5, "decay": 110, "hardness": 0.6 },
+    { "wave": "noise", "gain": -10, "attack": 1, "decay": 30, "curve": 6,
+      "filter": { "type": "bandpass", "cutoff": 2600, "to": 1200, "time": 30, "q": 1 } }
+  ],
+  "master": { "drive": 2, "highpass": 200, "lowpass": 8000, "reverb": { "decay": 200, "mix": -19, "size": 0.6, "damp": 3500, "predelay": 6 } }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "block-gain",
+  "family": "ship",
+  "description": "Block is gained: a warbling field powers up, a resonant filter sweeping open over two detuned notes a fifth apart.",
+  "level": -6,
+  "layers": [
+    { "wave": "square", "notes": ["G4", "D5"], "step": 0, "attack": 60, "hold": 80, "decay": 320, "curve": 3,
+      "unison": { "voices": 2, "detune": 10 },
+      "drift": { "cents": 8 },
+      "lfo": { "rate": 6, "pitch": 14, "cutoff": 0.3 },
+      "filter": { "type": "ladder", "cutoff": 300, "to": 3600, "time": 260, "curve": 0, "q": 6 } },
+    { "wave": "triangle", "note": "G5", "gain": -10, "at": 200, "attack": 3, "decay": 260, "drift": { "cents": 6 } }
+  ],
+  "master": { "drive": 2, "highpass": 250, "lowpass": 7500,
+              "echo": { "time": 140, "feedback": 0.28, "mix": -19, "damp": 2400 },
+              "reverb": { "decay": 300, "mix": -19 } }
+}

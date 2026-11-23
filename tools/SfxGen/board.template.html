@@ -1,0 +1,653 @@
+<title>Bloom Sound Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wdth,wght@87.5..100,400..700&display=swap">
+<style>
+  /* Layout: one column for a thumb. A sticky bar holds the page's two tools; each family is a list of rows,
+     and each row is a play button, the sound's outline, and a line for the listener's note. */
+  :root {
+    --bg: #0a1e23;
+    --surface: #10303a;
+    --line: #1f4b57;
+    --fg: #e2f4f2;
+    --muted: #8db2b3;
+    --accent: #5ff0ff;
+    --accent-ink: #05272d;
+    --ok: #6dffa8;
+    --tag-core: #fff0b0;
+    --tag-weapon: #ff6f7d;
+    --tag-shield: #5ff0ff;
+    --tag-solar: #ffd36b;
+    --tag-garden: #6dffa8;
+    --tag-drone: #a99bff;
+    --body: "Saira", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --step--1: 0.8125rem;
+    --step-0: 1rem;
+    --step-1: 1.125rem;
+    --step-2: 1.5rem;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #edf5f4;
+      --surface: #ffffff;
+      --line: #c3dbd9;
+      --fg: #0e2a30;
+      --muted: #4c6d70;
+      --accent: #0a7c8c;
+      --accent-ink: #ffffff;
+      --ok: #17834f;
+      --tag-core: #a88600;
+      --tag-weapon: #c93a4a;
+      --tag-shield: #0a7c8c;
+      --tag-solar: #b77400;
+      --tag-garden: #17834f;
+      --tag-drone: #5b49c9;
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #edf5f4;
+    --surface: #ffffff;
+    --line: #c3dbd9;
+    --fg: #0e2a30;
+    --muted: #4c6d70;
+    --accent: #0a7c8c;
+    --accent-ink: #ffffff;
+    --ok: #17834f;
+    --tag-core: #a88600;
+    --tag-weapon: #c93a4a;
+    --tag-shield: #0a7c8c;
+    --tag-solar: #b77400;
+    --tag-garden: #17834f;
+    --tag-drone: #5b49c9;
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--body);
+    font-size: var(--step-0);
+    line-height: 1.45;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto;
+    height: env(safe-area-inset-top, 0px);
+    z-index: 10;
+    background: var(--bg);
+  }
+  .wrap {
+    max-width: 44rem;
+    margin-inline: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  .bar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar .wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    padding-block: 0.75rem;
+  }
+  h1 {
+    margin: 0;
+    font-size: var(--step-2);
+    font-weight: 600;
+    font-stretch: 87.5%;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+  .round {
+    color: var(--muted);
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+  }
+  .bar-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-left: auto;
+  }
+  .switch {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: var(--step--1);
+    color: var(--muted);
+  }
+  .switch input { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
+
+  button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: 0;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.9rem;
+    font-weight: 600;
+  }
+
+  main.wrap { padding-block: 0.5rem 4rem; }
+  section { margin-top: 1.75rem; }
+  h2 {
+    margin: 0 0 0.25rem;
+    font-size: var(--step--1);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--muted);
+  }
+  ul { list-style: none; margin: 0; padding: 0; }
+
+  .sound {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem 0.75rem;
+    padding-block: 0.9rem;
+    border-top: 1px solid var(--line);
+  }
+  .play {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+    min-height: 3rem;
+    padding: 0.4rem 0.9rem 0.4rem 0.7rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 0.6rem;
+    text-align: left;
+  }
+  .play:active, .play.playing { border-color: var(--accent); }
+  .play svg { flex: none; width: 1.1rem; height: 1.1rem; fill: var(--accent); }
+  .name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: var(--step-1);
+    font-weight: 600;
+    font-stretch: 87.5%;
+  }
+  .dot {
+    flex: none;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--tag, transparent);
+  }
+  .wave {
+    align-self: center;
+    width: 6.5rem;
+    max-width: 100%;
+    height: 2.5rem;
+    color: var(--accent);
+  }
+  .desc {
+    grid-column: 1 / -1;
+    margin: 0;
+    max-width: 65ch;
+    color: var(--muted);
+    font-size: var(--step--1);
+  }
+  .desc b { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .tools {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .chip {
+    min-width: 2.75rem;
+    min-height: 2.5rem;
+    padding: 0.3rem 0.7rem;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+  }
+  .chip:active, .chip.playing { border-color: var(--accent); }
+  .chip[aria-pressed="true"] { border-color: var(--ok); color: var(--ok); font-weight: 600; }
+  .note {
+    flex: 1 1 10rem;
+    min-width: 0;
+    min-height: 2.5rem;
+    padding: 0.3rem 0.6rem;
+    background: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    font: inherit;
+    font-size: var(--step--1);
+  }
+  .note::placeholder { color: var(--muted); }
+
+  .group { border-top: 1px solid var(--line); padding-top: 0.9rem; }
+  .group h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: var(--step-1);
+    font-weight: 600;
+    font-stretch: 87.5%;
+    overflow-wrap: anywhere;
+  }
+  .group .sound { border-top: 0; padding-block: 0.6rem 0.9rem; }
+  .group .sound + .sound { border-top: 1px dashed var(--line); padding-top: 0.9rem; }
+
+  .takes { display: grid; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+  .take {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.8rem 0.9rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 0.6rem;
+  }
+  .take-title {
+    margin: 0;
+    font-size: var(--step-1);
+    font-weight: 600;
+    font-stretch: 87.5%;
+  }
+  .take-desc { margin: 0; max-width: 65ch; color: var(--muted); font-size: var(--step--1); }
+  .take .tools { grid-column: auto; }
+
+  .sheet {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 20;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .sheet .wrap { display: grid; gap: 0.5rem; padding-block: 0.75rem; }
+  .sheet p { margin: 0; font-size: var(--step--1); color: var(--muted); }
+  .sheet textarea {
+    width: 100%;
+    min-height: 8rem;
+    box-sizing: border-box;
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    font: inherit;
+    font-size: var(--step--1);
+  }
+  .sheet .row { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .play, .chip { transition: border-color 120ms; }
+  }
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <h1>Bloom Sound Board</h1>
+    <span class="round" id="round"></span>
+    <div class="bar-tools">
+      <label class="switch" for="phone-filter">
+        <input type="checkbox" id="phone-filter">
+        Phone speaker
+      </label>
+      <button class="primary" id="copy-notes" type="button">Copy notes</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="families"></main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="wrap">
+    <p id="sheet-status" role="status"></p>
+    <textarea id="sheet-text" readonly aria-label="Your notes"></textarea>
+    <div class="row"><button class="chip" id="sheet-close" type="button">Close</button></div>
+  </div>
+</div>
+
+<script>
+  const DATA = /*SOUNDS*/null;
+
+  // The game changes each play a little; "x5" previews that, so a repeated sound can be judged for fatigue.
+  const GAME_PITCH = 0.03;
+  const GAME_VOLUME_DB = 1.5;
+  const BURST_GAP = 0.17;
+  const PHONE_CUTOFF = 350;
+  const TAGS = ["core", "weapon", "shield", "solar", "garden", "drone"];
+
+  let ctx = null;
+  let phoneFilter = null;
+  const pcm = new Map();
+  const buffers = new Map();
+
+  function store(key, value) {
+    try {
+      if (value === undefined) return localStorage.getItem(key);
+      if (value === "") localStorage.removeItem(key); else localStorage.setItem(key, value);
+    } catch (e) { /* notes then last only until the page closes */ }
+    return null;
+  }
+
+  function samplesOf(variant) {
+    if (!pcm.has(variant.name)) {
+      const raw = atob(variant.wav);
+      const bytes = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+      // The tool writes a 44-byte header and then 16-bit samples.
+      pcm.set(variant.name, new Int16Array(bytes.buffer, 44, (bytes.length - 44) >> 1));
+    }
+    return pcm.get(variant.name);
+  }
+
+  function audio() {
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      phoneFilter = ctx.createBiquadFilter();
+      phoneFilter.type = "highpass";
+      phoneFilter.frequency.value = PHONE_CUTOFF;
+      phoneFilter.Q.value = 0.707;
+      phoneFilter.connect(ctx.destination);
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  function bufferOf(variant) {
+    if (!buffers.has(variant.name)) {
+      const ints = samplesOf(variant);
+      const buffer = audio().createBuffer(1, ints.length, 44100);
+      const floats = buffer.getChannelData(0);
+      for (let i = 0; i < ints.length; i++) floats[i] = ints[i] / 32768;
+      buffers.set(variant.name, buffer);
+    }
+    return buffers.get(variant.name);
+  }
+
+  function play(variant, delay = 0, rate = 1, gainDb = 0) {
+    const context = audio();
+    const source = context.createBufferSource();
+    source.buffer = bufferOf(variant);
+    source.playbackRate.value = rate;
+    const gain = context.createGain();
+    gain.gain.value = Math.pow(10, gainDb / 20);
+    source.connect(gain);
+    gain.connect(document.getElementById("phone-filter").checked ? phoneFilter : context.destination);
+    source.start(context.currentTime + delay);
+    return source.buffer.duration / rate + delay;
+  }
+
+  function flash(button, seconds) {
+    button.classList.add("playing");
+    setTimeout(() => button.classList.remove("playing"), Math.max(120, seconds * 1000));
+  }
+
+  function varied(version, at) {
+    const pick = version.variants[Math.floor(Math.random() * version.variants.length)];
+    const rate = 1 + (Math.random() * 2 - 1) * GAME_PITCH;
+    const db = (Math.random() * 2 - 1) * GAME_VOLUME_DB;
+    return play(pick, at, rate, db);
+  }
+
+  function burst(version) {
+    let last = -1;
+    let end = 0;
+    for (let i = 0; i < 5; i++) {
+      let pick = Math.floor(Math.random() * version.variants.length);
+      if (version.variants.length > 1 && pick === last) pick = (pick + 1) % version.variants.length;
+      last = pick;
+      const rate = 1 + (Math.random() * 2 - 1) * GAME_PITCH;
+      const db = (Math.random() * 2 - 1) * GAME_VOLUME_DB;
+      end = play(version.variants[pick], i * BURST_GAP, rate, db);
+    }
+    return end;
+  }
+
+  // A short fight, in seconds from the press: three cards drawn, two played, two hits, a heavy hit taken,
+  // block and energy gained, the fight won. It is for a take that has only some of the sounds; a take without
+  // one of these sounds skips it.
+  const FIGHT = [
+    ["card-draw", 0], ["card-draw", 0.2], ["card-draw", 0.4], ["card-play", 1.1], ["card-play-weapon", 1.9],
+    ["hit-medium", 2.15], ["hit-medium", 2.9], ["ship-hit-heavy", 3.9], ["block-gain", 5.1],
+    ["energy-gain", 6.2], ["fight-won", 7.4],
+  ];
+
+  // Two turns of a fight, for a set that has every combat sound: the turn starts, five cards are drawn, four
+  // are played (core, weapon, garden, solar), the turn ends, the enemy's three hits land; then a shuffle, a drone
+  // card, focus spent on a heavy hit, and the fight is won.
+  const FULL_FIGHT = [
+    ["turn-start", 0], ["card-draw", 0.35], ["card-draw", 0.55], ["card-draw", 0.75], ["card-draw", 0.95],
+    ["card-draw", 1.15], ["card-play-core", 1.9], ["block-gain", 2.15], ["target-lock", 2.7],
+    ["card-play-weapon", 3.1], ["hit-medium", 3.35], ["card-play-garden", 4.1], ["grow", 4.4],
+    ["card-play-solar", 5.0], ["energy-gain", 5.25], ["end-turn", 6.0], ["hand-discard", 6.15],
+    ["enemy-block", 6.8], ["ship-blocked", 7.5], ["ship-hit", 8.1], ["ship-hit-heavy", 8.8],
+    ["piece-offline", 9.1], ["turn-start", 10.2], ["shuffle", 10.5], ["card-draw", 11.0], ["card-draw", 11.2],
+    ["card-draw", 11.4], ["card-play-drone", 12.0], ["focus-gain", 12.3], ["card-play", 13.0], ["repair", 13.25],
+    ["card-play-weapon", 14.1], ["focus-spend", 14.25], ["hit-heavy", 14.45], ["fight-won", 15.5],
+  ];
+
+  function fight(take) {
+    const versions = new Map();
+    for (const family of DATA.families) {
+      for (const sound of family.sounds) {
+        const version = sound.versions.find(v => v.take === take);
+        if (version) versions.set(sound.id, version);
+      }
+    }
+    const plan = FULL_FIGHT.every(([id]) => versions.has(id)) ? FULL_FIGHT : FIGHT;
+    let end = 0;
+    for (const [id, at] of plan) {
+      if (versions.has(id)) end = Math.max(end, varied(versions.get(id), at));
+    }
+    return end;
+  }
+
+  // The game's own sounds keep the keys they had before there were takes, so earlier notes stay.
+  const keyOf = (take, id) => take === "now" ? id : `${take}/${id}`;
+  const slug = text => text.replace(/[^a-z0-9_-]/gi, "-");
+
+  function draw(canvas, variant) {
+    const ints = samplesOf(variant);
+    const ratio = window.devicePixelRatio || 1;
+    const width = Math.round(canvas.clientWidth * ratio);
+    const height = Math.round(canvas.clientHeight * ratio);
+    if (!width || !height) return;
+    canvas.width = width;
+    canvas.height = height;
+    const g = canvas.getContext("2d");
+    g.clearRect(0, 0, width, height);
+    g.fillStyle = getComputedStyle(canvas).color;
+    let top = 1;
+    for (let i = 0; i < ints.length; i++) top = Math.max(top, Math.abs(ints[i]));
+    const bar = Math.max(1, Math.round(ratio * 2));
+    const gap = Math.max(1, Math.round(ratio));
+    for (let x = 0; x + bar <= width; x += bar + gap) {
+      const from = Math.floor(x / width * ints.length);
+      const to = Math.max(from + 1, Math.floor((x + bar + gap) / width * ints.length));
+      let peak = 0;
+      for (let i = from; i < to && i < ints.length; i++) peak = Math.max(peak, Math.abs(ints[i]));
+      const h = Math.max(ratio, peak / top * height);
+      g.fillRect(x, (height - h) / 2, bar, h);
+    }
+  }
+
+  function el(tag, attrs = {}, ...children) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(attrs)) {
+      if (key === "class") node.className = value; else node.setAttribute(key, value);
+    }
+    node.append(...children);
+    return node;
+  }
+
+  const canvases = [];
+
+  function tagOf(id) { return TAGS.find(t => id.endsWith("-" + t)); }
+
+  function tagDot(id) {
+    const tag = tagOf(id);
+    if (!tag) return null;
+    const dot = el("span", { class: "dot" });
+    dot.style.setProperty("--tag", `var(--tag-${tag})`);
+    return dot;
+  }
+
+  function row(sound, version, label) {
+    const key = keyOf(version.take, sound.id);
+    const part = slug(key);
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.setAttribute("viewBox", "0 0 16 16");
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = '<path d="M3 1.5v13l11-6.5z"></path>';
+
+    const main = el("button", { class: "play", type: "button", id: "play-" + part, "aria-label": `Play ${label} of ${sound.id}` }, icon, el("span", { class: "name" }, label));
+    if (label === sound.id) {
+      const dot = tagDot(sound.id);
+      if (dot) main.append(dot);
+    }
+    let next = 0;
+    main.addEventListener("click", () => {
+      flash(main, play(version.variants[next]));
+      next = (next + 1) % version.variants.length;
+    });
+
+    const wave = el("canvas", { class: "wave", "aria-hidden": "true" });
+    canvases.push([wave, version.variants[0]]);
+
+    const level = (version.level > 0 ? "+" : version.level < 0 ? "−" : "") + Math.abs(version.level);
+    const desc = el("p", { class: "desc" });
+    desc.append(el("b", {}, `${version.ms} ms · level ${level}`), " · " + version.description);
+
+    const tools = el("div", { class: "tools" });
+    if (version.variants.length > 1) {
+      version.variants.forEach((variant, i) => {
+        const chip = el("button", { class: "chip", type: "button", id: "variant-" + slug(variant.name), "aria-label": `Variant ${i + 1} of ${key}` }, String(i + 1));
+        chip.addEventListener("click", () => flash(chip, play(variant)));
+        tools.append(chip);
+      });
+    }
+    const five = el("button", { class: "chip", type: "button", id: "burst-" + part, "aria-label": `Play ${key} five times, as the game varies it` }, "×5");
+    five.addEventListener("click", () => flash(five, burst(version)));
+
+    const ok = el("button", { class: "chip", type: "button", id: "ok-" + part, "aria-pressed": store("ok:" + key) ? "true" : "false" }, "OK");
+    ok.addEventListener("click", () => {
+      const on = ok.getAttribute("aria-pressed") !== "true";
+      ok.setAttribute("aria-pressed", String(on));
+      store("ok:" + key, on ? "1" : "");
+    });
+
+    const note = el("input", { class: "note", type: "text", id: "note-" + part, placeholder: "Note", "aria-label": `Note on ${key}`, autocomplete: "off" });
+    note.value = store("note:" + key) || "";
+    note.addEventListener("input", () => store("note:" + key, note.value.trim()));
+
+    tools.append(five, ok, note);
+    return el("li", { class: "sound" }, main, wave, desc, tools);
+  }
+
+  function group(sound, titles) {
+    if (!DATA.takes.length) return row(sound, sound.versions[0], sound.id);
+    const heading = el("h3", {}, sound.id);
+    const dot = tagDot(sound.id);
+    if (dot) heading.append(dot);
+    const list = el("ul");
+    for (const version of sound.versions) list.append(row(sound, version, titles.get(version.take) || version.take));
+    return el("li", { class: "group" }, heading, list);
+  }
+
+  function takeCard(take) {
+    const button = el("button", { class: "chip", type: "button", id: "fight-" + take.name, "aria-label": `Hear a short fight with the take ${take.title}` }, "Hear a fight");
+    button.addEventListener("click", () => flash(button, fight(take.name)));
+    const note = el("input", { class: "note", type: "text", id: "take-note-" + take.name, placeholder: "Note on the whole take", "aria-label": `Note on the take ${take.title}`, autocomplete: "off" });
+    note.value = store("take:" + take.name) || "";
+    note.addEventListener("input", () => store("take:" + take.name, note.value.trim()));
+    return el("li", { class: "take" },
+      el("h3", { class: "take-title" }, take.title),
+      el("p", { class: "take-desc" }, take.description),
+      el("div", { class: "tools" }, button, note));
+  }
+
+  function notesText() {
+    const lines = [];
+    for (const take of DATA.takes) {
+      const note = document.getElementById("take-note-" + take.name).value.trim();
+      if (note) lines.push(`take ${take.name}: ${note}`);
+    }
+    for (const family of DATA.families) {
+      for (const sound of family.sounds) {
+        for (const version of sound.versions) {
+          const key = keyOf(version.take, sound.id);
+          const ok = document.getElementById("ok-" + slug(key)).getAttribute("aria-pressed") === "true";
+          const note = document.getElementById("note-" + slug(key)).value.trim();
+          if (ok || note) lines.push(`${key}: ${[ok ? "OK" : "", note].filter(Boolean).join(", ")}`);
+        }
+      }
+    }
+    return lines.length ? `Sound board round ${DATA.round}\n${lines.join("\n")}` : "";
+  }
+
+  function showSheet(status, text) {
+    document.getElementById("sheet-status").textContent = status;
+    const area = document.getElementById("sheet-text");
+    area.value = text;
+    area.hidden = !text;
+    document.getElementById("sheet").hidden = false;
+    if (text) { area.focus(); area.select(); }
+  }
+
+  function start() {
+    const total = DATA.families.reduce((n, f) => n + f.sounds.reduce((m, s) => m + s.versions.length, 0), 0);
+    const takeCount = DATA.takes.length ? ` · ${DATA.takes.length} takes` : "";
+    document.getElementById("round").textContent = `round ${DATA.round} · ${total} sounds${takeCount}`;
+    const host = document.getElementById("families");
+    const titles = new Map(DATA.takes.map(t => [t.name, t.title]));
+    if (DATA.takes.length) {
+      const list = el("ul", { class: "takes" });
+      for (const take of DATA.takes) list.append(takeCard(take));
+      host.append(el("section", {}, el("h2", {}, "Takes"), list));
+    }
+    for (const family of DATA.families) {
+      const list = el("ul");
+      for (const sound of family.sounds) list.append(group(sound, titles));
+      host.append(el("section", {}, el("h2", {}, family.title), list));
+    }
+
+    const redraw = () => canvases.forEach(([canvas, variant]) => draw(canvas, variant));
+    redraw();
+    window.addEventListener("resize", redraw);
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
+    new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+    const filter = document.getElementById("phone-filter");
+    filter.checked = store("phone-filter") === "1";
+    filter.addEventListener("change", () => store("phone-filter", filter.checked ? "1" : ""));
+
+    document.getElementById("copy-notes").addEventListener("click", () => {
+      const text = notesText();
+      if (!text) { showSheet("No sound is marked OK or has a note yet.", ""); return; }
+      const fallback = () => showSheet("Copying is blocked here. Select the text below and copy it.", text);
+      if (!navigator.clipboard) { fallback(); return; }
+      navigator.clipboard.writeText(text).then(() => showSheet("Copied. Paste the notes into the chat.", text), fallback);
+    });
+    document.getElementById("sheet-close").addEventListener("click", () => { document.getElementById("sheet").hidden = true; });
+  }
+
+  if (DATA) start();
+</script>

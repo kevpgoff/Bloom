@@ -1,0 +1,14 @@
+{
+  "id": "card-play",
+  "family": "cards",
+  "description": "A card from a crew piece is played: a seed pod opens with a soft pop and a small voice that says 'mwa'.",
+  "level": -6,
+  "layers": [
+    { "wave": "skin", "note": "A5", "decay": 110, "hardness": 0.55 },
+    { "wave": "saw", "note": "D5", "gain": -2, "attack": 10, "decay": 220, "curve": 3,
+      "drift": { "cents": 10 },
+      "lfo": { "rate": 8, "pitch": 25 },
+      "formant": { "from": "u", "to": "a", "time": 120, "curve": 0, "shift": 7 } }
+  ],
+  "master": { "highpass": 250, "lowpass": 8000, "reverb": { "decay": 220, "mix": -18, "size": 0.7, "predelay": 10 } }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "turn-start",
+  "family": "flow",
+  "description": "A new turn begins and energy refills: a drop falls into the glass bowl, and one thumb-piano note answers.",
+  "level": -8,
+  "layers": [
+    { "wave": "sine", "note": "D6", "gain": -4, "attack": 1, "decay": 60,
+      "pitch": { "from": -10, "to": 2, "time": 30 },
+      "body": { "material": "glass", "note": "D6", "decay": 250, "dry": -4 } },
+    { "wave": "tine", "note": "D5", "at": 40, "decay": 500, "hardness": 0.4 }
+  ],
+  "master": { "highpass": 250, "lowpass": 9000, "reverb": { "decay": 380, "mix": -16, "damp": 4500, "predelay": 15 } }
+}

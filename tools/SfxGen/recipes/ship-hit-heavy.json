@@ -1,0 +1,18 @@
+{
+  "id": "ship-hit-heavy",
+  "family": "ship",
+  "description": "A heavy hit lands in a lane: a trunk is struck and cracks, and loose seeds rattle down after it.",
+  "level": -2,
+  "layers": [
+    { "wave": "skin", "note": "A3", "decay": 360, "hardness": 0.8 },
+    { "wave": "wood", "note": "D4", "gain": -2, "decay": 260, "hardness": 1 },
+    { "wave": "noise", "gain": -5, "attack": 1, "decay": 150, "curve": 6,
+      "filter": { "type": "bandpass", "cutoff": 1600, "to": 500, "time": 110, "q": 0.8 } },
+    { "wave": "crackle", "gain": -6, "attack": 2, "decay": 520, "curve": 3,
+      "density": { "from": 3500, "to": 40 },
+      "body": { "material": "skin", "note": "D5", "decay": 60, "dry": -8 } },
+    { "wave": "sine", "note": "D3", "gain": -14, "decay": 240, "curve": 4,
+      "pitch": { "from": 12, "time": 60 } }
+  ],
+  "master": { "drive": 6, "highpass": 110, "lowpass": 7000, "reverb": { "decay": 480, "mix": -15, "damp": 3000, "predelay": 12 } }
+}

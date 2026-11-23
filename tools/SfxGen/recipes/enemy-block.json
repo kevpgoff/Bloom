@@ -1,0 +1,13 @@
+{
+  "id": "enemy-block",
+  "family": "attack",
+  "description": "The enemy raises block: an old iron plate is swung up and rings dully.",
+  "level": -8,
+  "layers": [
+    { "wave": "noise", "gain": -10, "attack": 60, "decay": 40, "curve": 2,
+      "filter": { "type": "bandpass", "cutoff": 800, "to": 2000, "time": 100, "curve": 0, "q": 1 } },
+    { "wave": "metal", "note": "A4", "at": 80, "decay": 420, "hardness": 0.35 },
+    { "wave": "skin", "note": "D5", "gain": -8, "at": 80, "decay": 80, "hardness": 0.5 }
+  ],
+  "master": { "highpass": 250, "lowpass": 6500, "reverb": { "decay": 260, "mix": -17, "damp": 3500, "predelay": 10 } }
+}
