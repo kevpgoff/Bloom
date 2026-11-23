@@ -184,7 +184,7 @@ public partial class FittingBoard : Control
             bool lifted = _drag?.PieceId == id;
             var color = Palette.ForPiece(def);
             GridPainter.DrawPiece(this, g, cells, lifted ? color with { A = 0.25f } : color);
-            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Glyph(color));
+            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Glyph(color), GridPainter.NameLines(g, cells, def.Name));
             GridPainter.DrawLabel(this, g, cells, def.Name, lifted ? Palette.Muted with { A = 0.5f } : Palette.Label(color));
             if (!lifted && receivers.Contains(id))
             {
@@ -260,15 +260,15 @@ public partial class FittingBoard : Control
             var piece = pieces[i];
             var def = session.Content.Piece(piece.DefId);
             var shape = def.Shape.Rotated(_cargoRotation.GetValueOrDefault(piece.Id));
-            const float labelHeight = 30;
+            const float labelHeight = 34;
             float cell = Mathf.Floor(Mathf.Min(36, Mathf.Min((slot.Size.X - 16) / shape.Width, (slot.Size.Y - 16 - labelHeight) / shape.Height)));
             var origin = slot.Position + new Vector2((slot.Size.X - (shape.Width * cell)) / 2, 8 + ((slot.Size.Y - 16 - labelHeight - (shape.Height * cell)) / 2));
             var layout = new GridLayout(cell, origin, 0, shape.Height);
             bool lifted = _drag?.PieceId == piece.Id;
             var color = Palette.ForPiece(def);
             GridPainter.DrawPiece(this, layout, shape.Cells, lifted ? color with { A = 0.25f } : color);
-            GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Glyph(color), reserveLabelSpace: false);
-            DrawString(BloomTheme.Hud, new Vector2(slot.Position.X + 4, slot.End.Y - 10), def.Name.ToUpperInvariant(), HorizontalAlignment.Center, slot.Size.X - 8, 15,
+            GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Glyph(color), labelLines: 0);
+            DrawString(BloomTheme.Hud, new Vector2(slot.Position.X + 4, slot.End.Y - 10), def.Name.ToUpperInvariant(), HorizontalAlignment.Center, slot.Size.X - 8, 19,
                 lifted ? Palette.Muted with { A = 0.5f } : Palette.Label(color));
             if (!lifted && piece.Id == SelectedPieceId)
             {
@@ -284,7 +284,7 @@ public partial class FittingBoard : Control
         var layout = new GridLayout(g.CellSize, FloatingTopLeft(shape, g, drag.Pointer), 0, shape.Height);
         var def = session.Content.Piece(PieceInstanceOf(session.State, drag.PieceId).DefId);
         GridPainter.DrawPiece(this, layout, shape.Cells, Palette.ForPiece(def) with { A = 0.9f });
-        GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), Palette.Glyph(Palette.ForPiece(def)), reserveLabelSpace: false);
+        GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), Palette.Glyph(Palette.ForPiece(def)), labelLines: 0);
         GridPainter.DrawOutline(this, layout, shape.Cells, Palette.Selectable, 3);
     }
 

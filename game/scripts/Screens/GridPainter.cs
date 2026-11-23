@@ -100,7 +100,7 @@ internal static class GridPainter
         DrawDashedLoop(canvas, Corners(laneRect.Grow(-1f)), Palette.Heavy with { A = 0.75f }, 1.6f, 6f);
 
         var font = BloomTheme.Hud;
-        int size = (int)Mathf.Clamp(g.CellSize * 0.15f, 13, 18);
+        int size = (int)Mathf.Clamp(g.CellSize * 0.17f, 13, 20);
         float cx = laneRect.GetCenter().X;
         float top = laneRect.Position.Y;
         float half = (font.GetStringSize("HEAVY", HorizontalAlignment.Left, -1, size).X / 2f) + 8f;
@@ -274,18 +274,19 @@ internal static class GridPainter
     /// Draws a piece's glyph upright at the visual center of its shape, over a soft glow in the same color,
     /// so L-, T-, S- and U-shapes stay recognizable at every rotation.
     /// </summary>
-    public static void DrawPieceIcon(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells, Texture2D? icon, Color tint, bool reserveLabelSpace = true)
+    public static void DrawPieceIcon(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells, Texture2D? icon, Color tint, int labelLines = 1)
     {
         if (icon is null || cells.Count == 0)
         {
             return;
         }
 
+        // Room for the name under the glyph (NameLines): none, one line, or two.
         var (center, span) = IconAnchor(g, cells);
-        float maxSide = reserveLabelSpace ? span * 0.56f : span * 0.70f;
+        float maxSide = labelLines switch { <= 0 => span * 0.70f, 1 => span * 0.56f, _ => span * 0.46f };
         float iconSize = Mathf.Clamp(maxSide, 14f, g.CellSize * 1.15f);
-        var drawCenter = reserveLabelSpace && g.CellSize >= 46f
-            ? center + new Vector2(0, -g.CellSize * 0.11f)
+        var drawCenter = labelLines > 0 && g.CellSize >= 46f
+            ? center + new Vector2(0, -g.CellSize * (labelLines > 1 ? 0.2f : 0.11f))
             : center;
 
         if (ArtLibrary.Glow is { } glow)
@@ -310,10 +311,31 @@ internal static class GridPainter
     }
 
     /// <summary>
-    /// Writes the name in tracked capitals along the piece's bottom row, under the glyph. The font shrinks
-    /// to fit that row, down to 11 px; a name still too long there wraps onto two lines.
+    /// Writes the name in tracked capitals along the piece's bottom row, under the glyph. See
+    /// <see cref="LayOutName"/> for how it fits.
     /// </summary>
     public static void DrawLabel(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells, string text, Color color)
+    {
+        var name = LayOutName(g, cells, text);
+
+        // Capitals only, so two lines can sit closer than the font's own line height.
+        float step = name.FontSize * 1.15f;
+        for (int i = 0; i < name.Lines.Length; i++)
+        {
+            var baseline = name.Baseline - new Vector2(0, step * (name.Lines.Length - 1 - i));
+            canvas.DrawString(BloomTheme.Hud, baseline, name.Lines[i], HorizontalAlignment.Center, name.Width, name.FontSize, color);
+        }
+    }
+
+    /// <summary>How many lines a piece's name takes on the grid, so <see cref="DrawPieceIcon"/> can make room.</summary>
+    public static int NameLines(GridLayout g, IReadOnlyCollection<Cell> cells, string text) => LayOutName(g, cells, text).Lines.Length;
+
+    /// <summary>
+    /// Fits a piece's name to the run of cells at the left of its bottom row. It takes one line at 19 px when
+    /// the cells are full size, shrinking to 16 px at most. A name still too long splits at the space nearest
+    /// its middle, onto two lines of at most 18 px.
+    /// </summary>
+    private static NameLayout LayOutName(GridLayout g, IReadOnlyCollection<Cell> cells, string text)
     {
         var font = BloomTheme.Hud;
         text = text.ToUpperInvariant();
@@ -326,39 +348,55 @@ internal static class GridPainter
             width++;
         }
 
-        const int smallest = 11;
         float maxWidth = (width * g.CellSize) - 10f;
-        int fontSize = (int)Mathf.Clamp(g.CellSize * 0.15f, 12, 17);
-        while (fontSize > smallest && font.GetStringSize(text, HorizontalAlignment.Left, -1, fontSize).X > maxWidth)
-        {
-            fontSize--;
-        }
-
         var rect = g.CellRect(anchorRow);
         var baseline = new Vector2(rect.Position.X + 5f, rect.End.Y - Mathf.Max(7f, g.CellSize * 0.11f));
-        if (font.GetStringSize(text, HorizontalAlignment.Left, -1, fontSize).X <= maxWidth)
+        bool Fits(string line, int size) => font.GetStringSize(line, HorizontalAlignment.Left, -1, size).X <= maxWidth;
+
+        int largest = (int)Mathf.Clamp(g.CellSize * 0.17f, 10, 19);
+        int smallest = Math.Min(largest, 16);
+        for (int size = largest; size >= smallest; size--)
         {
-            canvas.DrawString(font, baseline, text, HorizontalAlignment.Center, maxWidth, fontSize, color);
-            return;
+            if (Fits(text, size))
+            {
+                return new NameLayout([text], size, baseline, maxWidth);
+            }
         }
 
-        // Two lines whose last baseline sits where the single line would.
-        canvas.DrawMultilineString(
-            font,
-            baseline - new Vector2(0, font.GetHeight(fontSize)),
-            text,
-            HorizontalAlignment.Center,
-            maxWidth,
-            fontSize,
-            maxLines: 2,
-            modulate: color);
+        int split = SplitNearMiddle(text);
+        string[] lines = split < 0 ? [text] : [text[..split], text[(split + 1)..]];
+        int lineSize = Math.Min(largest, 18);
+        while (lineSize > 10 && !lines.All(line => Fits(line, lineSize)))
+        {
+            lineSize--;
+        }
+
+        return new NameLayout(lines, lineSize, baseline, maxWidth);
     }
+
+    /// <summary>The index of the space nearest the middle of the text, or -1 if it has none.</summary>
+    private static int SplitNearMiddle(string text)
+    {
+        int best = -1;
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (text[i] == ' ' && (best < 0 || Math.Abs(i - (text.Length / 2)) < Math.Abs(best - (text.Length / 2))))
+            {
+                best = i;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>A piece's name laid out on the grid: its lines, their font size, the last line's baseline and the width they're centered in.</summary>
+    private readonly record struct NameLayout(string[] Lines, int FontSize, Vector2 Baseline, float Width);
 
     /// <summary>"OFFLINE" in the top-left corner of a disabled piece's first cell; the name stays readable for repair picks.</summary>
     public static void DrawOffTag(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells)
     {
         var font = BloomTheme.Hud;
-        int fontSize = (int)Mathf.Clamp(g.CellSize * 0.12f, 10, 13);
+        int fontSize = (int)Mathf.Clamp(g.CellSize * 0.17f, 10, 19);
         var corner = g.CellRect(Cell.RowMajor(cells).First());
         var textSize = font.GetStringSize("OFFLINE", HorizontalAlignment.Left, -1, fontSize);
         var tag = new Rect2(corner.Position + new Vector2(7, 7), textSize + new Vector2(8, 2));
@@ -523,7 +561,7 @@ internal static class GridPainter
     private static int NeighborCount(HashSet<Cell> set, Cell c) =>
         Sides.Count(s => set.Contains(new Cell(c.X + s.X, c.Y + s.Y)));
 
-    private static int LaneMarkSize(GridLayout g) => (int)Mathf.Clamp(g.CellSize * 0.14f, 12, 16);
+    private static int LaneMarkSize(GridLayout g) => (int)Mathf.Clamp(g.CellSize * 0.17f, 12, 20);
 
     /// <summary>
     /// The outline of a set of cells: one loop of grid corners per separate part, running clockwise on
