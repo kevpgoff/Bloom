@@ -46,11 +46,11 @@ The owner decided these for the loop of fight, reward, refit and next fight, bef
 | --- | --- |
 | Reward offers | After a won fight the player picks 1 of 3 pieces or skips. Each pick rolls a rarity (common 60%, uncommon 30%, rare 10%, placeholder odds), then a piece of that rarity. A piece is 3× as likely if it shares a tag with a fitted piece; crew count the tag their bonus targets. No piece appears twice in one offer, and the bridge is never offered. |
 | Full cargo hold | The hold may go over its 3 pieces while refitting, but the next fight cannot start until fitting or composting brings it back to 3. Skipping a reward is always allowed. |
-| Placeholder run | 4 enemies in a fixed order of rising difficulty, the order of `enemies.json`. Winning the 4th wins the run. Replaced by the sector map. |
+| Placeholder run | 4 enemies in a fixed order of rising difficulty, the order of `enemies.json`. Winning the 4th wins the run. Replaced by the sector map on 2026-11-22. |
 | Hull between fights | Damage carries over with no healing, as the spec says, until groves and docks exist. |
 | Reward pool | 8 placeholder pieces (5 equipment, 3 crew) using only existing effects, plus every spec piece except the bridge. |
-| Salvage | Left out until docks exist. Composting removes a piece for nothing for now. |
-| Run start | A new run opens on the Fitting screen, so the player can refit before the first fight. |
+| Salvage | Left out until docks exist. Composting removes a piece for nothing for now. Since the sector map (2026-11-22), fights and composting pay salvage. |
+| Run start | A new run opens on the Fitting screen, so the player can refit before the first fight. Since the sector map (2026-11-22), it opens on the map, and the ship can be refitted from there. |
 | Taps when fitting | The first tap selects a piece and shows its cards and bonus; a tap on the selected piece turns it clockwise. Dragging works at any time. |
 
 Taken as defaults, not raised by the owner:
@@ -131,6 +131,36 @@ Taken as defaults, not raised by the owner:
 - Debug builds leave out debug symbols (`dotnet/include_debug_symbols`), which would add 31 MB to the APK.
 - On the owner's phone, a cold start now reaches the fight in about 0.8 s instead of 1.25 s, and the APK is 60 MB instead of 105 MB. The FX demo plays the same fight, event for event, as with Mono, at 56 to 61 fps.
 - Godot logs a `libmonosgen-2.0.so` error at every start, because it tries Mono first. GodotSharp produces trim and AOT warnings at export, as it does for iOS. The game's own code produces none.
+
+## Sector map decided on 2026-11-22
+
+The owner decided these in a round of questions about adding progression to a run. The work comes in 5 pull requests, each playable, with a stop after each one so the owner can play it on the phone: the map and its fights; docks, groves and upgrades; shipyards; events; the boss's parts.
+
+| Topic | Decision |
+| --- | --- |
+| Scope | Progression inside a run: the sector map and its nodes. Renown, unlocks and the logbook come later. |
+| Run length | One sector of about 8 nodes that ends in a boss, as in the spec's first playable. The code handles more sectors (`Rules.SectorsPerRun`), so going to 3 is mostly content. |
+| Nodes | Skirmish, hard fight, boss, dock, shipyard, grove and event. |
+| Enemy reveal | The map shows node types only. Choosing a fight node commits to it; the Fitting screen then shows its enemy and heavy lanes, so the player can refit before the fight. |
+| Boss | The spec's parts: 2 or 3 of them, and the body and each working part act every turn with their own patterns. A part whose hull reaches 0 stops acting. The fight is won when the body's hull reaches 0. |
+| Targeting | Tap the body or a part to aim. Every attack hits it until the player aims elsewhere. It starts on the body. |
+| Upgrades | Written for each card in `cards.json`: an upgraded cost, effects or both. Placeholders are written for every card. |
+| Shipyard | Free: pick 1 of 3 hull section shapes and attach it, one per visit. The spec's economy table priced sections at 100 salvage; the node table, which made them free, wins. |
+| Content | 8 normal enemies, 3 hard ones, 1 boss and 6 events, all placeholders. Pieces stay at 16 for now. |
+| Pull request #4 | Merged into `main` before this work, which branches from it. It held the phone fixes and #5's NativeAOT build, which had been merged into #4's branch, not into `main`. |
+
+Taken as defaults, not raised by the owner (all numbers are in `Rules` and are placeholders):
+- The map has 7 rows of choices and the boss row. It is made from 4 paths that walk up 4 columns, one column left or right at most per row, never crossing. That gives 2 to 4 nodes per row, and the whole map fits on one phone screen without scrolling. The first row is at the bottom.
+- Rows 1 and 2 are skirmishes, and the row just before the boss is all groves. The rows between them are rolled: skirmish 40, event 20, hard fight 15, dock 10, shipyard 10, grove 5. Hard fights, docks, shipyards and groves never follow themselves on a path. A map has at least one dock and one shipyard. A type gets its weight only when it is built, so the first pull request rolls only skirmishes, hard fights and groves.
+- Enemies come in pools: early (skirmishes on the first 3 rows), late, hard and boss. Each enemy has a pool and a sector in `enemies.json`. The enemy is rolled when the node is chosen, and it repeats in a run only once the rest of its pool has been met.
+- A run starts with 0 salvage. A skirmish pays 20 to 30, a hard fight 40 to 55, and a boss before the last sector 60 to 80. Composting pays 10. Undo takes back composting's salvage with the piece. The salvage is paid when the fight is won, even if the piece is skipped.
+- After a hard fight or a boss, the first of the 3 offered pieces is always rare.
+- Refitting is allowed on the map (the Ship button) and after choosing a fight. Undo is cleared when a node is entered. The cargo limit blocks only the start of a fight.
+- Groves come with the first pull request, with only the repair option (30% of the maximum hull, rounded up, never past the maximum), so a sector of about 7 fights has some healing. The upgrade option joins it with upgrades.
+- A boss before the last sector gives a reward with a rare piece, then the next sector's map. A free hull section joins that reward with shipyards. With one sector, beating the boss wins the run.
+- Whether the Fitting screen is open over the map is not saved: a resumed run opens on the map.
+- Enemy icons for the 8 new enemies and the node icons are new art in the Holo Grove style.
+- A simple bot that fights with the starting ship and never takes a piece wins 399 of 400 runs, losing on average 0.4 hull per early fight, 2.4 per late fight and 8 per hard fight. The placeholder enemies are too weak, and need a balance pass once docks and upgrades exist.
 
 ## Proposed in the spec, not yet confirmed
 
