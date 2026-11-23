@@ -85,7 +85,7 @@ public sealed class RewardEngine(ContentDb content)
         run.Cargo.Add(piece);
         run.Reward = null;
         run.UndoStack.Clear();
-        MapEngine.FinishNode(run);
+        MapEngine.FinishNode(content, run);
         return piece;
     }
 
@@ -95,7 +95,7 @@ public sealed class RewardEngine(ContentDb content)
         RequireOffer(run);
         run.Reward = null;
         run.UndoStack.Clear();
-        MapEngine.FinishNode(run);
+        MapEngine.FinishNode(content, run);
     }
 
     /// <summary>The tags a piece is favored for: its own, and for a piece with a bonus, the tag the bonus targets.</summary>

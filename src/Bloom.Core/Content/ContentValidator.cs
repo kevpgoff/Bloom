@@ -19,6 +19,7 @@ internal static class ContentValidator
         CheckIds(db.Cards.Select(c => c?.Id), "card", errors);
         CheckIds(db.Enemies.Select(e => e?.Id), "enemy", errors);
         CheckIds(db.Ships.Select(s => s?.Id), "ship class", errors);
+        CheckIds(db.Sections.Select(s => s?.Id), "hull section", errors);
 
         foreach (var piece in db.Pieces.Where(p => p is not null))
         {
@@ -40,6 +41,16 @@ internal static class ContentValidator
         foreach (var ship in db.Ships.Where(s => s is not null))
         {
             ValidateShip(db, ship, errors);
+        }
+
+        foreach (var section in db.Sections.Where(s => s is not null))
+        {
+            ValidateSection(section, errors);
+        }
+
+        if (db.Sections.Count < Rules.ShipyardChoices)
+        {
+            errors.Add($"There are {db.Sections.Count} hull sections, but a shipyard offers {Rules.ShipyardChoices}.");
         }
 
         // Fitting the starting pieces needs valid pieces and shapes, so it runs only on otherwise clean content.
@@ -334,6 +345,31 @@ internal static class ContentValidator
         if (bridges != 1)
         {
             errors.Add($"{where}: must start with exactly one bridge (a piece tagged Core), but has {bridges}.");
+        }
+    }
+
+    private static void ValidateSection(HullSectionDef section, List<string> errors)
+    {
+        string where = $"hull section '{section.Id}'";
+        if (string.IsNullOrWhiteSpace(section.Name))
+        {
+            errors.Add($"{where}: missing name.");
+        }
+
+        if (section.Shape is null)
+        {
+            errors.Add($"{where}: missing shape.");
+            return;
+        }
+
+        if (!section.Shape.IsConnected())
+        {
+            errors.Add($"{where}: the shape must be one group of cells joined by edges.");
+        }
+
+        if (section.Shape.Count < Rules.MinSectionCells || section.Shape.Count > Rules.MaxSectionCells)
+        {
+            errors.Add($"{where}: a section covers {Rules.MinSectionCells} to {Rules.MaxSectionCells} cells, but the shape covers {section.Shape.Count}.");
         }
     }
 

@@ -1,0 +1,12 @@
+[
+  { "id": "rib", "name": "Rib", "placeholder": true, "shape": ["###"] },
+  { "id": "knuckle", "name": "Knuckle", "placeholder": true, "shape": ["##", "#."] },
+  { "id": "keel", "name": "Keel", "placeholder": true, "shape": ["####"] },
+  { "id": "seed_pod", "name": "Seed Pod", "placeholder": true, "shape": ["##", "##"] },
+  { "id": "spur", "name": "Spur", "placeholder": true, "shape": ["###", ".#."] },
+  { "id": "crook", "name": "Crook", "placeholder": true, "shape": ["#..", "###"] },
+  { "id": "twist", "name": "Twist", "placeholder": true, "shape": [".##", "##."] },
+  { "id": "long_keel", "name": "Long Keel", "placeholder": true, "shape": ["#####"] },
+  { "id": "cradle", "name": "Cradle", "placeholder": true, "shape": ["#.#", "###"] },
+  { "id": "bough", "name": "Bough", "placeholder": true, "shape": ["##", "##", "#."] }
+]

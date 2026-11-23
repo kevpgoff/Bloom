@@ -35,8 +35,8 @@ public sealed class MapEngine(ContentDb content)
 
     /// <summary>
     /// Moves the ship to a reachable node and starts what happens there: a fight node commits to a fight
-    /// against an enemy rolled from its pool, a dock rolls the pieces it sells, and a grove waits for the
-    /// player's choice. Refit steps can no longer be undone after this.
+    /// against an enemy rolled from its pool, a dock rolls the pieces it sells, a shipyard the hull sections
+    /// it offers, and a grove waits for the player's choice. Refit steps can no longer be undone after this.
     /// </summary>
     public void Choose(RunState run, int nodeId)
     {
@@ -58,7 +58,7 @@ public sealed class MapEngine(ContentDb content)
             throw new InvalidOperationException($"Sector {run.Sector} has no enemy in the {pool} pool.");
         }
 
-        if (pool is null && node.Type is not (NodeType.Grove or NodeType.Dock))
+        if (pool is null && node.Type is not (NodeType.Grove or NodeType.Dock or NodeType.Shipyard))
         {
             throw new InvalidOperationException($"{node.Type} nodes are not built yet.");
         }
@@ -79,6 +79,10 @@ public sealed class MapEngine(ContentDb content)
             var pieces = _rewards.RollPieces(run, Rules.DockPieces);
             run.Dock = new DockVisit(pieces, run.Rng.Next(Rules.DockRepairs.Min, Rules.DockRepairs.Max + 1));
         }
+        else if (node.Type == NodeType.Shipyard)
+        {
+            run.Shipyard = new ShipyardVisit(ShipyardEngine.RollSections(content, run));
+        }
         else
         {
             run.Grove = new GroveVisit();
@@ -95,13 +99,19 @@ public sealed class MapEngine(ContentDb content)
 
     /// <summary>
     /// Called when a node is done. After the boss of a sector that is not the last, the next sector
-    /// starts; the last boss wins the run when the fight ends, so it never gets here.
+    /// starts, and the spec's free hull section is offered before its first node (when one still fits).
+    /// The last boss wins the run when the fight ends, so it never gets here.
     /// </summary>
-    internal static void FinishNode(RunState run)
+    internal static void FinishNode(ContentDb content, RunState run)
     {
         if (run.CurrentNode is { Type: NodeType.Boss } && run.Sector < run.Sectors)
         {
             EnterSector(run, run.Sector + 1);
+            var sections = ShipyardEngine.RollSections(content, run);
+            if (sections.Count > 0)
+            {
+                run.Shipyard = new ShipyardVisit(sections);
+            }
         }
     }
 

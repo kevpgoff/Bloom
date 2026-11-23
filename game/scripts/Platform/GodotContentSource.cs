@@ -10,7 +10,8 @@ public static class GodotContentSource
         Read(dir, "pieces.json"),
         Read(dir, "cards.json"),
         Read(dir, "enemies.json"),
-        Read(dir, "ships.json"));
+        Read(dir, "ships.json"),
+        Read(dir, "sections.json"));
 
     private static string Read(string dir, string name)
     {

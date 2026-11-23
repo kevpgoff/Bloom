@@ -17,6 +17,8 @@ namespace Bloom.Core.Tests;
 /// Enemy pools: "dummy" and "blocker" are early, "heavy" and "mixed" late, "brute" hard and "titan" the boss.
 /// Upgrades: "ram" deals 8, "lance" costs 1, "sprout" blocks 6 and grows 3, "patch" costs 0; the other cards
 /// have none, so "plating" (deflect) and "singer" (brace) cannot be upgraded.
+/// Hull sections: "rib" (line of 3), "pod" (square of 4), "crook" (L of 4) and "keel" (line of 5). The test hull
+/// leaves column 5 and rows 5 to 7 free for them.
 /// A new run gets a generated map; <see cref="UseTinyMap"/> swaps in a short fixed one.
 /// </summary>
 internal static class TestContent
@@ -87,7 +89,17 @@ internal static class TestContent
         ]
         """;
 
-    public static ContentDb Db { get; } = ContentDb.FromJson(Pieces, Cards, Enemies, Ships);
+    /// <summary>Hull sections as JSON, for tests that build their own content.</summary>
+    public const string SectionsJson = """
+        [
+          { "id": "rib", "name": "Rib", "shape": ["###"] },
+          { "id": "pod", "name": "Pod", "shape": ["##", "##"] },
+          { "id": "crook", "name": "Crook", "shape": ["#..", "###"] },
+          { "id": "keel", "name": "Keel", "shape": ["#####"] }
+        ]
+        """;
+
+    public static ContentDb Db { get; } = ContentDb.FromJson(Pieces, Cards, Enemies, Ships, SectionsJson);
 
     public static RunState NewRun(ulong seed = 1) => RunFactory.NewRun(Db, "test", seed);
 
@@ -136,7 +148,9 @@ internal static class TestContent
 
     /// <summary>
     /// Test setup: moves a copy of the card from wherever it is in the deck into the hand and returns its
-    /// id. Pass <paramref name="skip"/> to take a later copy.
+    /// id. Pass <paramref name="skip"/> to take a later copy. Copies are counted in the hand, then the draw
+    /// pile, then the discard pile, and a copy already in the hand stays where it is, so taking copy 0 and
+    /// then copy 1 always gives two different cards.
     /// </summary>
     public static int Take(CombatState combat, string cardId, int skip = 0)
     {
@@ -149,8 +163,12 @@ internal static class TestContent
                     continue;
                 }
 
-                pile.Remove(card);
-                combat.Hand.Add(card);
+                if (pile != combat.Hand)
+                {
+                    pile.Remove(card);
+                    combat.Hand.Add(card);
+                }
+
                 return card.Id;
             }
         }
@@ -166,6 +184,6 @@ internal static class TestContent
     public static ContentDb LoadShipped()
     {
         string Read(string name) => File.ReadAllText(Path.Combine(ShippedDataDir, name));
-        return ContentDb.FromJson(Read("pieces.json"), Read("cards.json"), Read("enemies.json"), Read("ships.json"));
+        return ContentDb.FromJson(Read("pieces.json"), Read("cards.json"), Read("enemies.json"), Read("ships.json"), Read("sections.json"));
     }
 }

@@ -29,6 +29,9 @@ public enum RunPhase
     /// <summary>At a dock (<see cref="RunState.Dock"/>): buying, selling and repairing until the player leaves. The player may refit.</summary>
     Dock,
 
+    /// <summary>At a shipyard, or just after a boss before the last sector (<see cref="RunState.Shipyard"/>): attaching one offered hull section or none.</summary>
+    Shipyard,
+
     /// <summary>At a grove (<see cref="RunState.Grove"/>), choosing what it does for the ship.</summary>
     Grove,
     Won,
@@ -41,7 +44,7 @@ public enum RunPhase
 /// </summary>
 public sealed class RunState
 {
-    public const int CurrentSchemaVersion = 6;
+    public const int CurrentSchemaVersion = 7;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -84,6 +87,9 @@ public sealed class RunState
     /// <summary>Set while the ship is at a dock, until the player leaves it.</summary>
     public DockVisit? Dock { get; set; }
 
+    /// <summary>Set while hull sections are on offer, until the player attaches one or leaves.</summary>
+    public ShipyardVisit? Shipyard { get; set; }
+
     /// <summary>Set while the ship is at a grove and the player has not yet chosen what it does.</summary>
     public GroveVisit? Grove { get; set; }
 
@@ -111,6 +117,7 @@ public sealed class RunState
         _ when Reward is not null => RunPhase.Reward,
         _ when Encounter is not null => RunPhase.Prepare,
         _ when Dock is not null => RunPhase.Dock,
+        _ when Shipyard is not null => RunPhase.Shipyard,
         _ when Grove is not null => RunPhase.Grove,
         _ => RunPhase.Map,
     };

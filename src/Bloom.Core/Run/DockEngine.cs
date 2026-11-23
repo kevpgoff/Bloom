@@ -125,7 +125,7 @@ public sealed class DockEngine(ContentDb content)
         RequireDock(run);
         run.Dock = null;
         run.UndoStack.Clear();
-        MapEngine.FinishNode(run);
+        MapEngine.FinishNode(content, run);
     }
 
     private static DockVisit RequireDock(RunState run) =>

@@ -24,12 +24,12 @@ public class ContentTests
     ];
     private static readonly ShipClassDef Ship = new("ship", "Ship", 60, Shape.Parse(["###", "###"]), new Cell(0, 0), [new StartingPiece("bridge", new Cell(0, 0))]);
 
-    private static ContentDb Create(PieceDef[]? pieces = null, CardDef[]? cards = null, EnemyDef[]? enemies = null, ShipClassDef[]? ships = null) =>
-        ContentDb.Create(pieces ?? [Bridge, Lance], cards ?? [Ram], enemies ?? Enemies, ships ?? [Ship]);
+    private static ContentDb Create(PieceDef[]? pieces = null, CardDef[]? cards = null, EnemyDef[]? enemies = null, ShipClassDef[]? ships = null, HullSectionDef[]? sections = null) =>
+        ContentDb.Create(pieces ?? [Bridge, Lance], cards ?? [Ram], enemies ?? Enemies, ships ?? [Ship], sections ?? [.. TestContent.Db.Sections]);
 
-    private static void AssertInvalid(string expectedError, PieceDef[]? pieces = null, CardDef[]? cards = null, EnemyDef[]? enemies = null, ShipClassDef[]? ships = null)
+    private static void AssertInvalid(string expectedError, PieceDef[]? pieces = null, CardDef[]? cards = null, EnemyDef[]? enemies = null, ShipClassDef[]? ships = null, HullSectionDef[]? sections = null)
     {
-        var e = Assert.Throws<ContentException>(() => Create(pieces, cards, enemies, ships));
+        var e = Assert.Throws<ContentException>(() => Create(pieces, cards, enemies, ships, sections));
         Assert.Contains(e.Errors, error => error.Contains(expectedError, StringComparison.Ordinal));
     }
 
@@ -89,9 +89,36 @@ public class ContentTests
         AssertInvalid("OffHull", ships: [Ship with { StartingPieces = [new StartingPiece("bridge", new Cell(2, 0))] }]);
 
     [Fact]
+    public void ASectionOutsideThreeToFiveCellsIsReported()
+    {
+        AssertInvalid("hull section 'stub': a section covers 3 to 5 cells, but the shape covers 2",
+            sections: [.. TestContent.Db.Sections, new HullSectionDef("stub", "Stub", Shape.Parse(["##"]))]);
+        AssertInvalid("hull section 'slab': a section covers 3 to 5 cells, but the shape covers 6",
+            sections: [.. TestContent.Db.Sections, new HullSectionDef("slab", "Slab", Shape.Parse(["###", "###"]))]);
+    }
+
+    [Fact]
+    public void ASectionInPiecesIsReported() =>
+        AssertInvalid("hull section 'split': the shape must be one group of cells joined by edges",
+            sections: [.. TestContent.Db.Sections, new HullSectionDef("split", "Split", Shape.Parse(["##.#"]))]);
+
+    [Fact]
+    public void ASectionWithoutANameIsReported() =>
+        AssertInvalid("hull section 'rib2': missing name",
+            sections: [.. TestContent.Db.Sections, new HullSectionDef("rib2", " ", Shape.Parse(["###"]))]);
+
+    [Fact]
+    public void TooFewSectionsForAShipyardAreReported() =>
+        AssertInvalid("There are 2 hull sections, but a shipyard offers 3.", sections: [.. TestContent.Db.Sections.Take(2)]);
+
+    [Fact]
+    public void ADuplicateSectionIdIsReported() =>
+        AssertInvalid("Duplicate hull section id 'rib'", sections: [.. TestContent.Db.Sections, TestContent.Db.Sections[0]]);
+
+    [Fact]
     public void BrokenJsonNamesTheFile()
     {
-        var e = Assert.Throws<ContentException>(() => ContentDb.FromJson("[", "[]", "[]", "[]"));
+        var e = Assert.Throws<ContentException>(() => ContentDb.FromJson("[", "[]", "[]", "[]", "[]"));
         Assert.StartsWith("pieces.json:", Assert.Single(e.Errors));
     }
 
@@ -101,7 +128,7 @@ public class ContentTests
         // .NET 8 reads the "type" discriminator only when it comes first. If this starts passing after a
         // runtime upgrade, the rule in game/data/README.md can be dropped.
         const string cards = """[{ "id": "ram", "name": "Ram", "cost": 1, "effects": [{ "amount": 5, "type": "damage" }] }]""";
-        Assert.Throws<ContentException>(() => ContentDb.FromJson("[]", cards, "[]", "[]"));
+        Assert.Throws<ContentException>(() => ContentDb.FromJson("[]", cards, "[]", "[]", "[]"));
     }
 }
 
@@ -115,6 +142,22 @@ public class ShippedContentTests
         Assert.Equal(17, db.Cards.Count);  // the spec's 8, the placeholder Patch and 8 for the rewards
         Assert.Equal(12, db.Enemies.Count);
         Assert.Single(db.Ships);
+        Assert.Equal(10, db.Sections.Count);
+    }
+
+    /// <summary>Every shipped hull section can be offered on the starting ship, so the first shipyard offers any of them.</summary>
+    [Fact]
+    public void EverySectionFitsTheStartingShip()
+    {
+        var db = TestContent.LoadShipped();
+        foreach (var ship in db.Ships)
+        {
+            var run = RunFactory.NewRun(db, ship.Id, seed: 1);
+            foreach (var section in db.Sections)
+            {
+                Assert.True(ShipyardEngine.Fits(run.Ship.Grid, section.Shape), $"'{section.Id}' cannot attach to the starting {ship.Id}.");
+            }
+        }
     }
 
     /// <summary>The first sector (owner, 2026-11-22): 8 normal enemies, 3 hard ones and a boss.</summary>

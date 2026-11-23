@@ -55,7 +55,7 @@ public class RewardTests
         Assert.Equal(2, run.Sector);
         Assert.Equal(2, run.Map!.Sector);
         Assert.Empty(run.Path);
-        Assert.Equal(RunPhase.Map, run.Phase);
+        Assert.Equal(RunPhase.Shipyard, run.Phase); // the boss's free hull section, before the first node
     }
 
     [Theory]
