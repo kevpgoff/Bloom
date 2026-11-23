@@ -244,6 +244,7 @@ At startup the game logs how many cues it loaded and which cues have no file. `g
 - `Sources.cs`: the voices (plain oscillators, band-limited with polyBLEP; struck objects, as one decaying sine per mode; the plucked string), the materials' modes, the ladder filter, the resonators of a body, the vowel filter and the random drift.
 - `Dsp.cs`: the envelope curve, the filter (a state-variable filter that stays stable while its cutoff sweeps), the echo, the reverb (eight delay lines feeding each other, whose lengths wobble slightly so the tail does not ring) and the rate halving.
 - `Takes.cs`: the takes.
+- `RenderCache.cs`: renders each variant of a recipe once per run, so the checks, the check of the saved files and the board share one render.
 - `Analysis.cs`: the loudness measure and the numbers in the table above.
 - `Checks.cs`: the rules, with their limits.
 - `Board.cs`, `board.template.html`: the sound board.

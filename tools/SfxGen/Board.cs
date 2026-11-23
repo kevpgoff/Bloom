@@ -34,7 +34,7 @@ internal static class Board
             double ms = 0;
             for (int v = 0; v < recipe.Variants; v++)
             {
-                var samples = Synth.Render(recipe, v).Samples;
+                var samples = RenderCache.Of(recipe, v).Samples;
                 byte[] wav = Wav.Encode(samples);
                 foreach (byte b in wav)
                 {

@@ -26,13 +26,61 @@ public class SynthTests
 
     private static Recipe Parse(string json, string id) => RecipeFiles.Parse(json, id + ".json");
 
+    /// <summary>The layers of three recipes that use, between them, every wave and every effect.</summary>
+    private static readonly string[] EveryWaveAndEffect =
+    [
+        """
+        { "wave": "sine", "note": "D5", "decay": 200, "fm": { "ratio": 3.5, "index": 2, "to": 0.5 },
+          "pitch": { "from": -2, "time": 30 } },
+        { "wave": "triangle", "note": "A5", "decay": 200, "unison": { "voices": 3, "detune": 10 },
+          "drift": { "cents": 15 } },
+        { "wave": "saw", "note": "D5", "decay": 200, "filter": { "type": "ladder", "cutoff": 3000, "to": 600, "q": 4 },
+          "lfo": { "rate": 6, "to": 12, "pitch": 20, "amp": 0.3, "cutoff": 1 } },
+        { "wave": "square", "note": "G5", "decay": 200, "ring": { "ratio": 1.41 },
+          "formant": { "from": "a", "to": "u", "shift": 3 } },
+        { "wave": "sine", "notes": ["D6", "A6"], "step": 40, "decay": 80,
+          "filter": { "type": "highpass", "cutoff": 500 } }
+        """,
+        """
+        { "wave": "string", "note": "D5", "decay": 300, "hardness": 0.7 },
+        { "wave": "wood", "note": "A5", "decay": 200 },
+        { "wave": "tine", "note": "D6", "decay": 200 },
+        { "wave": "metal", "note": "G5", "decay": 200 },
+        { "wave": "glass", "note": "D6", "decay": 200, "unison": { "voices": 2, "detune": 7 } },
+        { "wave": "skin", "note": "A4", "decay": 200 }
+        """,
+        """
+        { "wave": "noise", "decay": 150, "filter": { "type": "bandpass", "cutoff": 1500, "q": 1 },
+          "body": { "material": "glass", "note": "D6", "decay": 200 } },
+        { "wave": "crackle", "decay": 200, "density": { "from": 2000, "to": 100 },
+          "body": { "material": "wood", "note": "A5", "decay": 50, "dry": -6 } }
+        """,
+    ];
+
+    /// <summary>
+    /// The checks render each sound only once and the board reuses that render, so rendering must repeat exactly:
+    /// nothing may read a clock, an unseeded generator, or state left over from an earlier render. A second pass in
+    /// the opposite order would show state carried from one render into the next.
+    /// </summary>
     [Fact]
-    public void TheSameRecipeAlwaysRendersTheSameSamples()
+    public void EveryWaveAndEffectRendersTheSameSamplesEveryTime()
     {
-        var recipe = Parse(Varied, "varied");
-        for (int v = 0; v < recipe.Variants; v++)
+        var recipes = EveryWaveAndEffect.Select((layers, i) => Parse($$"""
+            {
+              "id": "every-{{i}}", "family": "flow", "description": "Every wave and effect.", "level": -6,
+              "variants": 2, "vary": { "pitch": 0.5, "time": 0.1, "tone": 0.2 },
+              "layers": [ {{layers}} ],
+              "master": { "drive": 3, "echo": { "time": 80 }, "reverb": { "decay": 300, "predelay": 20 } }
+            }
+            """, $"every-{i}")).ToList();
+        var renders = recipes.SelectMany(r => Enumerable.Range(0, r.Variants).Select(v => (Recipe: r, Variant: v))).ToList();
+
+        var first = renders.Select(x => Synth.Render(x.Recipe, x.Variant).Samples).ToList();
+        var second = Enumerable.Reverse(renders).Select(x => Synth.Render(x.Recipe, x.Variant).Samples).Reverse().ToList();
+
+        for (int i = 0; i < renders.Count; i++)
         {
-            Assert.Equal(Synth.Render(recipe, v).Samples, Synth.Render(recipe, v).Samples);
+            Assert.True(first[i].AsSpan().SequenceEqual(second[i]), $"{renders[i].Recipe.Id}, variant {renders[i].Variant + 1}, rendered differently the second time.");
         }
     }
 

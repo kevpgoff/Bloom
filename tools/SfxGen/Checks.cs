@@ -40,15 +40,11 @@ internal static class Checks
             string name = Path.GetFileNameWithoutExtension(Synth.FileName(recipe, v));
             void Error(string message) => found.Add(new Finding(name, true, message));
 
-            var first = Synth.Render(recipe, v);
-            if (!first.Samples.AsSpan().SequenceEqual(Synth.Render(recipe, v).Samples))
-            {
-                Error("two renders of the same recipe differ.");
-            }
-
-            renders.Add(first.Samples);
-            var stats = Analysis.Measure(first.Samples);
-            if (first.Clipped || stats.PeakDb > PeakCeilingDb)
+            // That a render repeats exactly is checked by the tests, and for the game's sounds by Files below.
+            var render = RenderCache.Of(recipe, v);
+            renders.Add(render.Samples);
+            var stats = Analysis.Measure(render.Samples);
+            if (render.Clipped || stats.PeakDb > PeakCeilingDb)
             {
                 Error($"it peaks at {Num(stats.PeakDb)} dBFS, above {Num(PeakCeilingDb)}. Lower the level, or make the sound less spiky.");
             }
@@ -59,7 +55,7 @@ internal static class Checks
                 Error($"its loudness is {Num(stats.Loudness)}, not the {Num(target)} its level asks for.");
             }
 
-            if (first.Samples[0] != 0 || first.Samples[^1] != 0)
+            if (render.Samples[0] != 0 || render.Samples[^1] != 0)
             {
                 Error("it does not start and end at zero, so it would click.");
             }
@@ -136,7 +132,7 @@ internal static class Checks
                     continue;
                 }
 
-                var fresh = Synth.Render(recipe, v).Samples;
+                var fresh = RenderCache.Of(recipe, v).Samples;
                 if (committed.Length != fresh.Length)
                 {
                     found.Add(new Finding(file, true, "the file is older than its recipe (the length differs). Run tools/sfx.sh render."));
