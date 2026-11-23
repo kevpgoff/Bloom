@@ -231,7 +231,7 @@ public class CardUpgradeContentTests
     private static readonly PieceDef Bridge = new("bridge", "Bridge", PieceKind.Equipment, [Tag.Core], Rarity.Common, Shape.Parse(["##"]), [new CardGrant("ram", 2)]);
     private static readonly CardDef Ram = new("ram", "Ram", 1, [new DamageEffect(5)]);
     private static readonly EnemyDef Dummy = new("dummy", "Dummy", 10, [new Intent(IntentKind.Attack, 1)], EnemyPool.Early);
-    private static readonly ShipClassDef Ship = new("ship", "Ship", 60, Shape.Parse(["###", "###"]), new Cell(0, 0), [new StartingPiece("bridge", new Cell(0, 0))]);
+    private static readonly ShipClassDef Ship = new("ship", "Ship", 60, Shape.Parse(["###", "###"]), new Cell(0, 0), [new ShipLoadout("a", "A", [new StartingPiece("bridge", new Cell(0, 0))])]);
 
     private static void AssertInvalid(string expectedError, CardUpgrade upgrade)
     {
@@ -272,7 +272,7 @@ public class CardUpgradeContentTests
              { "id": "c", "name": "C", "pool": "Hard", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] },
              { "id": "d", "name": "D", "pool": "Boss", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] }]
             """;
-        const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }]""";
+        const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "loadouts": [{ "id": "a", "name": "A", "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }] }]""";
         var db = ContentDb.FromJson(pieces, cards, enemies, ships, TestContent.SectionsJson, TestContent.PlainEventsJson);
         Assert.Equal(0, db.Card("ram").Upgrade!.Cost);
         Assert.Equal(1, db.Card("ram").Cost);

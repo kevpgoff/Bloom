@@ -18,20 +18,39 @@ public sealed record KeepEnergyRule : ShipRule;
 public sealed record StartingPiece(string Piece, Cell Origin, Rotation Rotation = Rotation.R0);
 
 /// <summary>
-/// A ship class as defined in ships.json: its starting hull, hull points, pieces and optional special rule.
+/// One set of starting pieces for a ship class. A class has one or more; the player picks one in the hangar.
+/// A loadout changes only the pieces: the hull, the hull points and the rule belong to the class.
+/// <see cref="Placeholder"/> marks loadouts invented for testing.
+/// </summary>
+public sealed record ShipLoadout(string Id, string Name, IReadOnlyList<StartingPiece> StartingPieces, bool Placeholder = false);
+
+/// <summary>
+/// A ship class as defined in ships.json: its starting hull, hull points, loadouts and optional special rule.
 /// <see cref="HullOrigin"/> places the hull shape inside the 6x8 grid, leaving room for hull sections.
 /// </summary>
+/// <param name="Loadouts">The sets of starting pieces to choose from. The first is the one a run uses when none is named.</param>
 /// <param name="SoundSet">
 /// The name of the ship's own set of sound effects, or null for a ship that uses only the base set. The rules
 /// never read it; the game plays the set's version of a sound where the set has one.
 /// </param>
+/// <param name="Commune">The commune that grows the ship, written as on pieces (e.g. <c>sunwrights</c>). The rules never read it.</param>
+/// <param name="GrownFrom">One line on what the ship is grown from, for the hangar. The rules never read it.</param>
 public sealed record ShipClassDef(
     string Id,
     string Name,
     int Hull,
     Shape HullShape,
     Cell HullOrigin,
-    IReadOnlyList<StartingPiece> StartingPieces,
+    IReadOnlyList<ShipLoadout> Loadouts,
     ShipRule? Rule = null,
     string? SoundSet = null,
-    bool Placeholder = false);
+    string? Commune = null,
+    string? GrownFrom = null,
+    bool Placeholder = false)
+{
+    /// <summary>The loadout with this id, or the first one when <paramref name="id"/> is null.</summary>
+    public ShipLoadout Loadout(string? id) =>
+        id is null
+            ? Loadouts[0]
+            : Loadouts.FirstOrDefault(l => l.Id == id) ?? throw new KeyNotFoundException($"Ship class '{Id}' has no loadout '{id}'.");
+}

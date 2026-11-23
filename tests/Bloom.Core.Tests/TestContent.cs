@@ -96,11 +96,15 @@ internal static class TestContent
         [
           { "id": "test", "name": "Test", "hull": 60,
             "hullShape": ["#####", "#####", "#####", "#####", "#####"], "hullOrigin": { "x": 0, "y": 0 },
-            "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 4 } }] },
+            "loadouts": [
+              { "id": "a", "name": "Bare", "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 4 } }] },
+              { "id": "armed", "name": "Armed", "startingPieces": [
+                { "piece": "bridge", "origin": { "x": 0, "y": 4 } },
+                { "piece": "lance", "origin": { "x": 0, "y": 0 } }] }] },
           { "id": "solar", "name": "Solar", "hull": 60,
             "hullShape": ["######", "######", "######"], "hullOrigin": { "x": 0, "y": 2 },
             "rule": { "type": "keepEnergy" },
-            "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 4 } }] }
+            "loadouts": [{ "id": "a", "name": "Bare", "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 4 } }] }] }
         ]
         """;
 

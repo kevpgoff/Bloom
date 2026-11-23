@@ -22,7 +22,11 @@ public class ContentTests
         Dummy with { Id = "hard", Pool = EnemyPool.Hard },
         Dummy with { Id = "boss", Pool = EnemyPool.Boss },
     ];
-    private static readonly ShipClassDef Ship = new("ship", "Ship", 60, Shape.Parse(["###", "###"]), new Cell(0, 0), [new StartingPiece("bridge", new Cell(0, 0))]);
+    private static readonly ShipClassDef Ship = new("ship", "Ship", 60, Shape.Parse(["###", "###"]), new Cell(0, 0), [new ShipLoadout("a", "A", [new StartingPiece("bridge", new Cell(0, 0))])]);
+
+    /// <summary>The test ship with one loadout of these starting pieces.</summary>
+    private static ShipClassDef WithPieces(params StartingPiece[] pieces) =>
+        Ship with { Loadouts = [new ShipLoadout("a", "A", pieces)] };
 
     private static ContentDb Create(PieceDef[]? pieces = null, CardDef[]? cards = null, EnemyDef[]? enemies = null, ShipClassDef[]? ships = null, HullSectionDef[]? sections = null, EventDef[]? events = null) =>
         ContentDb.Create(pieces ?? [Bridge, Lance], cards ?? [Ram], enemies ?? Enemies, ships ?? [Ship], sections ?? [.. TestContent.Db.Sections], events ?? [.. TestContent.PlainEvents]);
@@ -113,11 +117,38 @@ public class ContentTests
 
     [Fact]
     public void AShipWithoutABridgeIsReported() =>
-        AssertInvalid("exactly one bridge", ships: [Ship with { StartingPieces = [new StartingPiece("lance", new Cell(0, 0))] }]);
+        AssertInvalid("exactly one bridge", ships: [WithPieces(new StartingPiece("lance", new Cell(0, 0)))]);
 
     [Fact]
     public void StartingPiecesThatDoNotFitAreReported() =>
-        AssertInvalid("OffHull", ships: [Ship with { StartingPieces = [new StartingPiece("bridge", new Cell(2, 0))] }]);
+        AssertInvalid("OffHull", ships: [WithPieces(new StartingPiece("bridge", new Cell(2, 0)))]);
+
+    [Fact]
+    public void AShipWithoutALoadoutIsReported() =>
+        AssertInvalid("needs at least one loadout", ships: [Ship with { Loadouts = [] }]);
+
+    [Fact]
+    public void ARepeatedLoadoutIdIsReported() =>
+        AssertInvalid("duplicate loadout id 'a'", ships: [Ship with { Loadouts = [Ship.Loadouts[0], Ship.Loadouts[0]] }]);
+
+    [Theory]
+    [InlineData("Big start")]
+    [InlineData("b_2")]
+    public void ALoadoutIdIsWrittenLikeAFolderName(string id) =>
+        AssertInvalid($"loadout '{id}': the id must be lowercase words joined by hyphens", ships: [Ship with { Loadouts = [Ship.Loadouts[0] with { Id = id }] }]);
+
+    [Fact]
+    public void ALoadoutWithoutANameIsReported() =>
+        AssertInvalid("loadout 'a': missing name", ships: [Ship with { Loadouts = [Ship.Loadouts[0] with { Name = "" }] }]);
+
+    /// <summary>Every loadout is checked, not only the first: a later one whose pieces do not fit is named.</summary>
+    [Fact]
+    public void ALaterLoadoutThatDoesNotFitIsReported()
+    {
+        var bad = new ShipLoadout("b", "B", [new StartingPiece("bridge", new Cell(2, 0))]);
+        AssertInvalid("ship class 'ship', loadout 'b': ", ships: [Ship with { Loadouts = [Ship.Loadouts[0], bad] }]);
+        AssertInvalid("loadout 'b': must start with exactly one bridge", ships: [Ship with { Loadouts = [Ship.Loadouts[0], bad with { StartingPieces = [new StartingPiece("lance", new Cell(0, 0))] }] }]);
+    }
 
     [Fact]
     public void ASectionOutsideThreeToFiveCellsIsReported()
@@ -258,7 +289,7 @@ public class ContentTests
              { "id": "c", "name": "C", "pool": "Hard", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] },
              { "id": "d", "name": "D", "pool": "Boss", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] }]
             """;
-        const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "rule": { "type": "keepEnergy" }, "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }]""";
+        const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "rule": { "type": "keepEnergy" }, "loadouts": [{ "id": "a", "name": "A", "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }] }]""";
         var db = ContentDb.FromJson(pieces, cards, enemies, ships, TestContent.SectionsJson, TestContent.PlainEventsJson);
         Assert.IsType<KeepEnergyRule>(db.Ship("s").Rule);
     }
@@ -266,7 +297,7 @@ public class ContentTests
     [Fact]
     public void AnUnknownShipRuleIsReported()
     {
-        const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "rule": { "type": "nope" }, "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }]""";
+        const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "rule": { "type": "nope" }, "loadouts": [{ "id": "a", "name": "A", "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }] }]""";
         var e = Assert.Throws<ContentException>(() => ContentDb.FromJson("[]", "[]", "[]", ships, "[]", "[]"));
         Assert.StartsWith("ships.json:", Assert.Single(e.Errors));
     }
@@ -274,7 +305,7 @@ public class ContentTests
     [Fact]
     public void AShipRuleMustStartWithItsType()
     {
-        const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "rule": { "extra": 1, "type": "keepEnergy" }, "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }]""";
+        const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "rule": { "extra": 1, "type": "keepEnergy" }, "loadouts": [{ "id": "a", "name": "A", "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }] }]""";
         var e = Assert.Throws<ContentException>(() => ContentDb.FromJson("[]", "[]", "[]", ships, "[]", "[]"));
         Assert.StartsWith("ships.json:", Assert.Single(e.Errors));
     }
@@ -289,7 +320,7 @@ public class ContentTests
         """;
 
     private static string ShipWithSoundSet(string soundSet) =>
-        $$"""[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, {{soundSet}} "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }]""";
+        $$"""[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, {{soundSet}} "loadouts": [{ "id": "a", "name": "A", "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }] }]""";
 
     [Fact]
     public void AShipSoundSetIsReadFromJsonAndIsOptional()
@@ -510,5 +541,44 @@ public class ShippedContentTests
             .Select(b => $"{DefOf(b.GiverId)}->{DefOf(b.ReceiverId)}")
             .Order();
         Assert.Equal(["lens_grinder->burning_glass"], bonuses);
+    }
+
+    /// <summary>
+    /// The Seedling's placeholder second loadout: a Garden and Shield start from existing pieces, with a Lance and
+    /// an Arc Cutter so that it can still win a fight. Both crew start the Moss Reactor's cards grown.
+    /// </summary>
+    [Fact]
+    public void TheSeedlingsOrchardLoadoutMatchesItsSetup()
+    {
+        var db = TestContent.LoadShipped();
+        var seedling = db.Ship("seedling");
+        Assert.Equal(["a", "b"], seedling.Loadouts.Select(l => l.Id));
+
+        var run = RunFactory.NewRun(db, new RunSetup("seedling", Seed: 1, LoadoutId: "b"));
+        var fitter = new ShipFitter(db);
+        Assert.Equal(60, run.Hull);
+        Assert.Equal(25, run.Ship.Grid.CellCount);
+        Assert.Equal(22, run.Ship.Fitted.Sum(f => fitter.CellsOf(f).Count));
+        Assert.Equal(17, DeckBuilder.Build(run.Ship, db).Count);
+
+        string DefOf(int pieceId) => run.Ship.Find(pieceId)!.Piece.DefId;
+        var bonuses = fitter.ActiveBonuses(run.Ship, [])
+            .Select(b => $"{DefOf(b.GiverId)}->{DefOf(b.ReceiverId)}")
+            .Order();
+        Assert.Equal(["orchard_keeper->moss_reactor", "spore_singer->moss_reactor"], bonuses);
+    }
+
+    /// <summary>The hangar shows each ship's commune and what it is grown from, and names each loadout.</summary>
+    [Fact]
+    public void EveryShipHasTheTextTheHangarShows()
+    {
+        var db = TestContent.LoadShipped();
+        var communes = db.Pieces.Select(p => p.Commune).Where(c => c is not null).Distinct().ToList();
+        Assert.All(db.Ships, ship =>
+        {
+            Assert.Contains(ship.Commune, communes);
+            Assert.False(string.IsNullOrWhiteSpace(ship.GrownFrom));
+            Assert.Equal(ship.Loadouts.Count, ship.Loadouts.Select(l => l.Name).Distinct().Count());
+        });
     }
 }

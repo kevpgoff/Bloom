@@ -72,13 +72,16 @@ internal static class ContentValidator
         {
             foreach (var ship in db.Ships)
             {
-                try
+                foreach (var loadout in ship.Loadouts)
                 {
-                    RunFactory.NewRun(db, ship.Id, seed: 0);
-                }
-                catch (Exception e) when (e is InvalidOperationException or ArgumentException)
-                {
-                    errors.Add($"ship class '{ship.Id}': {e.Message}");
+                    try
+                    {
+                        RunFactory.NewRun(db, new RunSetup(ship.Id, Seed: 0, LoadoutId: loadout.Id));
+                    }
+                    catch (Exception e) when (e is InvalidOperationException or ArgumentException)
+                    {
+                        errors.Add($"ship class '{ship.Id}', loadout '{loadout.Id}': {e.Message}");
+                    }
                 }
             }
         }
@@ -387,13 +390,49 @@ internal static class ContentValidator
             errors.Add($"{where}: soundSet '{set}' must be lowercase words joined by hyphens, like the folder it names.");
         }
 
-        if (ship.StartingPieces is null || ship.StartingPieces.Count == 0)
+        if (ship.Loadouts is null || ship.Loadouts.Count == 0)
+        {
+            errors.Add($"{where}: needs at least one loadout.");
+            return;
+        }
+
+        var seen = new HashSet<string>();
+        foreach (var loadout in ship.Loadouts)
+        {
+            if (string.IsNullOrWhiteSpace(loadout?.Id))
+            {
+                errors.Add($"{where}: a loadout has no id.");
+            }
+            else if (!seen.Add(loadout.Id))
+            {
+                errors.Add($"{where}: duplicate loadout id '{loadout.Id}'.");
+            }
+            else
+            {
+                ValidateLoadout(db, loadout, $"{where}, loadout '{loadout.Id}'", errors);
+            }
+        }
+    }
+
+    private static void ValidateLoadout(ContentDb db, ShipLoadout loadout, string where, List<string> errors)
+    {
+        if (!IsFolderName(loadout.Id))
+        {
+            errors.Add($"{where}: the id must be lowercase words joined by hyphens.");
+        }
+
+        if (string.IsNullOrWhiteSpace(loadout.Name))
+        {
+            errors.Add($"{where}: missing name.");
+        }
+
+        if (loadout.StartingPieces is null || loadout.StartingPieces.Count == 0)
         {
             errors.Add($"{where}: needs starting pieces.");
             return;
         }
 
-        foreach (var start in ship.StartingPieces)
+        foreach (var start in loadout.StartingPieces)
         {
             if (start?.Piece is null || !db.HasPiece(start.Piece))
             {
@@ -401,7 +440,7 @@ internal static class ContentValidator
             }
         }
 
-        int bridges = ship.StartingPieces.Count(s => s?.Piece is not null && db.HasPiece(s.Piece) && db.Piece(s.Piece).IsBridge);
+        int bridges = loadout.StartingPieces.Count(s => s?.Piece is not null && db.HasPiece(s.Piece) && db.Piece(s.Piece).IsBridge);
         if (bridges != 1)
         {
             errors.Add($"{where}: must start with exactly one bridge (a piece tagged Core), but has {bridges}.");

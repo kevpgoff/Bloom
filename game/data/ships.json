@@ -3,36 +3,67 @@
     "id": "seedling",
     "name": "Seedling",
     "placeholder": true,
+    "commune": "tide_orchard",
+    "grownFrom": "A seed from the vault that the voyage carries. The hull is living wood.",
     "hull": 60,
     "hullShape": ["#####", "#####", "#####", "#####", "#####"],
     "hullOrigin": { "x": 1, "y": 1 },
-    "startingPieces": [
-      { "piece": "hull_plating", "origin": { "x": 1, "y": 1 }, "rotation": "R0" },
-      { "piece": "lens_grinder", "origin": { "x": 4, "y": 1 }, "rotation": "R0" },
-      { "piece": "tinker", "origin": { "x": 1, "y": 2 }, "rotation": "R0" },
-      { "piece": "light_lance", "origin": { "x": 2, "y": 2 }, "rotation": "R0" },
-      { "piece": "moss_reactor", "origin": { "x": 1, "y": 3 }, "rotation": "R0" },
-      { "piece": "sun_sail", "origin": { "x": 3, "y": 3 }, "rotation": "R0" },
-      { "piece": "spore_singer", "origin": { "x": 2, "y": 4 }, "rotation": "R270" },
-      { "piece": "bridge", "origin": { "x": 4, "y": 5 }, "rotation": "R0" }
+    "loadouts": [
+      {
+        "id": "a",
+        "name": "Sprout",
+        "startingPieces": [
+          { "piece": "hull_plating", "origin": { "x": 1, "y": 1 }, "rotation": "R0" },
+          { "piece": "lens_grinder", "origin": { "x": 4, "y": 1 }, "rotation": "R0" },
+          { "piece": "tinker", "origin": { "x": 1, "y": 2 }, "rotation": "R0" },
+          { "piece": "light_lance", "origin": { "x": 2, "y": 2 }, "rotation": "R0" },
+          { "piece": "moss_reactor", "origin": { "x": 1, "y": 3 }, "rotation": "R0" },
+          { "piece": "sun_sail", "origin": { "x": 3, "y": 3 }, "rotation": "R0" },
+          { "piece": "spore_singer", "origin": { "x": 2, "y": 4 }, "rotation": "R270" },
+          { "piece": "bridge", "origin": { "x": 4, "y": 5 }, "rotation": "R0" }
+        ]
+      },
+      {
+        "id": "b",
+        "name": "Orchard",
+        "placeholder": true,
+        "startingPieces": [
+          { "piece": "hull_plating", "origin": { "x": 1, "y": 1 }, "rotation": "R0" },
+          { "piece": "reed_screen", "origin": { "x": 3, "y": 1 }, "rotation": "R0" },
+          { "piece": "arc_cutter", "origin": { "x": 1, "y": 2 }, "rotation": "R0" },
+          { "piece": "orchard_keeper", "origin": { "x": 1, "y": 3 }, "rotation": "R0" },
+          { "piece": "light_lance", "origin": { "x": 2, "y": 3 }, "rotation": "R0" },
+          { "piece": "moss_reactor", "origin": { "x": 1, "y": 4 }, "rotation": "R0" },
+          { "piece": "spore_singer", "origin": { "x": 3, "y": 4 }, "rotation": "R0" },
+          { "piece": "bridge", "origin": { "x": 4, "y": 4 }, "rotation": "R0" }
+        ]
+      }
     ]
   },
   {
     "id": "heliotrope",
     "name": "Heliotrope",
     "placeholder": true,
+    "commune": "sunwrights",
+    "grownFrom": "One giant sail-leaf that turns to face the sun.",
     "hull": 60,
     "hullShape": ["######", "######", "######"],
     "hullOrigin": { "x": 0, "y": 2 },
     "rule": { "type": "keepEnergy" },
     "soundSet": "heliotrope",
-    "startingPieces": [
-      { "piece": "burning_glass", "origin": { "x": 0, "y": 2 }, "rotation": "R90" },
-      { "piece": "sun_sail", "origin": { "x": 1, "y": 2 }, "rotation": "R0" },
-      { "piece": "burning_glass", "origin": { "x": 4, "y": 2 }, "rotation": "R0" },
-      { "piece": "lens_grinder", "origin": { "x": 1, "y": 3 }, "rotation": "R90" },
-      { "piece": "bridge", "origin": { "x": 4, "y": 3 }, "rotation": "R0" },
-      { "piece": "sun_shutter", "origin": { "x": 2, "y": 4 }, "rotation": "R0" }
+    "loadouts": [
+      {
+        "id": "a",
+        "name": "Burning glass",
+        "startingPieces": [
+          { "piece": "burning_glass", "origin": { "x": 0, "y": 2 }, "rotation": "R90" },
+          { "piece": "sun_sail", "origin": { "x": 1, "y": 2 }, "rotation": "R0" },
+          { "piece": "burning_glass", "origin": { "x": 4, "y": 2 }, "rotation": "R0" },
+          { "piece": "lens_grinder", "origin": { "x": 1, "y": 3 }, "rotation": "R90" },
+          { "piece": "bridge", "origin": { "x": 4, "y": 3 }, "rotation": "R0" },
+          { "piece": "sun_shutter", "origin": { "x": 2, "y": 4 }, "rotation": "R0" }
+        ]
+      }
     ]
   }
 ]
