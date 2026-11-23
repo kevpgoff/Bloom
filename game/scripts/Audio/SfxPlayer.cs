@@ -1,3 +1,4 @@
+using Bloom.Game.Autoload;
 using Bloom.Game.Platform;
 using Godot;
 
@@ -10,9 +11,16 @@ namespace Bloom.Game.Audio;
 /// does not grate.
 /// </summary>
 /// <remarks>
-/// The files are rendered by <c>tools/SfxGen</c> from the recipes in <c>tools/SfxGen/recipes</c> and are kept in
-/// the repo. How loud each cue is against the others is set here, in <see cref="Tuning"/>; how loud all of them
-/// are is the player's <see cref="UserSettings.SfxVolume"/>.
+/// <para>
+/// The files directly in the folder are the base set. Each folder inside it is a ship's sound set: that ship's
+/// own version of some of the cues. While the run's ship class names a set (<c>soundSet</c> in
+/// <c>ships.json</c>), a cue plays from that set if the set has it, and from the base set otherwise.
+/// </para>
+/// <para>
+/// The files are rendered by <c>tools/SfxGen</c> from the recipes in <c>tools/SfxGen/recipes</c> and
+/// <c>tools/SfxGen/sets</c>, and are kept in the repo. How loud each cue is against the others is set here, in
+/// <see cref="Tuning"/>; how loud all of them are is the player's <see cref="UserSettings.SfxVolume"/>.
+/// </para>
 /// </remarks>
 public partial class SfxPlayer : Node
 {
@@ -50,6 +58,9 @@ public partial class SfxPlayer : Node
     internal readonly record struct Mix(float VolumeDb = 0f, float PitchRange = 0.1f, float VolumeRange = 1.5f, int MinGapMs = 40);
 
     private readonly Dictionary<SfxCue, List<AudioStream>> _streams = [];
+
+    /// <summary>The ships' sets by name. Each holds only the cues that the set has a version of.</summary>
+    private readonly Dictionary<string, Dictionary<SfxCue, List<AudioStream>>> _sets = new(StringComparer.Ordinal);
     private readonly Dictionary<SfxCue, int> _lastVariant = [];
     private readonly Dictionary<SfxCue, double> _lastPlayAt = [];
 
@@ -79,7 +90,7 @@ public partial class SfxPlayer : Node
         ProcessMode = ProcessModeEnum.Always;
         ApplyVolume();
 
-        int files = Load();
+        int files = DirAccess.DirExistsAbsolute(SfxDir) ? Load(SfxDir, _streams) : 0;
         var missing = Enum.GetValues<SfxCue>().Where(cue => !_streams.ContainsKey(cue)).Select(cue => cue.FileName()).ToList();
         GD.Print(files == 0
             ? $"SfxPlayer: no sound effects in {SfxDir}; run tools/sfx.sh render, then import."
@@ -88,6 +99,8 @@ public partial class SfxPlayer : Node
         {
             return;
         }
+
+        LoadSets();
 
         var polyphonic = new AudioStreamPolyphonic { Polyphony = Voices };
         _held.Add(polyphonic);
@@ -121,6 +134,7 @@ public partial class SfxPlayer : Node
 
         _held.Clear();
         _streams.Clear();
+        _sets.Clear();
     }
 
     /// <summary>On a phone, sounds stop while the game is in the background.</summary>
@@ -143,9 +157,16 @@ public partial class SfxPlayer : Node
         }
     }
 
+    /// <summary>
+    /// The name of the file that <see cref="Play"/> would play for the cue now, without its extension or its
+    /// variant: <c>heliotrope/card-play</c> when the run's ship has its own version, and <c>card-play</c> otherwise.
+    /// </summary>
+    internal string NameOf(SfxCue cue) =>
+        ShipSet() is { } set && _sets.TryGetValue(set, out var own) && own.ContainsKey(cue) ? $"{set}/{cue.FileName()}" : cue.FileName();
+
     internal void Play(SfxCue cue, float pitch, float volumeDb)
     {
-        if (_player is not { } player || _pausedByApp || !_streams.TryGetValue(cue, out var variants))
+        if (_player is not { } player || _pausedByApp || StreamsOf(cue) is not { } variants)
         {
             return;
         }
@@ -182,31 +203,70 @@ public partial class SfxPlayer : Node
         _playback?.PlayStream(variants[variant], 0f, db, pitch * Mathf.Pow(2f, semitones / 12f), AudioServer.PlaybackType.Default, SfxBus);
     }
 
-    /// <summary>Loads every sound file that belongs to a cue and returns how many there were.</summary>
-    private int Load()
+    /// <summary>
+    /// The sound set of the ship in the current run, or null when there is no run or its ship uses only the base
+    /// set. It is looked up at each play, so a new run with another ship changes the sounds at once.
+    /// </summary>
+    private static string? ShipSet() =>
+        GameRoot.Instance is { Session: { } session, Content: { } content }
+            ? content.Ships.FirstOrDefault(ship => ship.Id == session.State.ShipClassId)?.SoundSet
+            : null;
+
+    /// <summary>The files to choose from for a cue: the ship's own if its set has the cue, or else the base set's.</summary>
+    private List<AudioStream>? StreamsOf(SfxCue cue) =>
+        ShipSet() is { } set && _sets.TryGetValue(set, out var own) && own.TryGetValue(cue, out var variants)
+            ? variants
+            : _streams.GetValueOrDefault(cue);
+
+    /// <summary>
+    /// Loads each folder inside <see cref="SfxDir"/> as a ship's sound set, and warns about a ship class that
+    /// names a set with no folder, since that ship would play only the base set.
+    /// </summary>
+    private void LoadSets()
     {
-        if (!DirAccess.DirExistsAbsolute(SfxDir))
+        // ResourceLoader lists a folder with a slash after its name.
+        var folders = ResourceLoader.ListDirectory(SfxDir).Where(f => f.EndsWith('/')).Select(f => f.TrimEnd('/')).ToList();
+        folders.Sort(StringComparer.Ordinal);
+        foreach (string name in folders)
         {
-            return 0;
+            var cues = new Dictionary<SfxCue, List<AudioStream>>();
+            int files = Load($"{SfxDir}/{name}", cues);
+            if (files > 0)
+            {
+                _sets[name] = cues;
+                GD.Print($"SfxPlayer: set '{name}' has {cues.Count} cues from {files} files.");
+            }
         }
 
-        var files = ResourceLoader.ListDirectory(SfxDir).Where(f => f.EndsWith(".wav", StringComparison.Ordinal)).ToList();
+        foreach (var ship in GameRoot.Instance?.Content?.Ships ?? [])
+        {
+            if (ship.SoundSet is { } set && !_sets.ContainsKey(set))
+            {
+                GD.PushWarning($"SfxPlayer: the ship class '{ship.Id}' names the sound set '{set}', but {SfxDir}/{set} holds no sounds. It plays the base set.");
+            }
+        }
+    }
+
+    /// <summary>Loads every sound file in a folder that belongs to a cue, and returns how many there were.</summary>
+    private int Load(string dir, Dictionary<SfxCue, List<AudioStream>> into)
+    {
+        var files = ResourceLoader.ListDirectory(dir).Where(f => f.EndsWith(".wav", StringComparison.Ordinal)).ToList();
         files.Sort(StringComparer.Ordinal);
         int loaded = 0;
         foreach (string file in files)
         {
             if (SfxCueNames.ForFile(file) is not { } cue)
             {
-                GD.PushWarning($"SfxPlayer: {SfxDir}/{file} belongs to no cue in SfxCue.");
+                GD.PushWarning($"SfxPlayer: {dir}/{file} belongs to no cue in SfxCue.");
                 continue;
             }
 
-            if (ResourceLoader.Load<AudioStream>($"{SfxDir}/{file}") is { } stream)
+            if (ResourceLoader.Load<AudioStream>($"{dir}/{file}") is { } stream)
             {
                 _held.Add(stream);
-                if (!_streams.TryGetValue(cue, out var variants))
+                if (!into.TryGetValue(cue, out var variants))
                 {
-                    _streams[cue] = variants = [];
+                    into[cue] = variants = [];
                 }
 
                 variants.Add(stream);

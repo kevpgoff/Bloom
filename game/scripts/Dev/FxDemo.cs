@@ -17,7 +17,8 @@ namespace Bloom.Game.Dev;
 /// <remarks>
 /// Run a debug build with <c>godot --path game -- --fx-demo</c>, or <c>-- --fx-demo=lose</c> to only end turns
 /// until the ship is lost, or <c>-- --fx-demo=boss</c> to fight the boss instead and aim at each of its parts in
-/// turn until they are disabled. <see cref="GameRoot"/> keeps the demo's run in memory, so the saved run is untouched.
+/// turn until they are disabled. Add <c>--ship=heliotrope</c> to play another ship class, with its own sounds.
+/// <see cref="GameRoot"/> keeps the demo's run in memory, so the saved run is untouched.
 /// Each action and its events are printed, and so are each haptic pulse and each sound effect.
 /// </remarks>
 public partial class FxDemo : Node

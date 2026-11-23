@@ -16,10 +16,11 @@ dotnet build Bloom.sln          # builds the rules, the tests, the sound-effect 
 dotnet test                     # runs the rule tests, including validation of game/data/*.json, and the checks on every sound effect
 godot --path game               # runs the game (portrait window, 405×720)
 godot -e --path game            # opens the project in the editor
-godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 16, …" and a screen line ("MapScreen: …" on a new run)
+godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 18, …" and a screen line ("MapScreen: …" on a new run)
 godot --path game -- --fx-demo                 # debug builds: plays the first fight by itself to show the combat feedback; add =lose to show a defeat. The run stays in memory, so the save is untouched
+godot --path game -- --ship=heliotrope         # debug builds: starts a run as that ship class (copies an existing save of another class to user://run.<class>.json). With --fx-demo, the demo plays that ship
 tools/import-music.sh                          # builds the game's music from the zips in music/; see Music below
-tools/sfx.sh render                            # renders the sound effects from their recipes into game/audio/sfx/; see Sound effects below
+tools/sfx.sh render                            # renders the sound effects, the base set and each ship's set, from their recipes into game/audio/sfx/; see Sound effects below
 tools/android-debug.sh                         # exports a debug APK, installs it on the phone connected by USB and starts it; --log follows its log, --no-install only exports
 ```
 
@@ -55,7 +56,9 @@ The sound effects are our own: each one is a synth recipe, a small JSON file in 
 
 To change a sound, edit its recipe, run `tools/sfx.sh render`, and commit the recipe and the file together. `dotnet test` fails when a file no longer matches its recipe, when a sound would clip or click, or when a phone speaker would lose most of it. `tools/sfx.sh board` writes one page with a play button for every sound, for judging them by ear.
 
-In the game, `Sfx.Play(SfxCue.…)` starts a sound, and `game/scripts/Audio/SfxPlayer.cs` plays it on the Sfx bus. In a fight the calls sit beside the haptic pulses in `game/scripts/Feedback/CombatFeedback.cs`, so each sound lands with its visual effect.
+Each ship class can have a sound set of its own. The recipes in `tools/SfxGen/recipes/` are the base set, which is also the Seedling's. Another ship's set is a folder in `tools/SfxGen/sets/` that holds that ship's version of its own sounds: its card plays, its hits, what it gains and the hits it takes. The set is rendered into a folder of the same name in `game/audio/sfx/`, and a ship class names its set with `"soundSet"` in `game/data/ships.json`. The Heliotrope's set is `heliotrope`.
+
+In the game, `Sfx.Play(SfxCue.…)` starts a sound, and `game/scripts/Audio/SfxPlayer.cs` plays it on the Sfx bus: the version in the set of the run's ship if that set has one, and the base version otherwise. In a fight the calls sit beside the haptic pulses in `game/scripts/Feedback/CombatFeedback.cs`, so each sound lands with its visual effect.
 
 ## Layout
 
@@ -65,11 +68,11 @@ src/Bloom.Core/               the game rules in plain C#, with no Godot dependen
   Rng/ Grid/ Pieces/ Cards/ Combat/ Map/ Run/ Save/ Content/
 tests/Bloom.Core.Tests/       xUnit tests for the rules and the shipped data
 tests/SfxGen.Tests/           xUnit tests for the sound-effect tool, its recipes and the rendered files
-tools/SfxGen/                 renders the sound effects from recipes/*.json; see its README.md
+tools/SfxGen/                 renders the sound effects from recipes/*.json and each ship's sets/<name>/*.json; see its README.md
 game/                         the Godot project (res://)
   Bloom.csproj                game assembly; references Bloom.Core
   data/                       content as JSON; see game/data/README.md
-  audio/                      sfx/: the sound effects, rendered by tools/SfxGen and committed
+  audio/                      sfx/: the sound effects, rendered by tools/SfxGen and committed; a folder inside is one ship's set
                               music/: built by tools/import-music.sh and not committed; CREDITS.md
   scenes/ scripts/ art/
 docs/decisions.md             decisions made so far
@@ -96,6 +99,7 @@ A run is one sector: a branching map of about 20 nodes in 7 rows, ending in a bo
 | Shipyards: 1 of 3 hull sections, attached where the player chooses. Hard fights and bosses give a free section after their reward. Heavy attacks aimed past the hull's edge hit its edge lane | Done, tested; rulings in `docs/decisions.md` |
 | Events: 20 placeholder stories, each with 2 to 4 choices. A choice can cost salvage or need a fitted piece with a tag, and can give or take salvage, hull, max hull, pieces, an upgrade or a hull section, or start a fight | Done, tested; rulings in `docs/decisions.md` |
 | The boss's parts: the body and each working part act every turn with their own patterns, a part at 0 hull is disabled, and the player aims at the body or a part | Done, tested; rulings in `docs/decisions.md` |
+| Ship classes: Seedling (placeholder 5×5) and Heliotrope (placeholder 6×3, keep-energy rule via polymorphic `ShipRule`) | Two placeholder classes built and tested; no ship choice screen yet (use `--ship=heliotrope` in debug builds); the Heliotrope plays its own sound set; defaults to confirm in `docs/decisions.md` |
 | Renown, unlocks, logbook | Not started |
 | Art | Option A, "Holo Grove" (see `docs/decisions.md` and `game/art/README.md`). Done: palette, Saira font, ship drawing, icons, card, panel and button frames, backdrop, and the enemy shown large in a target-lock reticle |
 | Combat screen | Done: enemy and intent, a boss's parts (hull, intent, tap to aim; the aim wears the reticle), ship grid, hand, End Turn, defeat or voyage complete and New Run |
@@ -104,7 +108,7 @@ A run is one sector: a branching map of about 20 nodes in 7 rows, ending in a bo
 | Combat feedback | Done: particles, screen shake and haptics for every card effect, enemy action and the end of a fight (`game/scripts/Feedback/`). Shake strength and haptics are set in `user://settings.cfg`; there is no settings screen yet. Timings are placeholders in `CombatFeedback.Tuning` |
 | Low hull warning | Done: below half the maximum hull, the hull's numbers warm from white to amber to coral on every screen, the backdrop warms faintly and breathes, and in a fight the ship's deck darkens toward red and its hologram now and then flickers (`Visuals/HullWarning.cs`). Numbers are placeholders; see `docs/decisions.md` |
 | Music | Done: Voltz Supreme's "Analog Ambience" in four moods: voyage, fight, boss, and a short sting when a run is won or lost (see [Music](#music)). The voyage music pauses during a fight and resumes after it, and the music pauses while the phone shows another app. The volume is set in `user://settings.cfg`, and the fade times are placeholders in `MusicDirector.Tuning`. Before release, the game must show players the credit "Music by Voltz Supreme", but there is no credits screen yet |
-| Sound effects | In progress: our own synth sounds, rendered from recipes (see [Sound effects](#sound-effects)). The tool, the playback and all 31 combat sounds are done, in the Seedling's set (Wood and water); the owner is judging them by ear. The interface and the other screens are the next step. Each ship class is planned to get a sound set of its own; the game plays only the base set so far. The volume is set in `user://settings.cfg`, and the per-sound playback settings are placeholders in `SfxPlayer.Tuning` |
+| Sound effects | In progress: our own synth sounds, rendered from recipes (see [Sound effects](#sound-effects)). The tool, the playback and all 31 combat sounds are done, in the Seedling's set (Wood and water); the owner is judging them by ear. The interface and the other screens are the next step. Each ship class gets a sound set of its own, and the game plays the set that the run's ship names. The Heliotrope's set (Warm circuits) has all 22 of a ship's own sounds, which the owner approved by ear on 2026-11-23. The Fairy Ring's set is 8 trial sounds and the Comb has none. The volume is set in `user://settings.cfg`, and the per-sound playback settings are placeholders in `SfxPlayer.Tuning` |
 | Map screen | Done: the whole sector, with the path taken lit and the reachable nodes pulsing; tap a reachable node, then Set course (which names it) to go there, and Ship to refit. Node icons are in `art/icons/nodes/` |
 | Grove screen | Done: repair the hull, or upgrade one piece, with its cards shown as they would be |
 | Dock screen | Done: 3 pieces for sale, hull repair, and the cargo hold's pieces to sell. Ship opens the Fitting screen, where the selected piece can be sold too |

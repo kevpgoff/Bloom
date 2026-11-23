@@ -1,0 +1,23 @@
+{
+  "id": "repair",
+  "family": "ship",
+  "description": "A disabled piece comes back online: a loose contact crackles faster and faster, the hum returns, and the piece's note locks in again.",
+  "level": -6,
+  "layers": [
+    { "wave": "crackle", "gain": -8, "attack": 150, "decay": 200, "curve": -1,
+      "density": { "from": 30, "to": 220, "time": 350 },
+      "filter": { "type": "bandpass", "cutoff": 2200, "q": 1.2 } },
+    { "wave": "saw", "note": "D5", "gain": -8, "attack": 220, "decay": 130, "curve": -2,
+      "pitch": { "from": -2, "time": 330, "curve": 0 },
+      "drift": { "cents": 12 },
+      "filter": { "type": "ladder", "cutoff": 400, "to": 1800, "time": 340, "curve": 0, "q": 4 } },
+    { "wave": "square", "note": "D5", "at": 330, "attack": 3, "decay": 340, "curve": 4,
+      "unison": { "voices": 2, "detune": 9 },
+      "drift": { "cents": 6 },
+      "filter": { "type": "ladder", "cutoff": 3200, "to": 900, "time": 220, "q": 2.5 } },
+    { "wave": "triangle", "note": "A5", "gain": -9, "at": 330, "attack": 3, "decay": 300, "drift": { "cents": 6 } }
+  ],
+  "master": { "drive": 2, "highpass": 250, "lowpass": 8000,
+              "echo": { "time": 110, "feedback": 0.22, "mix": -20, "damp": 2400 },
+              "reverb": { "decay": 300, "mix": -18 } }
+}

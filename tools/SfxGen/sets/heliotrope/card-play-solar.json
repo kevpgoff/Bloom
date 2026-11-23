@@ -1,0 +1,17 @@
+{
+  "id": "card-play-solar",
+  "family": "cards",
+  "description": "A card from a solar piece is played: the filter opens like a shutter letting in the light, and three detuned saws shimmer in it.",
+  "level": -6,
+  "layers": [
+    { "wave": "saw", "note": "A5", "attack": 25, "hold": 30, "decay": 240, "curve": 3,
+      "unison": { "voices": 3, "detune": 18 },
+      "drift": { "cents": 8 },
+      "filter": { "type": "ladder", "cutoff": 800, "to": 5200, "time": 220, "curve": 0, "q": 3 } },
+    { "wave": "triangle", "note": "D6", "gain": -10, "at": 40, "attack": 30, "decay": 210, "drift": { "cents": 6 },
+      "lfo": { "rate": 6, "pitch": 12 } }
+  ],
+  "master": { "drive": 2, "highpass": 280, "lowpass": 8500,
+              "echo": { "time": 95, "feedback": 0.2, "mix": -20, "damp": 2600 },
+              "reverb": { "decay": 220, "mix": -19 } }
+}

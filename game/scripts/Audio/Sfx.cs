@@ -19,7 +19,9 @@ internal static class Sfx
     {
         if (LogCues)
         {
-            GD.Print(pitch == 1f ? $"Sfx: {cue.FileName()}" : $"Sfx: {cue.FileName()} at pitch {pitch:0.00}");
+            // With a ship that has its own version of the cue, the name starts with the ship's sound set.
+            string name = SfxPlayer.Instance?.NameOf(cue) ?? cue.FileName();
+            GD.Print(pitch == 1f ? $"Sfx: {name}" : $"Sfx: {name} at pitch {pitch:0.00}");
         }
 
         SfxPlayer.Instance?.Play(cue, pitch, volumeDb);

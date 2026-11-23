@@ -1,0 +1,20 @@
+{
+  "id": "card-play-garden",
+  "family": "cards",
+  "description": "A card from a garden piece is played: two soft, rounded plucks a fifth apart, with a little tape crackle like leaves moving.",
+  "level": -6,
+  "layers": [
+    { "wave": "triangle", "note": "D5", "attack": 3, "decay": 270, "curve": 5,
+      "unison": { "voices": 2, "detune": 8 },
+      "drift": { "cents": 8 } },
+    { "wave": "saw", "note": "A5", "gain": -8, "at": 30, "attack": 3, "decay": 230, "curve": 5,
+      "drift": { "cents": 8 },
+      "filter": { "type": "ladder", "cutoff": 2600, "to": 700, "time": 140, "q": 2 } },
+    { "wave": "crackle", "gain": -14, "attack": 4, "decay": 220, "curve": 2,
+      "density": { "from": 900, "to": 80 },
+      "filter": { "type": "highpass", "cutoff": 2500 } }
+  ],
+  "master": { "drive": 2, "highpass": 250, "lowpass": 7500,
+              "echo": { "time": 90, "feedback": 0.18, "mix": -21, "damp": 2400 },
+              "reverb": { "decay": 200, "mix": -20 } }
+}

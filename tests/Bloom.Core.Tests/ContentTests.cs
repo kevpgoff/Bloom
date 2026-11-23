@@ -246,6 +246,74 @@ public class ContentTests
         const string cards = """[{ "id": "ram", "name": "Ram", "cost": 1, "effects": [{ "amount": 5, "type": "damage" }] }]""";
         Assert.Throws<ContentException>(() => ContentDb.FromJson("[]", cards, "[]", "[]", "[]", "[]"));
     }
+
+    [Fact]
+    public void AShipRuleIsReadFromJson()
+    {
+        const string pieces = """[{ "id": "bridge", "name": "Bridge", "kind": "Equipment", "tags": ["Core"], "rarity": "Common", "shape": ["##"], "cards": [{ "card": "ram", "count": 2 }] }]""";
+        const string cards = """[{ "id": "ram", "name": "Ram", "cost": 1, "effects": [{ "type": "damage", "amount": 5 }] }]""";
+        const string enemies = """
+            [{ "id": "a", "name": "A", "pool": "Early", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] },
+             { "id": "b", "name": "B", "pool": "Late", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] },
+             { "id": "c", "name": "C", "pool": "Hard", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] },
+             { "id": "d", "name": "D", "pool": "Boss", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] }]
+            """;
+        const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "rule": { "type": "keepEnergy" }, "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }]""";
+        var db = ContentDb.FromJson(pieces, cards, enemies, ships, TestContent.SectionsJson, TestContent.PlainEventsJson);
+        Assert.IsType<KeepEnergyRule>(db.Ship("s").Rule);
+    }
+
+    [Fact]
+    public void AnUnknownShipRuleIsReported()
+    {
+        const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "rule": { "type": "nope" }, "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }]""";
+        var e = Assert.Throws<ContentException>(() => ContentDb.FromJson("[]", "[]", "[]", ships, "[]", "[]"));
+        Assert.StartsWith("ships.json:", Assert.Single(e.Errors));
+    }
+
+    [Fact]
+    public void AShipRuleMustStartWithItsType()
+    {
+        const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "rule": { "extra": 1, "type": "keepEnergy" }, "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }]""";
+        var e = Assert.Throws<ContentException>(() => ContentDb.FromJson("[]", "[]", "[]", ships, "[]", "[]"));
+        Assert.StartsWith("ships.json:", Assert.Single(e.Errors));
+    }
+
+    private const string OneBridge = """[{ "id": "bridge", "name": "Bridge", "kind": "Equipment", "tags": ["Core"], "rarity": "Common", "shape": ["##"], "cards": [{ "card": "ram", "count": 2 }] }]""";
+    private const string OneCard = """[{ "id": "ram", "name": "Ram", "cost": 1, "effects": [{ "type": "damage", "amount": 5 }] }]""";
+    private const string FourEnemies = """
+        [{ "id": "a", "name": "A", "pool": "Early", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] },
+         { "id": "b", "name": "B", "pool": "Late", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] },
+         { "id": "c", "name": "C", "pool": "Hard", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] },
+         { "id": "d", "name": "D", "pool": "Boss", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] }]
+        """;
+
+    private static string ShipWithSoundSet(string soundSet) =>
+        $$"""[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, {{soundSet}} "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }]""";
+
+    [Fact]
+    public void AShipSoundSetIsReadFromJsonAndIsOptional()
+    {
+        var with = ContentDb.FromJson(OneBridge, OneCard, FourEnemies, ShipWithSoundSet("\"soundSet\": \"warm-circuits\","), TestContent.SectionsJson, TestContent.PlainEventsJson);
+        Assert.Equal("warm-circuits", with.Ship("s").SoundSet);
+
+        var without = ContentDb.FromJson(OneBridge, OneCard, FourEnemies, ShipWithSoundSet(""), TestContent.SectionsJson, TestContent.PlainEventsJson);
+        Assert.Null(without.Ship("s").SoundSet);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Warm")]
+    [InlineData("warm circuits")]
+    [InlineData("warm--circuits")]
+    [InlineData("-warm")]
+    [InlineData("warm/circuits")]
+    public void AShipSoundSetMustBeAFolderName(string name)
+    {
+        string ships = ShipWithSoundSet($"\"soundSet\": \"{name}\",");
+        var e = Assert.Throws<ContentException>(() => ContentDb.FromJson(OneBridge, OneCard, FourEnemies, ships, TestContent.SectionsJson, TestContent.PlainEventsJson));
+        Assert.Contains("soundSet", Assert.Single(e.Errors), StringComparison.Ordinal);
+    }
 }
 
 public class ShippedContentTests
@@ -254,10 +322,10 @@ public class ShippedContentTests
     public void TheShippedContentLoadsAndPassesValidation()
     {
         var db = TestContent.LoadShipped();
-        Assert.Equal(16, db.Pieces.Count); // the spec's 7, the placeholder Tinker and 8 placeholder rewards
-        Assert.Equal(17, db.Cards.Count);  // the spec's 8, the placeholder Patch and 8 for the rewards
+        Assert.Equal(18, db.Pieces.Count); // the spec's 7, the placeholder Tinker, 8 placeholder rewards and 2 Heliotrope placeholders
+        Assert.Equal(19, db.Cards.Count);  // the spec's 8, the placeholder Patch, 8 for the rewards and 2 for the Heliotrope pieces
         Assert.Equal(12, db.Enemies.Count);
-        Assert.Single(db.Ships);
+        Assert.Equal(2, db.Ships.Count);
         Assert.Equal(10, db.Sections.Count);
         Assert.Equal(20, db.Events.Count); // 10 sketched with the owner and 10 from the owner's writer prompt, 2026-11-23
     }
@@ -406,5 +474,41 @@ public class ShippedContentTests
             .Select(b => $"{DefOf(b.GiverId)}->{DefOf(b.ReceiverId)}")
             .Order();
         Assert.Equal(["lens_grinder->light_lance", "spore_singer->moss_reactor"], bonuses);
+    }
+
+    [Fact]
+    public void TheHeliotropeMatchesItsStartingSetup()
+    {
+        var db = TestContent.LoadShipped();
+        var def = db.Ship("heliotrope");
+        var run = RunFactory.NewRun(db, "heliotrope", seed: 1);
+        var fitter = new ShipFitter(db);
+
+        Assert.IsType<KeepEnergyRule>(def.Rule);
+        Assert.Equal("heliotrope", def.SoundSet);
+        Assert.Null(db.Ship("seedling").SoundSet); // the Seedling's set is the base set
+        Assert.Equal(60, run.Hull);
+        Assert.Equal(18, run.Ship.Grid.CellCount);
+        Assert.Equal(0, run.Ship.Grid.Cells.Min(c => c.X));
+        Assert.Equal(5, run.Ship.Grid.Cells.Max(c => c.X));
+        Assert.Equal(2, run.Ship.Grid.Cells.Min(c => c.Y));
+        Assert.Equal(4, run.Ship.Grid.Cells.Max(c => c.Y));
+        Assert.Equal(0, run.Ship.Grid.LaneHit(0));
+
+        int usedCells = run.Ship.Fitted.Sum(f => fitter.CellsOf(f).Count);
+        Assert.Equal(16, usedCells);
+        Assert.Equal(2, run.Ship.Fitted.Count(f => f.Piece.DefId == "burning_glass"));
+        Assert.Equal(11, DeckBuilder.Build(run.Ship, db).Count);
+
+        var fittedDefs = run.Ship.Fitted.Select(f => db.Piece(f.Piece.DefId)).ToList();
+        Assert.All(fittedDefs, p => Assert.Equal(Rarity.Common, p.Rarity));
+        var nonCoreTags = fittedDefs.SelectMany(p => p.Tags).Where(t => t != Tag.Core).Distinct().Order();
+        Assert.Equal([Tag.Weapon, Tag.Solar], nonCoreTags);
+
+        string DefOf(int pieceId) => run.Ship.Find(pieceId)!.Piece.DefId;
+        var bonuses = fitter.ActiveBonuses(run.Ship, [])
+            .Select(b => $"{DefOf(b.GiverId)}->{DefOf(b.ReceiverId)}")
+            .Order();
+        Assert.Equal(["lens_grinder->burning_glass"], bonuses);
     }
 }

@@ -158,5 +158,21 @@
     "placeholder": true,
     "effects": [{ "type": "focus", "amount": 6 }],
     "upgrade": { "effects": [{ "type": "focus", "amount": 9 }] }
+  },
+  {
+    "id": "shutter",
+    "name": "Shutter",
+    "cost": 1,
+    "placeholder": true,
+    "effects": [{ "type": "block", "amount": 7 }],
+    "upgrade": { "effects": [{ "type": "block", "amount": 10 }] }
+  },
+  {
+    "id": "sear",
+    "name": "Sear",
+    "cost": 3,
+    "placeholder": true,
+    "effects": [{ "type": "damage", "amount": 14 }],
+    "upgrade": { "effects": [{ "type": "damage", "amount": 20 }] }
   }
 ]

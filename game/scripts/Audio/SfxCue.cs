@@ -6,7 +6,8 @@ namespace Bloom.Game.Audio;
 /// Every sound effect the game can play. Each one is a file in <c>res://audio/sfx/</c> named after the member in
 /// lowercase words joined by hyphens (<see cref="CardPlayWeapon"/> is <c>card-play-weapon.wav</c>), rendered by
 /// <c>tools/SfxGen</c> from the recipe of the same name. A file named <c>card-draw_2.wav</c> is a second variant
-/// of <see cref="CardDraw"/>.
+/// of <see cref="CardDraw"/>. A file of the same name in a folder there, such as <c>heliotrope/</c>, is the
+/// version of the cue for the ship class whose sound set has that name; see <see cref="SfxPlayer"/>.
 /// </summary>
 internal enum SfxCue
 {

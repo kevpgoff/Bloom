@@ -382,6 +382,11 @@ internal static class ContentValidator
             }
         }
 
+        if (ship.SoundSet is { } set && !IsFolderName(set))
+        {
+            errors.Add($"{where}: soundSet '{set}' must be lowercase words joined by hyphens, like the folder it names.");
+        }
+
         if (ship.StartingPieces is null || ship.StartingPieces.Count == 0)
         {
             errors.Add($"{where}: needs starting pieces.");
@@ -402,6 +407,11 @@ internal static class ContentValidator
             errors.Add($"{where}: must start with exactly one bridge (a piece tagged Core), but has {bridges}.");
         }
     }
+
+    /// <summary>Lowercase letters and digits, in words joined by single hyphens.</summary>
+    private static bool IsFolderName(string name) =>
+        name.Length > 0 && name[0] != '-' && name[^1] != '-' && !name.Contains("--", StringComparison.Ordinal)
+        && name.All(c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-');
 
     private static void ValidateSection(HullSectionDef section, List<string> errors)
     {

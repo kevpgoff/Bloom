@@ -1,0 +1,19 @@
+{
+  "id": "focus-gain",
+  "family": "ship",
+  "description": "Focus is gained: a soft, pure tone swells and steadies with slow vibrato, like an oscillator being tuned in.",
+  "level": -8,
+  "layers": [
+    { "wave": "triangle", "note": "D6", "attack": 180, "hold": 60, "decay": 300, "curve": 2,
+      "pitch": { "from": -1, "time": 200, "curve": 0 },
+      "unison": { "voices": 2, "detune": 8 },
+      "drift": { "cents": 10 },
+      "lfo": { "rate": 5.5, "pitch": 14 } },
+    { "wave": "sine", "note": "A5", "gain": -10, "attack": 150, "hold": 60, "decay": 300, "curve": 2 },
+    { "wave": "noise", "gain": -24, "attack": 180, "decay": 250,
+      "filter": { "type": "bandpass", "cutoff": 3000, "q": 1 } }
+  ],
+  "master": { "highpass": 300, "lowpass": 8500,
+              "echo": { "time": 130, "feedback": 0.25, "mix": -20, "damp": 2400 },
+              "reverb": { "decay": 300, "mix": -18 } }
+}

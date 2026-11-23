@@ -150,8 +150,8 @@ public sealed class ContentDb
         }
         catch (NotSupportedException e)
         {
-            // System.Text.Json throws this, not JsonException, when an effect's "type" is not its first property.
-            errors.Add($"{fileName}: {e.Message} Check that \"type\" is the first property of every effect and outcome.");
+            // System.Text.Json throws this, not JsonException, when a polymorphic object's "type" is not its first property.
+            errors.Add($"{fileName}: {e.Message} Check that \"type\" is the first property of every effect, outcome and ship rule.");
             return [];
         }
     }

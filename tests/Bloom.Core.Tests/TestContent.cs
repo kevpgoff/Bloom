@@ -10,8 +10,10 @@ namespace Bloom.Core.Tests;
 
 /// <summary>
 /// Small fixed content for rule tests, so they don't break when the shipped data in game/data is
-/// rebalanced. The test ship is a 5x5 hull at the top-left of the grid (x 0-4, y 0-4) with the
-/// bridge on cells (0,4) and (1,4). The enemies "heavy" and "mixed" make heavy attacks on lane 0.
+/// rebalanced. The test ship ("test") is a 5x5 hull at the top-left of the grid (x 0-4, y 0-4) with the
+/// bridge on cells (0,4) and (1,4). A second test ship ("solar") is a 6x3 hull at (0,2) with the
+/// <c>keepEnergy</c> rule and the bridge on cells (0,4) and (1,4). The enemies "heavy" and "mixed" make
+/// heavy attacks on lane 0.
 /// All pieces are common except "drone" (uncommon) and "spear" (rare), for reward tests.
 /// No piece adds the card "chorus" (draw 2); tests put it in the hand themselves, so the reward pool stays the same.
 /// Enemy pools: "dummy" and "blocker" are early, "heavy" and "mixed" late, "brute" hard and "titan" the boss.
@@ -94,6 +96,10 @@ internal static class TestContent
         [
           { "id": "test", "name": "Test", "hull": 60,
             "hullShape": ["#####", "#####", "#####", "#####", "#####"], "hullOrigin": { "x": 0, "y": 0 },
+            "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 4 } }] },
+          { "id": "solar", "name": "Solar", "hull": 60,
+            "hullShape": ["######", "######", "######"], "hullOrigin": { "x": 0, "y": 2 },
+            "rule": { "type": "keepEnergy" },
             "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 4 } }] }
         ]
         """;
@@ -161,6 +167,8 @@ internal static class TestContent
             new EventChoice("Leave", [new EventResult("Gone.")])])];
 
     public static RunState NewRun(ulong seed = 1) => RunFactory.NewRun(Db, "test", seed);
+
+    public static RunState NewRun(string shipClassId, ulong seed = 1) => RunFactory.NewRun(Db, shipClassId, seed);
 
     /// <summary>
     /// Test setup: commits the run to a fight against <paramref name="enemyId"/>, as choosing a fight node

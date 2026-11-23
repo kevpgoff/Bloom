@@ -2,7 +2,7 @@
 
 Every audio file in `game/audio/` that was not made for the game is listed here, as `game/art/CREDITS.md` does for art. The game is sold, so each license must allow that.
 
-`sfx/` needs no row: every file in it is made for the game. `tools/SfxGen` renders each one from a recipe in `tools/SfxGen/recipes/`, and both are kept in the repo.
+`sfx/` needs no row: every file in it is made for the game. `tools/SfxGen` renders each one from a recipe in `tools/SfxGen/recipes/` or, for a ship's own set, in `tools/SfxGen/sets/`, and both are kept in the repo.
 
 | Files | Author | Source | License |
 | --- | --- | --- | --- |

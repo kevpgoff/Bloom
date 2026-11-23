@@ -1,0 +1,18 @@
+{
+  "id": "card-play-core",
+  "family": "cards",
+  "description": "A card from a core piece is played: a relay clicks over, and the ship's main circuit answers with a short, round hum.",
+  "level": -6,
+  "layers": [
+    { "wave": "square", "note": "D4", "gain": -4, "attack": 4, "hold": 30, "decay": 230, "curve": 4,
+      "unison": { "voices": 2, "detune": 10 },
+      "drift": { "cents": 8 },
+      "filter": { "type": "ladder", "cutoff": 2400, "to": 800, "time": 160, "q": 2 } },
+    { "wave": "triangle", "note": "D5", "attack": 3, "decay": 250, "drift": { "cents": 6 } },
+    { "wave": "noise", "gain": -10, "attack": 1, "decay": 14,
+      "filter": { "type": "bandpass", "cutoff": 1800, "q": 2 } }
+  ],
+  "master": { "drive": 3, "highpass": 200, "lowpass": 6500,
+              "echo": { "time": 90, "feedback": 0.18, "mix": -23, "damp": 2200 },
+              "reverb": { "decay": 200, "mix": -20 } }
+}

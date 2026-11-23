@@ -1,0 +1,21 @@
+{
+  "id": "grow",
+  "family": "ship",
+  "description": "A garden card grows: a small note glides up a fifth as its filter opens, over a soft crackle.",
+  "level": -9,
+  "variants": 2,
+  "vary": { "pitch": 0.3, "time": 0.1, "tone": 0.2 },
+  "layers": [
+    { "wave": "crackle", "gain": -8, "attack": 40, "decay": 200, "curve": 1,
+      "density": { "from": 300, "to": 1000 },
+      "filter": { "type": "highpass", "cutoff": 3000 } },
+    { "wave": "saw", "note": "D6", "at": 60, "attack": 20, "hold": 30, "decay": 280, "curve": 4,
+      "pitch": { "from": -7, "time": 110, "curve": 0 },
+      "drift": { "cents": 8 },
+      "filter": { "type": "ladder", "cutoff": 900, "to": 3600, "time": 140, "curve": 0, "q": 3 } },
+    { "wave": "triangle", "note": "A6", "gain": -14, "at": 170, "attack": 3, "decay": 220, "drift": { "cents": 6 } }
+  ],
+  "master": { "highpass": 300, "lowpass": 8500,
+              "echo": { "time": 110, "feedback": 0.22, "mix": -21, "damp": 2600 },
+              "reverb": { "decay": 240, "mix": -19 } }
+}
