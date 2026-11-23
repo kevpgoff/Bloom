@@ -24,7 +24,8 @@ public sealed class RunSession
         Rewards = new RewardEngine(content);
         Refit = new RefitEngine(content, Combat);
         Map = new MapEngine(content);
-        Grove = new GroveEngine();
+        Grove = new GroveEngine(content);
+        Dock = new DockEngine(content);
     }
 
     public ContentDb Content { get; }
@@ -42,6 +43,8 @@ public sealed class RunSession
     public MapEngine Map { get; }
 
     public GroveEngine Grove { get; }
+
+    public DockEngine Dock { get; }
 
     /// <summary>
     /// What happened in the fight during the last <see cref="Do(Action{RunSession})"/>, in order, for the game to

@@ -1,6 +1,7 @@
 using Bloom.Core.Cards;
 using Bloom.Core.Combat;
 using Bloom.Core.Grid;
+using Bloom.Core.Map;
 using Bloom.Core.Run;
 using Bloom.Core.Save;
 using static Bloom.Core.Tests.TestContent;
@@ -148,25 +149,41 @@ public class SaveTests
     }
 
     /// <summary>
-    /// Plays a whole run through <see cref="RunSession"/> on a short fixed map: a skirmish, a grove, a hard
-    /// fight and the boss, with rewards, and refitting (fit, move, turn, undo) before each fight. After every
-    /// action the session is resumed from the saved JSON and compared with a copy that is never saved.
+    /// Plays a whole run through <see cref="RunSession"/> on a short fixed map: a skirmish, a dock, a grove, a
+    /// hard fight and the boss, with rewards, trading (buy, sell, repair), an upgrade, and refitting (fit,
+    /// move, turn, undo) before each fight. After every action the session is resumed from the saved JSON and
+    /// compared with a copy that is never saved.
     /// </summary>
     [Fact]
     public void ResumingAfterEveryActionPlaysTheSameVoyage()
     {
         var store = new MemorySaveStore();
         var session = RunSession.StartNew(Db, store, "test", seed: 5);
-        UseTinyMap(session.State);
+        session.State.Map = new SectorMap
+        {
+            Sector = 1,
+            Nodes =
+            [
+                new MapNode(0, NodeType.Skirmish, 0, 0),
+                new MapNode(1, NodeType.Dock, 1, 0),
+                new MapNode(2, NodeType.Grove, 2, 0),
+                new MapNode(3, NodeType.HardFight, 3, 0),
+                new MapNode(4, NodeType.Boss, 4, 0),
+            ],
+            Edges = [new MapEdge(0, 1), new MapEdge(1, 2), new MapEdge(2, 3), new MapEdge(3, 4)],
+        };
         Fit(session.State, "lance", 1, 1);
         Fit(session.State, "plating", 1, 3);
+        session.State.Hull = 40; // so the dock has something to repair
+        session.State.Salvage = 60; // and enough to buy as well
         session.Save();
         var reference = SaveSerializer.Deserialize(store.Json!);
         var combat = new CombatEngine(Db);
         var rewards = new RewardEngine(Db);
         var refit = new RefitEngine(Db);
         var map = new MapEngine(Db);
-        var grove = new GroveEngine();
+        var grove = new GroveEngine(Db);
+        var dock = new DockEngine(Db);
 
         var seen = new HashSet<string>();
         int refitStep = 0;
@@ -190,8 +207,12 @@ public class SaveTests
                     action = r => rewards.Take(r, 0);
                     break;
                 case RunPhase.Grove:
-                    seen.Add("grove");
-                    action = r => grove.Repair(r);
+                    seen.Add("upgrade");
+                    int upgraded = PieceUpgrades.Upgradable(Db, reference)[0].Id;
+                    action = r => grove.Upgrade(r, upgraded);
+                    break;
+                case RunPhase.Dock:
+                    action = NextDockAction(dock, reference, seen);
                     break;
                 default:
                     while (action is null)
@@ -210,8 +231,35 @@ public class SaveTests
         }
 
         Assert.Equal(RunPhase.Won, reference.Phase);
-        Assert.Equal(["fit", "grove", "map", "move", "reward", "rotate", "undo"], seen.Order());
-        Assert.Equal([0, 1, 2, 3], reference.Path);
+        Assert.Equal(["buy", "fit", "leave", "map", "move", "repair", "reward", "rotate", "sell", "undo", "upgrade"], seen.Order());
+        Assert.Equal([0, 1, 2, 3, 4], reference.Path);
+        Assert.Contains(reference.Ship.Fitted, f => f.Piece.Upgraded);
+    }
+
+    /// <summary>At the dock: sell a held piece, repair once, buy the first piece for sale, then leave.</summary>
+    private static Action<RunState> NextDockAction(DockEngine dock, RunState run, HashSet<string> seen)
+    {
+        if (run.Cargo.Pieces.Count > 0 && !seen.Contains("sell"))
+        {
+            seen.Add("sell");
+            int sold = run.Cargo.Pieces[0].Id;
+            return r => dock.Sell(r, sold);
+        }
+
+        if (DockEngine.CanRepair(run) && !seen.Contains("repair"))
+        {
+            seen.Add("repair");
+            return r => dock.Repair(r);
+        }
+
+        if (dock.CanBuy(run, 0) && !seen.Contains("buy"))
+        {
+            seen.Add("buy");
+            return r => dock.Buy(r, 0);
+        }
+
+        seen.Add("leave");
+        return r => dock.Leave(r);
     }
 
     /// <summary>One refit step of a fixed script, or null to skip that step. The last step starts the chosen fight.</summary>

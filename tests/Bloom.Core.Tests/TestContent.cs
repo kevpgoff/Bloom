@@ -15,6 +15,8 @@ namespace Bloom.Core.Tests;
 /// All pieces are common except "drone" (uncommon) and "spear" (rare), for reward tests.
 /// No piece adds the card "chorus" (draw 2); tests put it in the hand themselves, so the reward pool stays the same.
 /// Enemy pools: "dummy" and "blocker" are early, "heavy" and "mixed" late, "brute" hard and "titan" the boss.
+/// Upgrades: "ram" deals 8, "lance" costs 1, "sprout" blocks 6 and grows 3, "patch" costs 0; the other cards
+/// have none, so "plating" (deflect) and "singer" (brace) cannot be upgraded.
 /// A new run gets a generated map; <see cref="UseTinyMap"/> swaps in a short fixed one.
 /// </summary>
 internal static class TestContent
@@ -50,14 +52,16 @@ internal static class TestContent
 
     private const string Cards = """
         [
-          { "id": "ram", "name": "Ram", "cost": 1, "effects": [{ "type": "damage", "amount": 5 }] },
+          { "id": "ram", "name": "Ram", "cost": 1, "effects": [{ "type": "damage", "amount": 5 }],
+            "upgrade": { "effects": [{ "type": "damage", "amount": 8 }] } },
           { "id": "brace", "name": "Brace", "cost": 1, "effects": [{ "type": "block", "amount": 5 }] },
-          { "id": "lance", "name": "Lance", "cost": 2, "effects": [{ "type": "damage", "amount": 12 }] },
+          { "id": "lance", "name": "Lance", "cost": 2, "effects": [{ "type": "damage", "amount": 12 }], "upgrade": { "cost": 1 } },
           { "id": "deflect", "name": "Deflect", "cost": 1, "effects": [{ "type": "block", "amount": 8 }] },
           { "id": "focus", "name": "Focus", "cost": 1, "effects": [{ "type": "focus", "amount": 4 }] },
           { "id": "unfurl", "name": "Unfurl", "cost": 0, "effects": [{ "type": "gainEnergy", "amount": 2 }] },
-          { "id": "sprout", "name": "Sprout", "cost": 1, "effects": [{ "type": "block", "amount": 4 }, { "type": "grow", "amount": 2 }] },
-          { "id": "patch", "name": "Patch", "cost": 1, "effects": [{ "type": "repair", "count": 1 }] },
+          { "id": "sprout", "name": "Sprout", "cost": 1, "effects": [{ "type": "block", "amount": 4 }, { "type": "grow", "amount": 2 }],
+            "upgrade": { "effects": [{ "type": "block", "amount": 6 }, { "type": "grow", "amount": 3 }] } },
+          { "id": "patch", "name": "Patch", "cost": 1, "effects": [{ "type": "repair", "count": 1 }], "upgrade": { "cost": 0 } },
           { "id": "overhaul", "name": "Overhaul", "cost": 0, "effects": [{ "type": "repair", "count": 2 }] },
           { "id": "chorus", "name": "Chorus", "cost": 1, "effects": [{ "type": "draw", "count": 2 }] }
         ]
@@ -99,9 +103,10 @@ internal static class TestContent
 
     /// <summary>
     /// Test setup: replaces the run's map with a fixed one that is a straight line: a skirmish on row 0
-    /// (node 0), a grove on row 1 (node 1), a hard fight on row 2 (node 2), then the boss (node 3). Returns the run.
+    /// (node 0), a grove on row 1 (node 1, or <paramref name="middle"/>), a hard fight on row 2 (node 2), then
+    /// the boss (node 3). Returns the run.
     /// </summary>
-    public static RunState UseTinyMap(RunState run)
+    public static RunState UseTinyMap(RunState run, NodeType middle = NodeType.Grove)
     {
         run.Map = new SectorMap
         {
@@ -109,7 +114,7 @@ internal static class TestContent
             Nodes =
             [
                 new MapNode(0, NodeType.Skirmish, 0, 0),
-                new MapNode(1, NodeType.Grove, 1, 0),
+                new MapNode(1, middle, 1, 0),
                 new MapNode(2, NodeType.HardFight, 2, 0),
                 new MapNode(3, NodeType.Boss, 3, 0),
             ],

@@ -298,7 +298,7 @@ public partial class CombatScreen : Control
         {
             IntentKind.Attack => ($"Attack {intent.Amount}", Palette.Attack),
             IntentKind.HeavyAttack => (session.Combat.HeavyAttackTarget(run) is { } target
-                ? $"Heavy attack {intent.Amount}  ·  {session.Content.Piece(target.Piece.DefId).Name}"
+                ? $"Heavy attack {intent.Amount}  ·  {CardText.PieceName(session.Content.Piece(target.Piece.DefId), target.Piece)}"
                 : $"Heavy attack {intent.Amount}", Palette.Heavy),
             IntentKind.Block => ($"Block {intent.Amount}", Palette.Block),
             _ => (intent.Kind.ToString(), Colors.White),

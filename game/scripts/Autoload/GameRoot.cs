@@ -39,8 +39,8 @@ public partial class GameRoot : Node
     public string Status { get; private set; } = "";
 
     /// <summary>
-    /// Whether the Fitting screen is open over the sector map. It is only which screen shows, not part of
-    /// the run, so it is not saved: a resumed run opens on the map.
+    /// Whether the Fitting screen is open over the sector map or a dock. It is only which screen shows, not
+    /// part of the run, so it is not saved: a resumed run opens on the map or the dock.
     /// </summary>
     public bool ShipOpen { get; private set; }
 
@@ -117,7 +117,7 @@ public partial class GameRoot : Node
         return Session;
     }
 
-    /// <summary>Opens or closes the Fitting screen over the map. Changes no state, so nothing is saved.</summary>
+    /// <summary>Opens or closes the Fitting screen over the map or a dock. Changes no state, so nothing is saved.</summary>
     public void ShowShip(bool open)
     {
         if (ShipOpen != open)

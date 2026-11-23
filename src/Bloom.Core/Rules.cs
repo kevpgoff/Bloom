@@ -70,13 +70,14 @@ public static class Rules
     public static readonly NodeType? MapRowBeforeBoss = NodeType.Grove;
 
     /// <summary>
-    /// How often each type appears on the other rows. A type with no weight is never placed; docks,
-    /// shipyards and events get theirs when they are built.
+    /// How often each type appears on the other rows. A type with no weight is never placed; shipyards and
+    /// events get theirs when they are built.
     /// </summary>
     public static readonly IReadOnlyList<(NodeType Type, int Weight)> MapNodeWeights =
     [
         (NodeType.Skirmish, 40),
         (NodeType.HardFight, 15),
+        (NodeType.Dock, 10),
         (NodeType.Grove, 5),
     ];
 
@@ -99,4 +100,25 @@ public static class Rules
 
     /// <summary>A grove repairs this share of the maximum hull, rounded up.</summary>
     public const int GroveRepairPercent = 30;
+
+    // Docks. Prices are the spec's starting prices for testing.
+
+    /// <summary>What a piece costs at a dock, by rarity.</summary>
+    public static int PiecePrice(Rarity rarity) => rarity switch
+    {
+        Rarity.Common => 40,
+        Rarity.Uncommon => 70,
+        _ => 120,
+    };
+
+    /// <summary>A dock buys a piece for this share of its price, rounded down.</summary>
+    public const int SellPercent = 50;
+
+    /// <summary>Pieces for sale at each dock, rolled like a reward's.</summary>
+    public const int DockPieces = 3;
+
+    /// <summary>Hull points one repair at a dock restores, for <see cref="DockRepairPrice"/>. It can be bought again.</summary>
+    public const int DockRepairHull = 10;
+
+    public const int DockRepairPrice = 20;
 }

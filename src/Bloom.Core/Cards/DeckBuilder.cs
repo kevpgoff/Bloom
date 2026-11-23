@@ -8,7 +8,7 @@ public static class DeckBuilder
 {
     /// <summary>
     /// Builds the deck from the fitted pieces that are not disabled, in layout order. Pieces in the
-    /// cargo hold add nothing. Card ids start at 1.
+    /// cargo hold add nothing. Card ids start at 1. The cards of an upgraded piece are upgraded.
     /// </summary>
     public static List<CardInstance> Build(ShipLayout layout, ContentDb content, IReadOnlyCollection<int>? disabledPieceIds = null)
     {
@@ -25,7 +25,7 @@ public static class DeckBuilder
             {
                 for (int i = 0; i < grant.Count; i++)
                 {
-                    deck.Add(new CardInstance(nextId++, grant.Card, fitted.Piece.Id));
+                    deck.Add(new CardInstance(nextId++, grant.Card, fitted.Piece.Id, fitted.Piece.Upgraded));
                 }
             }
         }

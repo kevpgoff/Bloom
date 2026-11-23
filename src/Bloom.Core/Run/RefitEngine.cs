@@ -17,8 +17,9 @@ public sealed record PlacementPreview(FitError Error, IReadOnlyList<ActiveBonus>
 /// <summary>
 /// Refitting: moving, turning, fitting and unfitting pieces, composting them from the cargo hold, undoing
 /// those steps, and starting the fight the player committed to. The spec: rearranging is free at any time
-/// outside combat, and the layout locks when a fight starts. Refitting is allowed on the map and after
-/// choosing a fight node (<see cref="RunPhase.Map"/> and <see cref="RunPhase.Prepare"/>).
+/// outside combat, and the layout locks when a fight starts. Refitting is allowed on the map, after
+/// choosing a fight node and at a dock (<see cref="RunPhase.Map"/>, <see cref="RunPhase.Prepare"/> and
+/// <see cref="RunPhase.Dock"/>).
 /// </summary>
 /// <remarks>
 /// Each method that changes the ship validates first, then saves a <see cref="ShipSnapshot"/> to
@@ -38,8 +39,8 @@ public sealed class RefitEngine(ContentDb content, CombatEngine? combat = null)
     /// <summary>Pieces that must be fitted or composted before the next fight can start.</summary>
     public int CargoExcess(RunState run) => run.Cargo.Excess;
 
-    /// <summary>Whether the ship can be changed now: on the map, or before a chosen fight.</summary>
-    public static bool CanRefit(RunState run) => run.Phase is RunPhase.Map or RunPhase.Prepare;
+    /// <summary>Whether the ship can be changed now: on the map, before a chosen fight, or at a dock.</summary>
+    public static bool CanRefit(RunState run) => run.Phase is RunPhase.Map or RunPhase.Prepare or RunPhase.Dock;
 
     public bool CanUndo(RunState run) => CanRefit(run) && run.UndoStack.Count > 0;
 
@@ -176,7 +177,7 @@ public sealed class RefitEngine(ContentDb content, CombatEngine? combat = null)
     public CombatState StartFight(RunState run)
     {
         RequireRefit(run);
-        if (run.Encounter is not { } encounter)
+        if (run.Phase != RunPhase.Prepare || run.Encounter is not { } encounter)
         {
             throw new InvalidOperationException("Choose a fight on the map first.");
         }
@@ -244,7 +245,7 @@ public sealed class RefitEngine(ContentDb content, CombatEngine? combat = null)
     {
         switch (run.Phase)
         {
-            case RunPhase.Map or RunPhase.Prepare:
+            case RunPhase.Map or RunPhase.Prepare or RunPhase.Dock:
                 return;
             case RunPhase.Fight:
                 throw new InvalidOperationException("The layout is locked during a fight.");

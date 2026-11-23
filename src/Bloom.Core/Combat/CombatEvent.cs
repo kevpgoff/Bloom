@@ -24,8 +24,8 @@ public sealed record DiscardShuffled(int Count) : CombatEvent;
 /// <summary>The cards left in the hand went to the discard pile at the end of the turn.</summary>
 public sealed record HandDiscarded(int Count) : CombatEvent;
 
-/// <summary>A card left the hand and its energy was paid. Its effects follow, in the card's order.</summary>
-public sealed record CardPlayed(int CardId, string CardDefId, int SourcePieceId) : CombatEvent;
+/// <summary>A card left the hand and its energy was paid. Its effects follow, in the card's order. <paramref name="Upgraded"/> says it played as its upgrade.</summary>
+public sealed record CardPlayed(int CardId, string CardDefId, int SourcePieceId, bool Upgraded = false) : CombatEvent;
 
 /// <summary>The attack being played used up the pending focus; its damage already includes it.</summary>
 public sealed record FocusSpent(int Amount) : CombatEvent;

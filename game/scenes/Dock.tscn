@@ -1,0 +1,95 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/Screens/DockScreen.cs" id="1_screen"]
+
+[node name="Dock" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_screen")
+
+[node name="Layout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Layout/Header"]
+layout_mode = 2
+theme_type_variation = &"Heading"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+text = "Dock"
+
+[node name="StatusLabel" type="Label" parent="Layout/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 1
+theme_override_font_sizes/font_size = 26
+text = "Hull"
+vertical_alignment = 1
+
+[node name="Message" type="Label" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.498, 0.702, 0.678, 1)
+theme_override_font_sizes/font_size = 24
+text = "A trading dock turns in the light. Its brokers deal in parts and patchwork."
+autowrap_mode = 3
+
+[node name="OptionScroll" type="ScrollContainer" parent="Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Options" type="VBoxContainer" parent="Layout/OptionScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="CargoNote" type="Label" parent="Layout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.718, 0.302, 1)
+theme_override_font_sizes/font_size = 22
+text = "Cargo hold full"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Buttons" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ShipButton" type="Button" parent="Layout/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 96)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Ship"
+
+[node name="ActionButton" type="Button" parent="Layout/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+disabled = true
+text = "Buy"
+
+[node name="LeaveButton" type="Button" parent="Layout/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 96)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Leave"
