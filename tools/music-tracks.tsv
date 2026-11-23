@@ -1,0 +1,34 @@
+# The game's music, built by tools/import-music.sh from Voltz Supreme's "Analog Ambience" zips in music/.
+# One row per file the game plays. Columns are separated by tabs; write - for an empty optional column.
+#
+#   mood      voyage (map, fitting, grove, dock, shipyard, event, reward), fight, boss, or stings
+#   name      the file name in game/audio/music/<mood>/ without .ogg; the stings must be named won and lost
+#   source    the WAV's file name inside the zips (the names are unique across the three zips)
+#   start     optional: where to start, in seconds
+#   end       optional: where to stop, in seconds
+#   fade_out  optional: seconds of fade-out before the end; needs end
+#
+# Left out of the game: Creepy (too dark), Simple Synth and Black Energy (too calm for the boss), Head in a Fishtank -
+# Just Bubbles (a thinned-out copy of Head in a Fishtank), Dreamy Ending (Long).
+#
+# mood	name	source	start	end	fade_out
+voyage	cool-breeze-in-the-sails	08 - Cool Breeze in the Sails.wav	-	-	-
+voyage	cooling-reactor	10 - Cooling Reactor.wav	-	-	-
+voyage	lullabye	Voltz Supreme - Lullabye.wav	-	-	-
+voyage	cryo-drift	Voltz Supreme - Cryo Drift.wav	-	-	-
+voyage	mind-float	Voltz Supreme - Mind Float.wav	-	-	-
+voyage	head-in-a-fishtank	09 - Head in a Fishtank.wav	-	-	-
+voyage	fields-of-your-mind	02 - Fields of Your Mind.wav	-	-	-
+voyage	trees	03 - Trees.wav	-	-	-
+voyage	trees-underwater	04 - Trees Underwater.wav	-	-	-
+fight	low-fog	07 - Low Fog.wav	-	-	-
+fight	night-drive	06 - Night Drive.wav	-	-	-
+fight	water-caves	13 - Water Caves.wav	-	-	-
+fight	kitten-in-a-cave	11 - Kitten in a Cave.wav	-	-	-
+fight	march-of-the-blips	Voltz Supreme - March of The Blips.wav	-	-	-
+boss	through-clouds	Voltz Supreme - Through Clouds.wav	-	-	-
+boss	sunset	12 - Sunset.wav	-	-	-
+boss	darkness	Voltz Supreme - Darkness.wav	-	-	-
+boss	long-highway	01 - Long Highway.wav	-	-	-
+stings	won	Voltz Supreme - Dreamy Ending (Short).wav	-	33.9	0.5
+stings	lost	14 - Waiting for Help.wav	0	30	4
