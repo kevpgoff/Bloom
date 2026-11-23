@@ -145,4 +145,7 @@ public static class Rules
     public const int MinEventChoices = 2;
 
     public const int MaxEventChoices = 4;
+
+    /// <summary>A boss has 2 or 3 parts, as the owner decided; at most 3 fit across the combat screen.</summary>
+    public const int MaxEnemyParts = 3;
 }

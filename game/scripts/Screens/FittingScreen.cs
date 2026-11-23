@@ -68,7 +68,7 @@ public partial class FittingScreen : Control
 
         var enemy = session.Refit.NextEnemy(run);
         _next.Visible = enemy is not null;
-        _next.Text = enemy is null ? "" : $"Next: {enemy.Name}{PoolNote(enemy.Pool)}  ·  Hull {enemy.Hull}";
+        _next.Text = enemy is null ? "" : $"Next: {enemy.Name}{PoolNote(enemy.Pool)}  ·  Hull {enemy.Hull}{PartsNote(enemy.AllParts.Count)}";
 
         _undo.Disabled = !session.Refit.CanUndo(run);
         bool prepare = run.Phase == RunPhase.Prepare;
@@ -88,6 +88,13 @@ public partial class FittingScreen : Control
         EnemyPool.Hard => "  ·  Hard fight",
         EnemyPool.Boss => "  ·  Boss",
         _ => "",
+    };
+
+    private static string PartsNote(int parts) => parts switch
+    {
+        0 => "",
+        1 => "  ·  1 part",
+        _ => $"  ·  {parts} parts",
     };
 
     private static void OnMainButton()

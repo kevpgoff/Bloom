@@ -8,7 +8,7 @@ All numbers are placeholders for testing, as the design spec says. Entries marke
 | --- | --- |
 | `pieces.json` | Equipment and crew: shape, tags, the cards they add, an optional adjacency bonus |
 | `cards.json` | Cards: cost, effects and an `upgrade` |
-| `enemies.json` | Enemies: hull points, a repeating pattern of intents, a `pool` and a `sector`. The pool says which fights of the sector map draw the enemy (see below). |
+| `enemies.json` | Enemies: hull points, a repeating pattern of intents, a `pool` and a `sector`, and for a boss its `parts`. The pool says which fights of the sector map draw the enemy (see below). |
 | `ships.json` | Ship classes: starting hull, hull points, starting pieces |
 | `sections.json` | Hull sections that shipyards offer: a name and a shape |
 | `events.json` | Events: a story, 2 to 4 choices, and what each choice can come to |
@@ -29,6 +29,7 @@ All numbers are placeholders for testing, as the design spec says. Entries marke
   - `fight` takes an `enemy` (not a boss) and starts that fight after the event, with that enemy's normal reward.
 
   The game shows only a choice's label, its cost and its tag, never its outcomes, so the text must carry the hints (the owner, 2026-11-23: "reading matters"). A choice whose tag no fitted piece carries is not shown. Every event needs one choice with no cost and no tag, so the player can always go on. The validator checks all of this, and every sector needs at least one event.
+- **Enemy parts** (`"parts"`, a boss's) each have a `name`, a `hull` and their own `pattern`, checked like the body's. An enemy has at most 3; every boss needs 2 or 3. The body acts first, then each working part in order, and all of them add to the enemy's one block.
 - **Enums** are written as in code: `"Equipment"`, `"Weapon"`, `"HeavyAttack"`.
 - **Enemy pools** are `"Early"` (skirmishes on the map's first 3 rows), `"Late"` (skirmishes on later rows), `"Hard"` (hard fights) and `"Boss"`. Every enemy needs one. `"sector"` defaults to 1. Each sector needs at least one enemy in every pool, and the validator checks it. When a fight node is chosen, its enemy is drawn from the pool, and an enemy repeats in a run only after the rest of its pool has been met.
 
@@ -107,7 +108,7 @@ The owner approved these on 2026-11-21 so that rewards and refitting can be trie
 | Drone Wrangler | Crew, Uncommon | `##` | 1 Rewire (1: repair 1, draw 1) | adjacent Drone pieces deal 2 more damage |
 | Choir Elder | Crew, Rare | `###` | 1 Hymn (1: next attack +6) | adjacent Weapon pieces deal 3 more damage |
 
-The enemies of sector 1, by pool. Lanes are 0-based; the seedling's hull covers lanes 1–5, so an attack on lane 0 hits lane 1 until a section opens lane 0. The three attacks on lane 0 aimed at lane 1 until the owner asked, on 2026-11-23, for the leftmost lane to be attacked once it exists. The first four were the old placeholder run of four fights; the rest were added with the sector map on 2026-11-22. On 2026-11-23 the owner asked for a harder game, and every enemy now hits about half again as hard (see `docs/decisions.md`, "Difficulty"). The boss is a big normal enemy until boss parts exist.
+The enemies of sector 1, by pool. Lanes are 0-based; the seedling's hull covers lanes 1–5, so an attack on lane 0 hits lane 1 until a section opens lane 0. The three attacks on lane 0 aimed at lane 1 until the owner asked, on 2026-11-23, for the leftmost lane to be attacked once it exists. The first four were the old placeholder run of four fights; the rest were added with the sector map on 2026-11-22. On 2026-11-23 the owner asked for a harder game, and every enemy now hits about half again as hard (see `docs/decisions.md`, "Difficulty"). The boss got its parts on 2026-11-23; each part is listed under it.
 
 | Pool | Enemy | Hull | Pattern |
 | --- | --- | --- | --- |
@@ -122,7 +123,10 @@ The enemies of sector 1, by pool. Lanes are 0-based; the seedling's hull covers 
 | Hard | Strip Miner | 70 | Heavy 19 on lane 3, attack 15, block 12, heavy 19 on lane 0 |
 | Hard | Aurora Knot | 64 | Attack 13, attack 13, heavy 21 on lane 5, block 10 |
 | Hard | Salvage Hound | 68 | Attack 17, block 8, heavy 20 on lane 2 |
-| Boss | Grand Combine | 120 | Attack 14, heavy 20 on lane 2, block 14, attack 16, heavy 20 on lane 4 |
+| Boss | Grand Combine | 56 | Attack 9, heavy 13 on lane 2, block 6 |
+| Boss part | Thresher Arm | 15 | Attack 5, attack 6, attack 7 |
+| Boss part | Chaff Screen | 12 | Block 3 |
+| Boss part | Baling Ram | 16 | Heavy 10 on lane 4, attack 4, heavy 10 on lane 3 |
 
 ## Placeholder events
 

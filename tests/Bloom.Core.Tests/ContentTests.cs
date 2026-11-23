@@ -48,6 +48,37 @@ public class ContentTests
     public void AnEnemyInASectorPastTheRunIsReported() =>
         AssertInvalid($"sector {Rules.SectorsPerRun + 1} is outside", enemies: [.. Enemies, Dummy with { Id = "far", Sector = Rules.SectorsPerRun + 1 }]);
 
+    private static readonly EnemyPartDef Arm = new("Arm", 10, [new Intent(IntentKind.Attack, 2)]);
+
+    private static EnemyDef BossWith(params EnemyPartDef[] parts) => Enemies[3] with { Parts = parts };
+
+    [Fact]
+    public void ABossWithPartsLoads() => Create(enemies: [.. Enemies[..3], BossWith(Arm, Arm with { Name = "Shell" })]);
+
+    [Fact]
+    public void TooManyPartsAreReported() =>
+        AssertInvalid($"has 4 parts, but at most {Rules.MaxEnemyParts}", enemies: [.. Enemies[..3], BossWith(Arm, Arm with { Name = "B" }, Arm with { Name = "C" }, Arm with { Name = "D" })]);
+
+    [Fact]
+    public void APartWithoutANameIsReported() =>
+        AssertInvalid("enemy 'boss', part 1: missing name", enemies: [.. Enemies[..3], BossWith(Arm, Arm with { Name = " " })]);
+
+    [Fact]
+    public void TwoPartsWithOneNameAreReported() =>
+        AssertInvalid("enemy 'boss', part 1: another part is already named 'Arm'", enemies: [.. Enemies[..3], BossWith(Arm, Arm)]);
+
+    [Fact]
+    public void APartWithoutHullIsReported() =>
+        AssertInvalid("enemy 'boss', part 0: hull must be above 0", enemies: [.. Enemies[..3], BossWith(Arm with { Hull = 0 })]);
+
+    [Fact]
+    public void APartWithoutAPatternIsReported() =>
+        AssertInvalid("enemy 'boss', part 0: needs at least one intent", enemies: [.. Enemies[..3], BossWith(Arm with { Pattern = [] })]);
+
+    [Fact]
+    public void APartsHeavyAttackWithoutALaneIsReported() =>
+        AssertInvalid("enemy 'boss', part 0: a heavy attack must name a lane", enemies: [.. Enemies[..3], BossWith(Arm with { Pattern = [new Intent(IntentKind.HeavyAttack, 5)] })]);
+
     [Fact]
     public void DuplicateIdsAreReported() =>
         AssertInvalid("Duplicate card id 'ram'", cards: [Ram, Ram]);
@@ -303,6 +334,14 @@ public class ShippedContentTests
         Assert.Equal(1, Count(EnemyPool.Boss));
     }
 
+    /// <summary>The spec's boss (owner, 2026-11-22): 2 or 3 parts, each acting every turn with its own pattern.</summary>
+    [Fact]
+    public void EveryShippedBossHasTwoOrThreeParts()
+    {
+        var db = TestContent.LoadShipped();
+        Assert.All(db.Enemies.Where(e => e.Pool == EnemyPool.Boss), boss => Assert.InRange(boss.AllParts.Count, 2, 3));
+    }
+
     [Fact]
     public void ARunStartsOnTheMapOfTheFirstSector()
     {
@@ -325,7 +364,7 @@ public class ShippedContentTests
         Assert.DoesNotContain(run.Ship.Grid.Cells, c => c.X == 0);
         Assert.Equal(1, run.Ship.Grid.LaneHit(0));
         var pools = db.Enemies
-            .Where(e => e.Pattern.Any(i => i.Kind == IntentKind.HeavyAttack && i.Lane == 0))
+            .Where(e => e.AllIntents.Any(i => i.Kind == IntentKind.HeavyAttack && i.Lane == 0))
             .Select(e => e.Pool!.Value)
             .Distinct()
             .Order();

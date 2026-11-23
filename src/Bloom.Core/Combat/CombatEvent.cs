@@ -31,10 +31,17 @@ public sealed record CardPlayed(int CardId, string CardDefId, int SourcePieceId,
 public sealed record FocusSpent(int Amount) : CombatEvent;
 
 /// <summary>
-/// A damage effect hit the enemy. <paramref name="Blocked"/> went into its block and <paramref name="HullDamage"/>
-/// got past it; a killing blow's hull damage can be more than the hull that was left.
+/// A damage effect hit the enemy: its body, or the part <paramref name="Part"/> when that was the target.
+/// <paramref name="Blocked"/> went into its block and <paramref name="HullDamage"/> got past it; a killing blow's
+/// hull damage can be more than the hull that was left. <paramref name="HullLeft"/> is the body's or the part's.
 /// </summary>
-public sealed record EnemyHit(int Amount, int Blocked, int HullDamage, int HullLeft) : CombatEvent;
+public sealed record EnemyHit(int Amount, int Blocked, int HullDamage, int HullLeft, int? Part = null) : CombatEvent;
+
+/// <summary>A hit took a part's hull to 0: it stops acting, and the player's aim went back to the body.</summary>
+public sealed record PartDisabled(int Part) : CombatEvent;
+
+/// <summary>The player aimed at a working part, or at the body (<paramref name="Part"/> null).</summary>
+public sealed record TargetChanged(int? Part) : CombatEvent;
 
 public sealed record BlockGained(int Amount, int Total) : CombatEvent;
 
@@ -48,15 +55,17 @@ public sealed record PieceRepaired(int PieceId) : CombatEvent;
 public sealed record CardGrew(int CardId, int Growth) : CombatEvent;
 
 /// <summary>
-/// The enemy attacked the ship. <paramref name="Blocked"/> went into the ship's block and <paramref name="HullDamage"/>
-/// got past it. <paramref name="HeavyLane"/> is the lane of a heavy attack, or null for a normal one.
+/// The enemy attacked the ship, with its body or with the part <paramref name="Part"/>. <paramref name="Blocked"/>
+/// went into the ship's block and <paramref name="HullDamage"/> got past it. <paramref name="HeavyLane"/> is the
+/// lane of a heavy attack, or null for a normal one.
 /// </summary>
-public sealed record ShipHit(int Amount, int Blocked, int HullDamage, int HullLeft, int? HeavyLane) : CombatEvent;
+public sealed record ShipHit(int Amount, int Blocked, int HullDamage, int HullLeft, int? HeavyLane, int? Part = null) : CombatEvent;
 
 /// <summary>A heavy attack disabled a piece; its cards went offline.</summary>
 public sealed record PieceDisabled(int PieceId, int Lane) : CombatEvent;
 
-public sealed record EnemyBlocked(int Amount, int Total) : CombatEvent;
+/// <summary>The enemy's body, or its part <paramref name="Part"/>, raised the enemy's one block to <paramref name="Total"/>.</summary>
+public sealed record EnemyBlocked(int Amount, int Total, int? Part = null) : CombatEvent;
 
 /// <summary>The fight is over. Always the last event of its action.</summary>
 public sealed record FightEnded(CombatOutcome Outcome) : CombatEvent;

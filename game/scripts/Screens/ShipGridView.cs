@@ -6,7 +6,7 @@ namespace Bloom.Game.Screens;
 
 /// <summary>
 /// Draws the ship during a fight: every lane, the hull's rows, the fitted pieces, which ones are
-/// disabled or receive a bonus, and the lane and target of a coming heavy attack. Reports taps on
+/// disabled or receive a bonus, and the lane and target of each coming heavy attack. Reports taps on
 /// pieces through <see cref="PieceTapped"/>. All of it is read from the run; nothing is decided here.
 /// </summary>
 public partial class ShipGridView : Control
@@ -59,17 +59,19 @@ public partial class ShipGridView : Control
         var combat = run.Combat;
         IReadOnlyCollection<int> disabled = combat?.DisabledPieceIds ?? [];
 
-        int? heavyLane = combat is null ? null : _session.Combat.HeavyLane(run);
-        GridPainter.DrawLanes(this, g, heavyLane is int marked ? [marked] : []);
+        // A boss's body and parts can each make a heavy attack in the same turn.
+        var heavies = combat is null ? [] : _session.Combat.NextActions(run).Where(a => a.Lane is not null).ToList();
+        var heavyLanes = heavies.Select(a => a.Lane!.Value).Distinct().ToList();
+        GridPainter.DrawLanes(this, g, heavyLanes);
         GridPainter.DrawHull(this, g, run.Ship.Grid.Cells);
-        if (heavyLane is int heavy)
+        foreach (int lane in heavyLanes)
         {
-            GridPainter.DrawHeavyLane(this, g, heavy);
+            GridPainter.DrawHeavyLane(this, g, lane);
         }
 
         var bonuses = _session.Fitter.ActiveBonuses(run.Ship, disabled);
         var bonusReceivers = bonuses.Select(b => b.ReceiverId).ToHashSet();
-        int? targetId = combat is null ? null : _session.Combat.HeavyAttackTarget(run)?.Piece.Id;
+        var targetIds = heavies.Where(a => a.Target is not null).Select(a => a.Target!.Piece.Id).ToHashSet();
         foreach (var fitted in run.Ship.Fitted)
         {
             int id = fitted.Piece.Id;
@@ -91,7 +93,7 @@ public partial class ShipGridView : Control
                 GridPainter.DrawBonusBadge(this, g, cells, Palette.Badge);
             }
 
-            if (id == targetId)
+            if (targetIds.Contains(id))
             {
                 GridPainter.DrawOutline(this, g, cells, Palette.Heavy, 5);
             }
