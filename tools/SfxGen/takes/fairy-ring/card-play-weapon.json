@@ -1,0 +1,15 @@
+{
+  "id": "card-play-weapon",
+  "family": "cards",
+  "description": "A card from a weapon piece is played: a hard click of chitin, then the angry buzz of a beetle's wings.",
+  "level": -6,
+  "layers": [
+    { "wave": "wood", "note": "A6", "decay": 40, "hardness": 1 },
+    { "wave": "saw", "note": "A5", "gain": -1, "at": 8, "attack": 6, "decay": 170, "curve": 3,
+      "pitch": { "from": 2, "to": -1, "time": 170, "curve": 0 },
+      "lfo": { "rate": 72, "amp": 0.85 },
+      "ring": { "ratio": 1.37, "amount": 0.5 },
+      "filter": { "type": "bandpass", "cutoff": 2200, "q": 1.2 } }
+  ],
+  "master": { "drive": 4, "highpass": 300, "lowpass": 9000, "reverb": { "decay": 180, "mix": -20, "size": 0.6 } }
+}

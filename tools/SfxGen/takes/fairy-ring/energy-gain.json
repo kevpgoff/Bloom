@@ -1,0 +1,15 @@
+{
+  "id": "energy-gain",
+  "family": "ship",
+  "description": "Extra energy is gained: a small bird chirps three times over the fizz of sunlight on leaves.",
+  "level": -6,
+  "layers": [
+    { "wave": "sine", "notes": ["D6", "A6", "D6"], "step": 105, "attack": 3, "decay": 70, "curve": 3,
+      "pitch": { "from": -14, "time": 28, "curve": 2 },
+      "lfo": { "rate": 38, "amp": 0.55 } },
+    { "wave": "crackle", "gain": -10, "attack": 30, "decay": 380, "curve": 2,
+      "density": { "from": 1600, "to": 200 },
+      "filter": { "type": "highpass", "cutoff": 4000 } }
+  ],
+  "master": { "highpass": 400, "lowpass": 11000, "reverb": { "decay": 320, "mix": -17, "predelay": 15 } }
+}

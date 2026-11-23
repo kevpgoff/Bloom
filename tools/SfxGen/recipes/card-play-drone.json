@@ -1,0 +1,15 @@
+{
+  "id": "card-play-drone",
+  "family": "cards",
+  "description": "A card from a drone piece is played: a little wooden drone winds up with a buzz of its wings and ticks into place.",
+  "level": -6,
+  "layers": [
+    { "wave": "noise", "gain": -4, "attack": 60, "decay": 170, "curve": 0,
+      "filter": { "type": "bandpass", "cutoff": 1500, "q": 2 },
+      "lfo": { "rate": 30, "to": 55, "amp": 1 },
+      "body": { "material": "wood", "note": "A5", "decay": 50, "dry": -6 } },
+    { "wave": "wood", "note": "A6", "at": 230, "decay": 60, "hardness": 0.8 },
+    { "wave": "tine", "note": "A5", "gain": -8, "at": 230, "decay": 240, "hardness": 0.6 }
+  ],
+  "master": { "highpass": 300, "lowpass": 8500, "reverb": { "decay": 150, "mix": -20, "size": 0.6, "damp": 4000, "predelay": 8 } }
+}

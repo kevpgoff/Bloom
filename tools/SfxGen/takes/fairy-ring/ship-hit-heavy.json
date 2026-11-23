@@ -1,0 +1,22 @@
+{
+  "id": "ship-hit-heavy",
+  "family": "ship",
+  "description": "A heavy hit lands in a lane: the ship's wood cracks and the ship itself groans, low and long.",
+  "level": -2,
+  "layers": [
+    { "wave": "saw", "note": "D3", "attack": 15, "decay": 520, "curve": 2,
+      "pitch": { "from": 4, "to": -5, "time": 520, "curve": 0 },
+      "unison": { "voices": 3, "detune": 20 },
+      "drift": { "cents": 20 },
+      "formant": { "from": "a", "to": "u", "time": 450, "curve": 0, "shift": 2 } },
+    { "wave": "wood", "note": "D4", "gain": -1, "decay": 240, "hardness": 1 },
+    { "wave": "noise", "gain": -5, "attack": 1, "decay": 140, "curve": 6,
+      "filter": { "type": "bandpass", "cutoff": 1800, "to": 600, "time": 100, "q": 0.8 } },
+    { "wave": "crackle", "gain": -6, "attack": 2, "decay": 380, "curve": 2,
+      "density": { "from": 2500, "to": 60 },
+      "body": { "material": "wood", "note": "A4", "decay": 40, "dry": -10 } },
+    { "wave": "sine", "note": "D3", "gain": -14, "decay": 240, "curve": 4,
+      "pitch": { "from": 12, "time": 60 } }
+  ],
+  "master": { "drive": 6, "highpass": 110, "lowpass": 7000, "reverb": { "decay": 460, "mix": -15, "damp": 3000, "predelay": 12 } }
+}

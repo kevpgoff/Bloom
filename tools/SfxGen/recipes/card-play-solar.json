@@ -1,0 +1,14 @@
+{
+  "id": "card-play-solar",
+  "family": "cards",
+  "description": "A card from a solar piece is played: a glass lens rings in the sun, and warm air rises past it.",
+  "level": -6,
+  "layers": [
+    { "wave": "glass", "note": "A5", "decay": 440, "hardness": 0.55,
+      "unison": { "voices": 2, "detune": 6 } },
+    { "wave": "tine", "note": "A6", "gain": -10, "decay": 180, "hardness": 0.6 },
+    { "wave": "noise", "gain": -16, "attack": 120, "decay": 150, "curve": -2,
+      "filter": { "type": "bandpass", "cutoff": 900, "to": 3000, "time": 270, "curve": 0, "q": 1.4 } }
+  ],
+  "master": { "highpass": 250, "lowpass": 9500, "reverb": { "decay": 200, "mix": -18, "damp": 5000, "predelay": 10 } }
+}

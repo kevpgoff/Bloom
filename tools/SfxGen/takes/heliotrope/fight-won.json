@@ -1,0 +1,20 @@
+{
+  "id": "fight-won",
+  "family": "flow",
+  "description": "The enemy is disabled: a slow, warm swell of two notes a fifth apart, with vibrato, as the filter opens and the tape echo carries it off.",
+  "level": -3,
+  "layers": [
+    { "wave": "saw", "notes": ["D5", "A5"], "step": 140, "attack": 160, "hold": 120, "decay": 410, "curve": 3,
+      "unison": { "voices": 3, "detune": 14 },
+      "drift": { "cents": 8 },
+      "lfo": { "rate": 5.5, "pitch": 12 },
+      "filter": { "type": "ladder", "cutoff": 500, "to": 2600, "time": 380, "curve": 0, "q": 2.5 } },
+    { "wave": "triangle", "note": "D5", "gain": -8, "attack": 200, "hold": 100, "decay": 540, "curve": 3,
+      "drift": { "cents": 10 } },
+    { "wave": "noise", "gain": -24, "attack": 200, "decay": 500,
+      "filter": { "type": "bandpass", "cutoff": 3000, "q": 1 } }
+  ],
+  "master": { "drive": 2, "highpass": 220, "lowpass": 8000,
+              "echo": { "time": 150, "feedback": 0.3, "mix": -17, "damp": 2200 },
+              "reverb": { "decay": 520, "mix": -16 } }
+}

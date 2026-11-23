@@ -1,0 +1,15 @@
+{
+  "id": "block-gain",
+  "family": "ship",
+  "description": "Block is gained: a glass bowl of water is set down; it hums as it is placed, then rings and wavers.",
+  "level": -6,
+  "layers": [
+    { "wave": "noise", "gain": -4, "attack": 90, "decay": 160, "curve": 2,
+      "filter": { "type": "bandpass", "cutoff": 1500, "q": 1 },
+      "body": { "material": "glass", "note": "G5", "decay": 300 } },
+    { "wave": "glass", "note": "G5", "at": 110, "decay": 650, "hardness": 0.3,
+      "unison": { "voices": 3, "detune": 7 } },
+    { "wave": "skin", "note": "G4", "gain": -10, "at": 110, "decay": 120, "hardness": 0.4 }
+  ],
+  "master": { "highpass": 250, "lowpass": 9000, "reverb": { "decay": 420, "mix": -16, "damp": 4500, "predelay": 15 } }
+}

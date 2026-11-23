@@ -1,0 +1,22 @@
+{
+  "id": "fight-lost",
+  "family": "flow",
+  "description": "The hull gives out: the living wood is struck, groans and splits, seeds spill, and the water bowl cracks and drains.",
+  "level": -3,
+  "layers": [
+    { "wave": "wood", "note": "D4", "decay": 300, "hardness": 1 },
+    { "wave": "noise", "gain": -4, "attack": 1, "decay": 160, "curve": 6,
+      "filter": { "type": "bandpass", "cutoff": 1800, "to": 500, "time": 120, "q": 0.8 } },
+    { "wave": "crackle", "gain": -2, "at": 150, "attack": 50, "decay": 750, "curve": 0,
+      "density": { "from": 60, "to": 15 },
+      "body": { "material": "wood", "note": "A4", "decay": 60, "dry": -12 } },
+    { "wave": "crackle", "gain": -6, "at": 300, "attack": 2, "decay": 560, "curve": 3,
+      "density": { "from": 2000, "to": 30 },
+      "body": { "material": "skin", "note": "D5", "decay": 50, "dry": -8 } },
+    { "wave": "glass", "note": "G5", "gain": -10, "at": 250, "decay": 500, "hardness": 0.9,
+      "pitch": { "to": -2, "time": 500, "curve": 0 } },
+    { "wave": "noise", "gain": -14, "at": 350, "attack": 200, "decay": 400, "curve": -1,
+      "filter": { "type": "bandpass", "cutoff": 1200, "to": 400, "time": 600, "curve": 0, "q": 2 } }
+  ],
+  "master": { "drive": 4, "highpass": 120, "lowpass": 7000, "reverb": { "decay": 450, "mix": -14, "damp": 3000, "predelay": 15 } }
+}

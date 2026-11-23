@@ -1,0 +1,21 @@
+{
+  "id": "hit-medium",
+  "family": "attack",
+  "description": "Your attack lands for 10 damage or more: a green branch is struck; it creaks, snaps and groans.",
+  "level": -4,
+  "variants": 3,
+  "vary": { "pitch": 0.6, "time": 0.12, "tone": 0.2 },
+  "layers": [
+    { "wave": "wood", "note": "G4", "decay": 200, "hardness": 0.9 },
+    { "wave": "crackle", "gain": -2, "attack": 2, "decay": 150, "curve": 1,
+      "density": { "from": 160, "to": 45 },
+      "body": { "material": "wood", "note": "D5", "decay": 35, "dry": -14 } },
+    { "wave": "noise", "gain": -8, "attack": 1, "decay": 50, "curve": 6,
+      "filter": { "type": "bandpass", "cutoff": 2500, "to": 900, "time": 40, "q": 0.9 } },
+    { "wave": "saw", "note": "A3", "gain": -8, "at": 30, "attack": 20, "decay": 200, "curve": 2,
+      "pitch": { "to": -2, "time": 200, "curve": 0 },
+      "drift": { "cents": 15 },
+      "formant": { "from": "o", "to": "u", "shift": 3 } }
+  ],
+  "master": { "drive": 4, "highpass": 160, "lowpass": 8000, "reverb": { "decay": 260, "mix": -18, "size": 0.7, "predelay": 8 } }
+}

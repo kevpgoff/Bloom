@@ -1,0 +1,17 @@
+{
+  "id": "ship-blocked",
+  "family": "ship",
+  "description": "Your block takes the whole blow: it splashes into the bowl of water, droplets patter, and the glass rings.",
+  "level": -5,
+  "layers": [
+    { "wave": "skin", "note": "G4", "gain": -2, "decay": 100, "hardness": 0.6 },
+    { "wave": "noise", "gain": -4, "attack": 2, "decay": 160, "curve": 3,
+      "filter": { "type": "bandpass", "cutoff": 2500, "to": 900, "time": 120, "q": 0.8 } },
+    { "wave": "crackle", "gain": -10, "at": 30, "attack": 2, "decay": 300, "curve": 3,
+      "density": { "from": 800, "to": 30 },
+      "body": { "material": "glass", "note": "D6", "decay": 40, "dry": -10 } },
+    { "wave": "glass", "note": "G5", "gain": -2, "at": 10, "decay": 600, "hardness": 0.6,
+      "unison": { "voices": 2, "detune": 7 } }
+  ],
+  "master": { "highpass": 250, "lowpass": 9000, "reverb": { "decay": 380, "mix": -16, "damp": 4500, "predelay": 12 } }
+}

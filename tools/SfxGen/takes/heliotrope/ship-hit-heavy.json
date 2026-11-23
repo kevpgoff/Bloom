@@ -1,0 +1,20 @@
+{
+  "id": "ship-hit-heavy",
+  "family": "ship",
+  "description": "A heavy hit lands in a lane: a deep 'vwomp' that drops in pitch, saturated like an overloaded tape, with a springy slap back.",
+  "level": -2,
+  "layers": [
+    { "wave": "saw", "note": "A3", "decay": 420, "curve": 4,
+      "pitch": { "from": 12, "to": -2, "time": 220, "curve": 3 },
+      "unison": { "voices": 3, "detune": 22 },
+      "drift": { "cents": 15 },
+      "filter": { "type": "ladder", "cutoff": 3600, "to": 420, "time": 260, "q": 5 } },
+    { "wave": "noise", "gain": -6, "attack": 1, "decay": 130, "curve": 6,
+      "filter": { "type": "bandpass", "cutoff": 1800, "to": 600, "time": 100, "q": 0.8 } },
+    { "wave": "sine", "note": "D3", "gain": -12, "decay": 260, "curve": 4,
+      "pitch": { "from": 12, "time": 70 } }
+  ],
+  "master": { "drive": 11, "highpass": 110, "lowpass": 6000,
+              "echo": { "time": 85, "feedback": 0.3, "mix": -16, "damp": 2000 },
+              "reverb": { "decay": 420, "mix": -16, "damp": 3000 } }
+}

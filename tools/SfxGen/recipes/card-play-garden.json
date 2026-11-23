@@ -1,0 +1,14 @@
+{
+  "id": "card-play-garden",
+  "family": "cards",
+  "description": "A card from a garden piece is played: two gut strings a fifth apart are plucked softly among rustling leaves.",
+  "level": -6,
+  "layers": [
+    { "wave": "string", "note": "D5", "decay": 460, "hardness": 0.3 },
+    { "wave": "string", "note": "A5", "gain": -8, "at": 25, "decay": 340, "hardness": 0.3 },
+    { "wave": "crackle", "gain": -12, "attack": 4, "decay": 200, "curve": 2,
+      "density": { "from": 1200, "to": 100 },
+      "filter": { "type": "highpass", "cutoff": 2500 } }
+  ],
+  "master": { "highpass": 250, "lowpass": 8000, "reverb": { "decay": 180, "mix": -18, "size": 0.8, "damp": 4000, "predelay": 10 } }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "card-draw",
+  "family": "cards",
+  "description": "A card is dealt: a soft breath through a resonant filter that opens as it goes, and a small blip.",
+  "level": -10,
+  "variants": 3,
+  "vary": { "pitch": 0.6, "time": 0.12, "tone": 0.25 },
+  "layers": [
+    { "wave": "noise", "attack": 8, "decay": 70, "curve": 3,
+      "filter": { "type": "ladder", "cutoff": 900, "to": 4200, "time": 60, "curve": 0, "q": 3 } },
+    { "wave": "square", "note": "A6", "gain": -12, "at": 45, "attack": 1, "decay": 30,
+      "drift": { "cents": 10 },
+      "filter": { "type": "ladder", "cutoff": 3000, "q": 2 } }
+  ],
+  "master": { "highpass": 400, "lowpass": 7000, "reverb": { "decay": 160, "mix": -22, "size": 0.6 } }
+}

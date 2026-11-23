@@ -1,0 +1,17 @@
+{
+  "id": "part-disabled",
+  "family": "attack",
+  "description": "One of a boss's parts goes dark: a limb snaps off, thuds onto the deck, and splinters settle.",
+  "level": -3,
+  "layers": [
+    { "wave": "noise", "gain": -2, "attack": 1, "decay": 40, "curve": 5,
+      "filter": { "type": "bandpass", "cutoff": 3000, "q": 1.2 } },
+    { "wave": "wood", "note": "G5", "gain": -2, "decay": 90, "hardness": 1 },
+    { "wave": "skin", "note": "D4", "at": 180, "decay": 200, "hardness": 0.6 },
+    { "wave": "wood", "note": "A4", "gain": -4, "at": 180, "decay": 150, "hardness": 0.8 },
+    { "wave": "crackle", "gain": -8, "at": 200, "attack": 2, "decay": 380, "curve": 3,
+      "density": { "from": 1500, "to": 20 },
+      "body": { "material": "wood", "note": "D6", "decay": 30, "dry": -10 } }
+  ],
+  "master": { "drive": 3, "highpass": 160, "lowpass": 8000, "reverb": { "decay": 340, "mix": -16, "damp": 3500, "predelay": 10 } }
+}

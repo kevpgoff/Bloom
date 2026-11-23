@@ -1,0 +1,18 @@
+{
+  "id": "energy-gain",
+  "family": "ship",
+  "description": "Extra energy is gained: a resonant filter bubbles over a steady note, like sap boiling in a glass tube.",
+  "level": -6,
+  "layers": [
+    { "wave": "saw", "note": "D5", "attack": 15, "hold": 120, "decay": 200, "curve": 3,
+      "unison": { "voices": 2, "detune": 9 },
+      "drift": { "cents": 8 },
+      "lfo": { "rate": 11, "to": 17, "cutoff": 1.3 },
+      "filter": { "type": "ladder", "cutoff": 1500, "q": 7 } },
+    { "wave": "sine", "note": "D6", "gain": -14, "at": 20, "attack": 30, "hold": 80, "decay": 180,
+      "lfo": { "rate": 5.5, "pitch": 18 } }
+  ],
+  "master": { "drive": 2, "highpass": 300, "lowpass": 8000,
+              "echo": { "time": 120, "feedback": 0.25, "mix": -19, "damp": 2400 },
+              "reverb": { "decay": 280, "mix": -20 } }
+}

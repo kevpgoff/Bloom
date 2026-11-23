@@ -1,0 +1,18 @@
+{
+  "id": "card-play-weapon",
+  "family": "cards",
+  "description": "A card from a weapon piece is played: a squelchy zap, a square wave through a filter turned up until it nearly whistles.",
+  "level": -6,
+  "layers": [
+    { "wave": "square", "note": "A5", "attack": 1, "decay": 190, "curve": 5,
+      "pitch": { "from": 5, "time": 30 },
+      "unison": { "voices": 2, "detune": 14 },
+      "drift": { "cents": 6 },
+      "filter": { "type": "ladder", "cutoff": 6000, "to": 650, "time": 100, "q": 7 } },
+    { "wave": "noise", "gain": -14, "attack": 1, "decay": 15,
+      "filter": { "type": "highpass", "cutoff": 3000 } }
+  ],
+  "master": { "drive": 5, "highpass": 250, "lowpass": 8000,
+              "echo": { "time": 95, "feedback": 0.2, "mix": -22, "damp": 2400 },
+              "reverb": { "decay": 180, "mix": -21 } }
+}

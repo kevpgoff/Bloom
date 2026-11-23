@@ -17,6 +17,7 @@ config/icon="res://art/app_icon/icon.svg"
 
 GameRoot="*res://scripts/Autoload/GameRoot.cs"
 MusicDirector="*res://scripts/Audio/MusicDirector.cs"
+SfxPlayer="*res://scripts/Audio/SfxPlayer.cs"
 
 [display]
 
@@ -32,6 +33,12 @@ window/handheld/orientation=1
 
 project/assembly_name="Bloom"
 project/solution_directory="../"
+
+[importer_defaults]
+
+wav={
+"compress/mode": 0
+}
 
 [input_devices]
 

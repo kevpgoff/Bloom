@@ -1,0 +1,15 @@
+{
+  "id": "energy-gain",
+  "family": "ship",
+  "description": "Extra energy is gained: a seed pod pops, its seeds scatter across a wooden deck, and warm air rises.",
+  "level": -6,
+  "layers": [
+    { "wave": "skin", "note": "A5", "decay": 90, "hardness": 0.9 },
+    { "wave": "crackle", "gain": -2, "at": 10, "attack": 2, "decay": 420, "curve": 3,
+      "density": { "from": 900, "to": 25 },
+      "body": { "material": "wood", "note": "D6", "decay": 45, "dry": -10 } },
+    { "wave": "noise", "gain": -14, "at": 40, "attack": 180, "decay": 160, "curve": -2,
+      "filter": { "type": "bandpass", "cutoff": 800, "to": 3000, "time": 300, "curve": 0, "q": 1.4 } }
+  ],
+  "master": { "highpass": 300, "lowpass": 9500, "reverb": { "decay": 300, "mix": -18, "size": 0.8, "predelay": 10 } }
+}

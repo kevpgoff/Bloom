@@ -1,0 +1,20 @@
+{
+  "id": "card-draw",
+  "family": "cards",
+  "description": "A card is dealt: two clicks, like a beetle opening its wing case, and a tiny chirp.",
+  "level": -10,
+  "variants": 3,
+  "vary": { "pitch": 0.8, "time": 0.15, "tone": 0.25 },
+  "layers": [
+    { "wave": "crackle", "attack": 1, "decay": 9, "curve": 2,
+      "density": { "from": 6000 },
+      "filter": { "type": "bandpass", "cutoff": 5000, "q": 2 } },
+    { "wave": "crackle", "gain": -2, "at": 30, "attack": 1, "decay": 9, "curve": 2,
+      "density": { "from": 6000 },
+      "filter": { "type": "bandpass", "cutoff": 3800, "q": 2 } },
+    { "wave": "sine", "note": "A6", "gain": -10, "at": 12, "attack": 4, "decay": 55, "curve": 2,
+      "pitch": { "from": -5, "time": 20 },
+      "lfo": { "rate": 55, "amp": 0.8 } }
+  ],
+  "master": { "highpass": 500, "lowpass": 10000, "reverb": { "decay": 140, "mix": -22, "size": 0.5 } }
+}

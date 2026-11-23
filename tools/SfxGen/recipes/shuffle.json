@@ -1,0 +1,18 @@
+{
+  "id": "shuffle",
+  "family": "cards",
+  "description": "The discard pile goes back into the deck: a handful of dry leaves is riffled, then tapped square on wood.",
+  "level": -9,
+  "variants": 2,
+  "vary": { "pitch": 0.4, "time": 0.1, "tone": 0.2 },
+  "layers": [
+    { "wave": "crackle", "attack": 30, "decay": 260, "curve": 1,
+      "density": { "from": 4000, "to": 800 },
+      "filter": { "type": "bandpass", "cutoff": 3000, "q": 0.8 } },
+    { "wave": "noise", "gain": -6, "attack": 40, "decay": 240, "curve": 1,
+      "filter": { "type": "bandpass", "cutoff": 1500, "to": 3500, "time": 260, "curve": 0, "q": 1 } },
+    { "wave": "wood", "note": "A5", "gain": -4, "at": 300, "decay": 60, "hardness": 0.6 },
+    { "wave": "wood", "note": "A5", "gain": -9, "at": 345, "decay": 50, "hardness": 0.6 }
+  ],
+  "master": { "highpass": 400, "lowpass": 9000, "reverb": { "decay": 150, "mix": -22, "size": 0.5 } }
+}

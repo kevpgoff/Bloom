@@ -1,0 +1,14 @@
+{
+  "id": "card-play-core",
+  "family": "cards",
+  "description": "A card from a core piece is played: the heartwood of the hull is knocked with a soft mallet, and the hollow behind it hums.",
+  "level": -6,
+  "layers": [
+    { "wave": "wood", "note": "D5", "decay": 260, "hardness": 0.45 },
+    { "wave": "skin", "note": "D4", "gain": -8, "decay": 180, "hardness": 0.3 },
+    { "wave": "noise", "gain": -8, "attack": 2, "decay": 40,
+      "filter": { "type": "bandpass", "cutoff": 1200, "q": 1 },
+      "body": { "material": "wood", "note": "D5", "decay": 220, "dry": -14 } }
+  ],
+  "master": { "highpass": 220, "lowpass": 8000, "reverb": { "decay": 220, "mix": -18, "size": 0.8, "damp": 4000, "predelay": 10 } }
+}

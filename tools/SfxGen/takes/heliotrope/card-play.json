@@ -1,0 +1,16 @@
+{
+  "id": "card-play",
+  "family": "cards",
+  "description": "A card from a crew piece is played: a round, slightly wobbly 'bwop' as a resonant filter closes.",
+  "level": -6,
+  "layers": [
+    { "wave": "saw", "note": "D5", "attack": 2, "decay": 240, "curve": 4,
+      "unison": { "voices": 2, "detune": 12 },
+      "drift": { "cents": 8 },
+      "filter": { "type": "ladder", "cutoff": 3400, "to": 480, "time": 150, "q": 3 } },
+    { "wave": "triangle", "note": "D5", "gain": -9, "attack": 3, "decay": 260, "drift": { "cents": 6 } }
+  ],
+  "master": { "drive": 3, "highpass": 220, "lowpass": 7000,
+              "echo": { "time": 100, "feedback": 0.22, "mix": -21, "damp": 2400 },
+              "reverb": { "decay": 200, "mix": -21 } }
+}
