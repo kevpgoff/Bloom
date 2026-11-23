@@ -240,6 +240,29 @@ Taken as defaults, not raised by the owner (numbers are in `Rules` or `events.js
 - **Revising the agent's events.** Besides the stories, a story no longer names a choice that needs a tag, since a player without the tag never sees that choice. Marooned Choir's elder costs only her 40 salvage, not also 5 max hull, because Humming Wreck already gives the same crew member for max hull.
 - **Balance.** The three bots, which take an event only when nothing else they want is reachable and then the first open choice, met 0.6 events a run and won 67% (plain, was 62%), 52% (smart, was 44%) and 64% (rare-only, was 59%) of 400 runs with the first 10 events, and 65%, 46% and 61% with all 20 (some of the new choices they take first cost hull or max hull). Event nodes take the place of some fights (about 4.6 fights won a run), so a path costs less hull. Players who chase fights and gambles in events will see something different from the bots.
 
+## The boss's parts, built on 2026-11-23
+
+The last of the sector map's 5 pull requests. The owner had decided the rules in the round of questions on 2026-11-22 (see "Sector map decided on 2026-11-22"), then said to go ahead after playing the events.
+
+Decided by the owner:
+
+| Topic | Decision |
+| --- | --- |
+| Boss | 2 or 3 parts. The body and each working part act every turn, each with its own pattern. A part whose hull reaches 0 is disabled and stops acting. The fight is won when the body's hull reaches 0. |
+| Targeting | Tap the body or a part to aim. Every attack hits it until the aim is changed. A fight starts aimed at the body. |
+
+Taken as defaults, not raised by the owner (numbers are placeholders):
+- **Order.** The body acts first, then each working part from left to right. The enemy's turn stops as soon as the ship's hull is gone.
+- **One block.** The enemy has a single block, as the ship does. The body's and the parts' block go into it, and it protects whatever is hit. A part that blocks therefore shields the whole enemy, which makes it a target.
+- **Damage past a part's hull is lost.** It does not carry on to the body. The aim goes back to the body when its part is disabled, and the next damage, even from the same card, hits the body.
+- **A part's pattern** moves on only while it works.
+- **Heavy attacks.** Every heavy attack of the turn marks its lane and the piece it would disable. When two hit the same lane, the second marks the piece behind the first. The Fitting screen marks the lanes of the body's and the parts' heavy attacks before the fight.
+- **Saving.** The aim is part of the fight and is saved: aiming is a player action (`CombatEngine.SetTarget`). The save schema goes to 9, so a run saved by the events pull request is set aside and a new run starts.
+- **The screen.** Each part has a panel under the enemy with its name, hull and what it does this turn. The aimed part, or the body, wears the reticle's corner brackets. Tapping a part's panel aims at it, and tapping the enemy's panel aims back at the body. Per the no-instruction-text rule, nothing says so.
+- **Content.** Any enemy may have up to 3 parts (`Rules.MaxEnemyParts`, what fits across the screen), and the validator checks them like the body. The tests require 2 or 3 on every shipped boss. Whether normal enemies get parts is still an open question below.
+- **The Grand Combine.** The body has 56 hull: attack 9, heavy 13 on lane 2, block 6. Its parts are the Thresher Arm (15 hull: attacks of 5, 6 and 7), the Chaff Screen (12 hull: block 3 every turn) and the Baling Ram (16 hull: heavy 10 on lane 4, attack 4, heavy 10 on lane 3). Together that is 99 hull, against the old boss's 120, and up to about 20 damage a turn while every part works, against 14.
+- **Balance.** Over 400 runs, with bots that aim at the part that hits hardest until it is disabled, then the next: plain 66% (was 65%), smart 48% (was 46%), rare-only 61% (unchanged). The boss fight lasts about 13 turns (was 14). Bots that only hit the body win 17%, 8% and 17%, and bots that aim at the part with the least hull left win 44%, 21% and 39%. Aiming matters: rushing the body leaves every part hitting until the end.
+
 ## Proposed in the spec, not yet confirmed
 
 - Three sectors for each run, about 8 nodes and 25 minutes for each sector.
