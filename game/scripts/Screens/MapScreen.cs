@@ -117,7 +117,7 @@ public partial class MapScreen : Control
         _ship.Text = run.Cargo.Pieces.Count > 0 ? $"Ship · {run.Cargo.Pieces.Count} held" : "Ship";
         _go.Disabled = _selected is null;
         _go.Text = _selected is int chosen ? $"Set course · {NodeName(map.Node(chosen).Type)}" : "Set course";
-        _seed.Text = _seedCopied ? $"Seed {GameRoot.SeedOf(run)} · copied" : $"Seed {GameRoot.SeedOf(run)}";
+        _seed.Text = $"Seed {GameRoot.SeedOf(run)}{(GameRoot.Instance.IsPractice ? " · practice" : "")}{(_seedCopied ? " · copied" : "")}";
         _map.SetState(session, _selected);
     }
 

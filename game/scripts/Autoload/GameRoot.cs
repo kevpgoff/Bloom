@@ -1,5 +1,6 @@
 using Bloom.Core.Combat;
 using Bloom.Core.Content;
+using Bloom.Core.Profile;
 using Bloom.Core.Run;
 using Bloom.Core.Save;
 using Bloom.Game.Dev;
@@ -26,6 +27,12 @@ namespace Bloom.Game.Autoload;
 /// <see cref="ResumeVoyage"/> goes back to it. A launch of the game resumes a test run before the voyage.
 /// </para>
 /// <para>
+/// The profile (<see cref="Profile"/>) is what stays between runs: the voyages made with each ship class and
+/// loadout, from which the locked ship classes open. It is a file of its own, written when a recorded voyage is
+/// launched and when it ends. A voyage from a seed that the player typed is practice and is not recorded, and
+/// neither is a test run.
+/// </para>
+/// <para>
 /// With <c>-- --fx-demo</c> in a debug build, the run is kept in memory with a fixed seed and an
 /// <see cref="FxDemo"/> plays it, so the saved run is never touched. With <c>--ship=&lt;id&gt;</c> as well, the
 /// demo plays that ship class.
@@ -40,13 +47,18 @@ public partial class GameRoot : Node
 
     private const string UnreadableSaveCopy = "user://run.unreadable.json";
     private const string TestSave = "user://run.test.json";
+    private const string ProfileSave = "user://profile.json";
+    private const string UnreadableProfileCopy = "user://profile.unreadable.json";
     private const string ShipFlag = "--ship=";
 
     private const ulong DemoSeed = 7;
 
     private readonly GodotSaveStore _fileStore = new();
     private readonly GodotSaveStore _testStore = new(TestSave);
+    private readonly GodotSaveStore _profileFile = new(ProfileSave);
     private ISaveStore _store = null!;
+    private ISaveStore _profileStore = null!;
+    private ProfileEngine? _profiles;
 
     /// <summary>The voyage that waits while the hangar's test tools are in use, or null.</summary>
     private RunSession? _parked;
@@ -69,6 +81,25 @@ public partial class GameRoot : Node
 
     /// <summary>Whether a voyage waits behind the hangar or a test run (<see cref="ParkVoyage"/>).</summary>
     public bool VoyageParked => _parked is not null;
+
+    /// <summary>The records of the voyages made, kept between runs. Empty and never stored while the FX demo plays.</summary>
+    public ProfileState Profile { get; private set; } = new();
+
+    /// <summary>
+    /// A test tool: while it is on, a locked ship class can be launched like any other. On when a debug build
+    /// starts, so that every ship can be tested; always off in a release build.
+    /// </summary>
+    public bool LocksOff { get; private set; }
+
+    /// <summary>Whether <see cref="Session"/> is a recorded voyage, in progress or just ended: not practice and not a test.</summary>
+    public bool IsRecorded =>
+        !IsTest && Session is { } session && (ProfileEngine.IsOpen(Profile, session.State) || ProfileEngine.EndOf(Profile, session.State) is not null);
+
+    /// <summary>Whether <see cref="Session"/> is a practice voyage: launched from a typed seed, so the profile does not record it.</summary>
+    public bool IsPractice => Session is not null && !IsTest && !IsRecorded && !FxDemo.IsRequested;
+
+    /// <summary>The end of <see cref="Session"/> in the profile, with the ship classes that it opened, or null when it is not a recorded voyage that ended.</summary>
+    public ClosedVoyage? VoyageEnd => !IsTest && Session is { } session ? ProfileEngine.EndOf(Profile, session.State) : null;
 
     /// <summary>One line for the status label, shown when no run could be started.</summary>
     public string Status { get; private set; } = "";
@@ -94,6 +125,8 @@ public partial class GameRoot : Node
         UserSettings.Load();
         bool demo = FxDemo.IsRequested;
         _store = demo ? new MemorySaveStore() : _fileStore;
+        _profileStore = demo ? new MemorySaveStore() : _profileFile;
+        LocksOff = TestTools;
         try
         {
             Content = GodotContentSource.Load(DataDir);
@@ -110,6 +143,7 @@ public partial class GameRoot : Node
                  $"events {Content.Events.Count}.";
         GD.Print($"GameRoot: {Status}");
 
+        _profiles = new ProfileEngine(Content);
         if (demo)
         {
             string ship = RequestedShip(Content) ?? DemoShip;
@@ -130,6 +164,14 @@ public partial class GameRoot : Node
             GD.PushWarning($"GameRoot: the saved run could not be read; a copy is at {UnreadableSaveCopy}. {e.Message}");
         }
 
+        Profile = LoadProfile();
+        if (_profiles.Reconcile(Profile, Session?.State))
+        {
+            // The game stopped between the run's file and the profile's being written, or the run's save is gone.
+            SaveProfile();
+            GD.Print($"GameRoot: the profile's open voyage was closed as {Profile.Last?.Outcome}.");
+        }
+
         if (TestTools && ResumeTest(Content) is { } test)
         {
             _parked = Session;
@@ -139,8 +181,50 @@ public partial class GameRoot : Node
 
         GD.Print(Session is { } resumed
             ? $"GameRoot: resumed the saved {(IsTest ? "test run" : "run")} ({resumed.State.ShipClassId}, loadout {resumed.State.LoadoutId}, " +
-              $"seed {SeedOf(resumed.State)}){(VoyageParked ? "; a voyage waits behind it" : "")}."
+              $"seed {SeedOf(resumed.State)}){(IsTest ? "" : IsRecorded ? ", recorded" : ", practice")}{(VoyageParked ? "; a voyage waits behind it" : "")}."
             : "GameRoot: no saved run; the hangar is open.");
+    }
+
+    /// <summary>The stored profile, or a new one. One that cannot be read is copied aside first, as the run is.</summary>
+    private ProfileState LoadProfile()
+    {
+        try
+        {
+            return ProfileSerializer.Load(_profileStore);
+        }
+        catch (SaveException e)
+        {
+            _profileFile.CopyTo(UnreadableProfileCopy);
+            GD.PushWarning($"GameRoot: the profile could not be read; a copy is at {UnreadableProfileCopy}. {e.Message}");
+            return new ProfileState();
+        }
+    }
+
+    private void SaveProfile() => _profileStore.Save(ProfileSerializer.Serialize(Profile));
+
+    /// <summary>Whether the profile has not yet opened this ship class. <see cref="LocksOff"/> does not change the answer.</summary>
+    public bool IsLocked(ShipClassDef ship) => !ProfileEngine.IsUnlocked(Profile, ship);
+
+    /// <summary>Whether this ship class can be launched now: it is open, or the locks are off.</summary>
+    public bool CanLaunch(ShipClassDef ship) => LocksOff || !IsLocked(ship);
+
+    /// <summary>Turns the locks off or back on (<see cref="LocksOff"/>). Only with <see cref="TestTools"/>.</summary>
+    public void SetLocksOff(bool off)
+    {
+        if (TestTools && LocksOff != off)
+        {
+            LocksOff = off;
+            Changed?.Invoke();
+        }
+    }
+
+    private void RequireLaunchable(ContentDb content, RunSetup setup)
+    {
+        var ship = content.Ship(setup.ShipClassId);
+        if (!CanLaunch(ship))
+        {
+            throw new InvalidOperationException($"The ship class '{ship.Id}' is locked.");
+        }
     }
 
     /// <summary>The saved test run, or null. One that cannot be read is deleted: it was only a test.</summary>
@@ -167,10 +251,14 @@ public partial class GameRoot : Node
     /// </summary>
     public static string NewSeedCode() => RunSeed.CodeFrom(((ulong)GD.Randi() << 32) | GD.Randi());
 
-    /// <summary>Starts the run chosen in the hangar and saves it. It opens on the map of its first sector.</summary>
-    public RunSession Launch(RunSetup setup)
+    /// <summary>
+    /// Starts the run chosen in the hangar and saves it. It opens on the map of its first sector. A
+    /// <paramref name="recorded"/> voyage is counted in the profile; one from a typed seed is not.
+    /// </summary>
+    public RunSession Launch(RunSetup setup, bool recorded)
     {
         var content = Content ?? throw new InvalidOperationException("Content is not loaded.");
+        RequireLaunchable(content, setup);
         if (VoyageParked)
         {
             // Saving a new voyage would replace the one that waits.
@@ -180,7 +268,16 @@ public partial class GameRoot : Node
         ShipOpen = false;
         IsTest = false;
         Session = RunSession.StartNew(content, _store, setup);
-        GD.Print($"GameRoot: launched a new run ({Session.State.ShipClassId}, loadout {Session.State.LoadoutId}, seed {SeedOf(Session.State)}).");
+        if (recorded && _profiles is { } profiles)
+        {
+            // Every voyage is closed when it is left, so one that is still open here has lost its run.
+            profiles.Reconcile(Profile, null);
+            profiles.Launch(Profile, Session.State);
+            SaveProfile();
+        }
+
+        GD.Print($"GameRoot: launched a new run ({Session.State.ShipClassId}, loadout {Session.State.LoadoutId}, seed {SeedOf(Session.State)}, " +
+                 $"{(recorded ? "recorded" : "practice")}).");
         Changed?.Invoke();
         return Session;
     }
@@ -197,6 +294,8 @@ public partial class GameRoot : Node
             throw new InvalidOperationException("Test runs are for debug builds.");
         }
 
+        RequireLaunchable(content, setup);
+
         var session = start is null ? RunSession.StartNew(content, _testStore, setup) : RunSession.StartTest(content, _testStore, setup, start);
         ShipOpen = false;
         IsTest = true;
@@ -210,6 +309,7 @@ public partial class GameRoot : Node
     /// <summary>
     /// Ends the run, whether it is finished or abandoned on the way, and goes back to the hangar. Its save is
     /// deleted, so the next launch of the game opens on the hangar too, unless a voyage waits behind a test run.
+    /// A recorded voyage that is left in progress is recorded as abandoned.
     /// </summary>
     public void LeaveRun()
     {
@@ -219,6 +319,11 @@ public partial class GameRoot : Node
         }
 
         GD.Print($"GameRoot: left the {(IsTest ? "test run" : "run")} ({session.State.ShipClassId}, {session.State.Phase}); the hangar is open.");
+        if (!IsTest)
+        {
+            RecordEnd(session.State, left: true);
+        }
+
         (IsTest ? _testStore : _store).Delete();
         Session = null;
         IsTest = false;
@@ -256,6 +361,22 @@ public partial class GameRoot : Node
         _parked = null;
         Session = voyage;
         Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Closes the recorded voyage in the profile once its run is won or lost, or when it is
+    /// <paramref name="left"/> in progress. Does nothing for a run that is not the recorded voyage in progress.
+    /// </summary>
+    private void RecordEnd(RunState run, bool left)
+    {
+        if (_profiles is not { } profiles || !ProfileEngine.IsOpen(Profile, run) || (run.Result == RunResult.InProgress && !left))
+        {
+            return;
+        }
+
+        var end = profiles.Finish(Profile, run);
+        SaveProfile();
+        GD.Print($"GameRoot: the voyage is recorded as {end.Outcome}{(end.Unlocked.Count > 0 ? $"; unlocked {string.Join(", ", end.Unlocked)}" : "")}.");
     }
 
     /// <summary>
@@ -316,6 +437,11 @@ public partial class GameRoot : Node
         {
             GD.PushWarning($"GameRoot: action rejected: {e.Message}");
             done = false;
+        }
+
+        if (done && !IsTest)
+        {
+            RecordEnd(session.State, left: false);
         }
 
         if (done && session.LastEvents.Count > 0)

@@ -810,8 +810,8 @@ public partial class CombatScreen : Control
         {
             _resultTitle.Text = "Voyage complete";
             _resultMessage.Text = $"The {enemy} powers down and drifts away. The way to the dark habitat is open.\n" +
-                                  $"{run.FightsWon} fights won, with {run.Hull} / {run.MaxHull} hull left.\n" +
-                                  $"Seed {GameRoot.SeedOf(run)}";
+                                  $"{(run.FightsWon == 1 ? "1 fight" : $"{run.FightsWon} fights")} won, with {run.Hull} / {run.MaxHull} hull left.\n" +
+                                  SeedLine(run) + UnlockedLine(session);
         }
         else
         {
@@ -819,9 +819,19 @@ public partial class CombatScreen : Control
             _resultTitle.Text = "Defeat";
             _resultMessage.Text = $"The hull gives out against the {enemy} after {turns}.\n" +
                                   $"The voyage ends here, after {won} won.\n" +
-                                  $"Seed {GameRoot.SeedOf(run)}";
+                                  SeedLine(run);
         }
     }
+
+    /// <summary>"Seed K3M9QX2A", with "practice" after it for a voyage that the profile does not record.</summary>
+    private static string SeedLine(RunState run) =>
+        $"Seed {GameRoot.SeedOf(run)}{(GameRoot.Instance.IsPractice ? " · practice" : "")}";
+
+    /// <summary>A line that names the ship classes this voyage's end opened, such as "Heliotrope unlocked", or nothing.</summary>
+    private static string UnlockedLine(RunSession session) =>
+        GameRoot.Instance.VoyageEnd is { Unlocked.Count: > 0 } end
+            ? $"\n{string.Join(", ", end.Unlocked.Where(id => session.Content.Ships.Any(s => s.Id == id)).Select(id => session.Content.Ship(id).Name))} unlocked"
+            : "";
 
     /// <summary>The voyage is over: back to the hangar, where the next one is chosen.</summary>
     private void LeaveForHangar()
