@@ -379,7 +379,9 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
     private void StartTurn(RunState run, CombatState combat)
     {
         combat.Turn++;
-        combat.Energy = Rules.EnergyPerTurn;
+        combat.Energy = content.Ship(run.ShipClassId).Rule is KeepEnergyRule
+            ? combat.Energy + Rules.EnergyPerTurn
+            : Rules.EnergyPerTurn;
         Emit(new TurnStarted(combat.Turn));
         Draw(run, combat, CardsToDraw(run, combat));
     }

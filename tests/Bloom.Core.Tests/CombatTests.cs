@@ -232,4 +232,61 @@ public class CombatTests
 
         Assert.Equal(Hand(5), Hand(5));
     }
+
+    [Fact]
+    public void KeepEnergyCarriesUnspentEnergyIntoTheNextTurn()
+    {
+        var run = NewRun("solar");
+        var combat = _engine.StartFight(run, "dummy");
+        Assert.Equal(Rules.EnergyPerTurn, combat.Energy);
+
+        _engine.PlayCard(run, CardIn(combat, "ram"));
+        Assert.Equal(Rules.EnergyPerTurn - 1, combat.Energy);
+
+        _engine.EndTurn(run);
+        Assert.Equal((Rules.EnergyPerTurn * 2) - 1, combat.Energy);
+    }
+
+    [Fact]
+    public void KeepEnergyCarriesCardGainedEnergyAndStacksWithoutACap()
+    {
+        var run = NewRun("solar");
+        Fit(run, "sail", 2, 2);
+        var combat = _engine.StartFight(run, "dummy");
+        _engine.PlayCard(run, Take(combat, "unfurl"));
+        Assert.Equal(Rules.EnergyPerTurn + 2, combat.Energy);
+
+        _engine.EndTurn(run);
+        Assert.Equal((Rules.EnergyPerTurn * 2) + 2, combat.Energy);
+
+        _engine.EndTurn(run);
+        Assert.Equal((Rules.EnergyPerTurn * 3) + 2, combat.Energy);
+    }
+
+    [Fact]
+    public void KeepEnergyDoesNotCarryBetweenFights()
+    {
+        var run = NewRun("solar");
+        var combat = _engine.StartFight(run, "dummy");
+        combat.Energy = 7;
+        combat.Enemy.Hull = 5;
+        Assert.Equal(CombatOutcome.Won, _engine.PlayCard(run, CardIn(combat, "ram")));
+
+        run.Reward = null;
+        var next = _engine.StartFight(run, "dummy");
+        Assert.Equal(Rules.EnergyPerTurn, next.Energy);
+    }
+
+    [Fact]
+    public void KeepEnergyStillAppliesWhenTheBridgeIsDisabled()
+    {
+        var run = NewRun("solar"); // bridge is the only piece in lane 0
+        var combat = _engine.StartFight(run, "heavy");
+        _engine.PlayCard(run, CardIn(combat, "ram")); // leaves 2 energy unspent
+
+        _engine.EndTurn(run);
+        Assert.Equal([BridgeId(run)], combat.DisabledPieceIds);
+        Assert.Equal(Rules.CardsDrawnPerTurn - 1, _engine.CardsToDraw(run, combat));
+        Assert.Equal((Rules.EnergyPerTurn * 2) - 1, combat.Energy);
+    }
 }

@@ -13,7 +13,7 @@ public abstract record CombatEvent;
 
 public sealed record FightStarted(string EnemyId) : CombatEvent;
 
-/// <summary>A turn started: energy was refilled. The draws follow as <see cref="CardDrawn"/>.</summary>
+/// <summary>A turn started: energy was added or refilled. The draws follow as <see cref="CardDrawn"/>.</summary>
 public sealed record TurnStarted(int Turn) : CombatEvent;
 
 public sealed record CardDrawn(int CardId) : CombatEvent;

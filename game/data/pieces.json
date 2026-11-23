@@ -192,5 +192,27 @@
       "targetTag": "Weapon",
       "effect": { "type": "damageBonus", "amount": 3 }
     }
+  },
+  {
+    "id": "sun_shutter",
+    "name": "Sun Shutter",
+    "kind": "Equipment",
+    "tags": ["Solar"],
+    "rarity": "Common",
+    "commune": "sunwrights",
+    "placeholder": true,
+    "shape": ["####"],
+    "cards": [{ "card": "shutter", "count": 3 }]
+  },
+  {
+    "id": "burning_glass",
+    "name": "Burning Glass",
+    "kind": "Equipment",
+    "tags": ["Weapon"],
+    "rarity": "Common",
+    "commune": "sunwrights",
+    "placeholder": true,
+    "shape": ["##"],
+    "cards": [{ "card": "sear", "count": 1 }]
   }
 ]

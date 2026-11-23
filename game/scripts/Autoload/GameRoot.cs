@@ -23,11 +23,13 @@ public partial class GameRoot : Node
     public const string StartingShip = "seedling";
 
     private const string UnreadableSaveCopy = "user://run.unreadable.json";
+    private const string ShipFlag = "--ship=";
 
     private const ulong DemoSeed = 7;
 
     private readonly GodotSaveStore _fileStore = new();
     private ISaveStore _store = null!;
+    private string _startingShip = StartingShip;
 
     public static GameRoot Instance { get; private set; } = null!;
 
@@ -83,6 +85,9 @@ public partial class GameRoot : Node
             return;
         }
 
+        string? requestedShip = RequestedShip(Content);
+        _startingShip = requestedShip ?? StartingShip;
+
         try
         {
             Session = RunSession.TryResume(Content, _store);
@@ -94,14 +99,23 @@ public partial class GameRoot : Node
             GD.PushWarning($"GameRoot: the saved run could not be read; a copy is at {UnreadableSaveCopy}. {e.Message}");
         }
 
+        if (Session is not null && requestedShip is not null && Session.State.ShipClassId != requestedShip)
+        {
+            // Starting another ship class via --ship overwrites user://run.json, so keep the saved run aside under its own class id.
+            string copyPath = $"user://run.{Session.State.ShipClassId}.json";
+            _fileStore.CopyTo(copyPath);
+            GD.Print($"GameRoot: saved '{Session.State.ShipClassId}' run copied to {copyPath} before starting '{requestedShip}'.");
+            Session = null;
+        }
+
         if (Session is not null)
         {
-            GD.Print("GameRoot: resumed the saved run.");
+            GD.Print($"GameRoot: resumed the saved run ({Session.State.ShipClassId}).");
         }
         else
         {
             StartNewRun();
-            GD.Print("GameRoot: started a new run.");
+            GD.Print($"GameRoot: started a new run ({_startingShip}).");
         }
     }
 
@@ -113,9 +127,36 @@ public partial class GameRoot : Node
 
         // The only non-deterministic step: picking the seed. Everything after it comes from the run's own RNG.
         ulong seed = ((ulong)GD.Randi() << 32) | GD.Randi();
-        Session = RunSession.StartNew(content, _store, StartingShip, seed);
+        Session = RunSession.StartNew(content, _store, _startingShip, seed);
         Changed?.Invoke();
         return Session;
+    }
+
+    /// <summary>
+    /// Debug launch option <c>-- --ship=&lt;id&gt;</c> chooses a ship class for testing before a ship choice screen
+    /// exists. Returns null when omitted or when the id is unknown (after logging an error).
+    /// </summary>
+    private static string? RequestedShip(ContentDb content)
+    {
+        if (!OS.IsDebugBuild())
+        {
+            return null;
+        }
+
+        string? arg = OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith(ShipFlag, StringComparison.Ordinal));
+        if (arg is null)
+        {
+            return null;
+        }
+
+        string id = arg[ShipFlag.Length..];
+        if (content.Ships.Any(s => s.Id == id))
+        {
+            return id;
+        }
+
+        GD.PushError($"GameRoot: unknown ship class '{id}' in {ShipFlag}; using '{StartingShip}'.");
+        return null;
     }
 
     /// <summary>Opens or closes the Fitting screen over the map or a dock. Changes no state, so nothing is saved.</summary>

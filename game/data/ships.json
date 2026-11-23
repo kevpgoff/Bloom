@@ -16,5 +16,22 @@
       { "piece": "spore_singer", "origin": { "x": 2, "y": 4 }, "rotation": "R270" },
       { "piece": "bridge", "origin": { "x": 4, "y": 5 }, "rotation": "R0" }
     ]
+  },
+  {
+    "id": "heliotrope",
+    "name": "Heliotrope",
+    "placeholder": true,
+    "hull": 60,
+    "hullShape": ["######", "######", "######"],
+    "hullOrigin": { "x": 0, "y": 2 },
+    "rule": { "type": "keepEnergy" },
+    "startingPieces": [
+      { "piece": "burning_glass", "origin": { "x": 0, "y": 2 }, "rotation": "R90" },
+      { "piece": "sun_sail", "origin": { "x": 1, "y": 2 }, "rotation": "R0" },
+      { "piece": "burning_glass", "origin": { "x": 4, "y": 2 }, "rotation": "R0" },
+      { "piece": "lens_grinder", "origin": { "x": 1, "y": 3 }, "rotation": "R90" },
+      { "piece": "bridge", "origin": { "x": 4, "y": 3 }, "rotation": "R0" },
+      { "piece": "sun_shutter", "origin": { "x": 2, "y": 4 }, "rotation": "R0" }
+    ]
   }
 ]

@@ -333,4 +333,23 @@ public class SaveTests
     [Fact]
     public void ThereIsNothingToResumeWithoutASave() =>
         Assert.Null(RunSession.TryResume(Db, new MemorySaveStore()));
+
+    [Fact]
+    public void CarriedOverEnergySurvivesSaveAndResume()
+    {
+        var engine = new CombatEngine(Db);
+        var original = NewRun("solar", seed: 11);
+        engine.StartFight(original, "dummy");
+        engine.PlayCard(original, original.Combat!.Hand.First(c => c.CardId == "ram").Id);
+        engine.EndTurn(original);
+        Assert.Equal((Rules.EnergyPerTurn * 2) - 1, original.Combat.Energy);
+
+        var restored = SaveSerializer.Deserialize(SaveSerializer.Serialize(original));
+        Assert.Equal(original.Combat.Energy, restored.Combat!.Energy);
+
+        engine.EndTurn(original);
+        engine.EndTurn(restored);
+        Assert.Equal((Rules.EnergyPerTurn * 3) - 1, restored.Combat.Energy);
+        Assert.Equal(SaveSerializer.Serialize(original), SaveSerializer.Serialize(restored));
+    }
 }
