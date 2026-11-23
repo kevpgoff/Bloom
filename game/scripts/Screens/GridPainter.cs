@@ -31,15 +31,19 @@ internal readonly record struct GridLayout(float CellSize, Vector2 Origin, int M
     /// Fits all lanes and the hull's rows into <paramref name="area"/>, leaving <paramref name="markerHeight"/>
     /// above the grid for the heavy-attack marker. Null when there is no room or no hull.
     /// </summary>
-    public static GridLayout? ForHull(Rect2 area, IReadOnlyCollection<Cell> hull, float markerHeight)
+    public static GridLayout? ForHull(Rect2 area, IReadOnlyCollection<Cell> hull, float markerHeight) =>
+        hull.Count == 0 ? null : Fit(area, hull.Min(c => c.Y), hull.Max(c => c.Y) - hull.Min(c => c.Y) + 1, markerHeight);
+
+    /// <summary>Fits the whole grid, every lane and row, into <paramref name="area"/>, as <see cref="ForHull"/> does for the hull's rows.</summary>
+    public static GridLayout? ForGrid(Rect2 area, float markerHeight) => Fit(area, 0, Rules.GridRows, markerHeight);
+
+    private static GridLayout? Fit(Rect2 area, int minRow, int rows, float markerHeight)
     {
-        if (hull.Count == 0 || area.Size.X <= 0 || area.Size.Y <= markerHeight)
+        if (area.Size.X <= 0 || area.Size.Y <= markerHeight)
         {
             return null;
         }
 
-        int minRow = hull.Min(c => c.Y);
-        int rows = hull.Max(c => c.Y) - minRow + 1;
         float cell = Mathf.Floor(Mathf.Min(area.Size.X / Rules.GridColumns, (area.Size.Y - markerHeight) / rows));
         var size = new Vector2(cell * Rules.GridColumns, cell * rows);
         var origin = area.Position + new Vector2((area.Size.X - size.X) / 2, markerHeight + ((area.Size.Y - markerHeight - size.Y) / 2));
@@ -284,7 +288,8 @@ internal static class GridPainter
         // Room for the name under the glyph (NameLines): none, one line, or two.
         var (center, span) = IconAnchor(g, cells);
         float maxSide = labelLines switch { <= 0 => span * 0.70f, 1 => span * 0.56f, _ => span * 0.46f };
-        float iconSize = Mathf.Clamp(maxSide, 14f, g.CellSize * 1.15f);
+        // Not Mathf.Clamp: while a screen is first laid out, a cell can be too small for the 14 px floor.
+        float iconSize = Mathf.Min(Mathf.Max(maxSide, 14f), g.CellSize * 1.15f);
         var drawCenter = labelLines > 0 && g.CellSize >= 46f
             ? center + new Vector2(0, -g.CellSize * (labelLines > 1 ? 0.2f : 0.11f))
             : center;

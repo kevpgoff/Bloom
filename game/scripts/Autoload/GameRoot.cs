@@ -71,7 +71,7 @@ public partial class GameRoot : Node
         }
 
         Status = $"Content loaded: pieces {Content.Pieces.Count}, cards {Content.Cards.Count}, " +
-                 $"enemies {Content.Enemies.Count}, ship classes {Content.Ships.Count}.";
+                 $"enemies {Content.Enemies.Count}, ship classes {Content.Ships.Count}, hull sections {Content.Sections.Count}.";
         GD.Print($"GameRoot: {Status}");
 
         if (demo)

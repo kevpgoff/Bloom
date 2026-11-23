@@ -70,14 +70,15 @@ public static class Rules
     public static readonly NodeType? MapRowBeforeBoss = NodeType.Grove;
 
     /// <summary>
-    /// How often each type appears on the other rows. A type with no weight is never placed; shipyards and
-    /// events get theirs when they are built.
+    /// How often each type appears on the other rows. A type with no weight is never placed; events get
+    /// theirs when they are built.
     /// </summary>
     public static readonly IReadOnlyList<(NodeType Type, int Weight)> MapNodeWeights =
     [
         (NodeType.Skirmish, 40),
         (NodeType.HardFight, 15),
         (NodeType.Dock, 10),
+        (NodeType.Shipyard, 10),
         (NodeType.Grove, 5),
     ];
 
@@ -90,7 +91,8 @@ public static class Rules
     /// <summary>Salvage for a won fight, from the first number up to and including the second.</summary>
     public static readonly (int Min, int Max) SkirmishSalvage = (20, 30);
 
-    public static readonly (int Min, int Max) HardFightSalvage = (40, 55);
+    /// <summary>Raised from 40 to 55 when the owner asked for better hard-fight rewards on 2026-11-23.</summary>
+    public static readonly (int Min, int Max) HardFightSalvage = (60, 80);
 
     /// <summary>For the boss of a sector that is not the last; the last one ends the run.</summary>
     public static readonly (int Min, int Max) BossSalvage = (60, 80);
@@ -127,4 +129,14 @@ public static class Rules
     public static readonly (int Min, int Max) DockRepairs = (1, 3);
 
     public const int DockRepairPrice = 20;
+
+    // Shipyards and hull sections. Decided by the owner on 2026-11-22: a shipyard is free, offers 3 shapes and attaches one.
+
+    /// <summary>Hull sections a shipyard offers; the player attaches one or none.</summary>
+    public const int ShipyardChoices = 3;
+
+    /// <summary>The spec's hull sections cover 3 to 5 cells.</summary>
+    public const int MinSectionCells = 3;
+
+    public const int MaxSectionCells = 5;
 }

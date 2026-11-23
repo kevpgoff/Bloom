@@ -12,3 +12,9 @@ public sealed record GroveVisit;
 /// the list, and a bought repair counts down.
 /// </summary>
 public sealed record DockVisit(List<string> Pieces, int Repairs);
+
+/// <summary>
+/// Hull sections on offer, as section def ids, rolled when the shipyard was entered (or the boss was beaten).
+/// Attaching one ends the visit, so the list never changes.
+/// </summary>
+public sealed record ShipyardVisit(List<string> Sections);

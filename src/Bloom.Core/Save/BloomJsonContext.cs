@@ -24,6 +24,7 @@ namespace Bloom.Core.Save;
 [JsonSerializable(typeof(List<CardDef>))]
 [JsonSerializable(typeof(List<EnemyDef>))]
 [JsonSerializable(typeof(List<ShipClassDef>))]
+[JsonSerializable(typeof(List<HullSectionDef>))]
 internal sealed partial class BloomJsonContext : JsonSerializerContext
 {
 }

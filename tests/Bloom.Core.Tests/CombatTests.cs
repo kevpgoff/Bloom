@@ -1,4 +1,6 @@
 using Bloom.Core.Combat;
+using Bloom.Core.Grid;
+using Bloom.Core.Pieces;
 using Bloom.Core.Run;
 using static Bloom.Core.Tests.TestContent;
 
@@ -180,6 +182,32 @@ public class CombatTests
 
         _engine.EndTurn(run); // disables the plating; the bridge is next in lane 0
         Assert.Equal(BridgeId(run), _engine.HeavyAttackTarget(run)?.Piece.Id);
+    }
+
+    /// <summary>
+    /// "heavy" aims at lane 0. On a hull in lanes 1 to 5 it hits lane 1; once a section grows into lane 0, it hits
+    /// lane 0 (owner, 2026-11-23).
+    /// </summary>
+    [Fact]
+    public void AHeavyAttackOnTheLeftLaneHitsItOnlyOnceTheHullGrowsThere()
+    {
+        var run = NewRun();
+        var hull = Enumerable.Range(1, 5).SelectMany(x => Enumerable.Range(0, 5).Select(y => new Cell(x, y)));
+        run.Ship = new ShipLayout { Grid = new ShipGrid(hull.ToList()) };
+        Fit(run, "bridge", 1, 4);
+        var plating = Fit(run, "plating", 1, 0);
+        _engine.StartFight(run, "heavy");
+        Assert.Equal(1, _engine.HeavyLane(run));
+        Assert.Equal(plating.Id, _engine.HeavyAttackTarget(run)?.Piece.Id);
+        _engine.EndTurn(run);
+        Assert.Contains(plating.Id, run.Combat!.DisabledPieceIds);
+
+        run.Combat = null;
+        run.Ship.Grid.Attach([new Cell(0, 0), new Cell(0, 1), new Cell(0, 2)]);
+        var lance = Fit(run, "lance", 0, 0, Rotation.R90);
+        _engine.StartFight(run, "heavy");
+        Assert.Equal(0, _engine.HeavyLane(run));
+        Assert.Equal(lance.Id, _engine.HeavyAttackTarget(run)?.Piece.Id);
     }
 
     [Fact]

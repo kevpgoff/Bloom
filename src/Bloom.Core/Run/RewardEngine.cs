@@ -6,9 +6,10 @@ namespace Bloom.Core.Run;
 
 /// <summary>
 /// The pieces offered after a won fight, as piece def ids, and the salvage the fight paid. The salvage is
-/// already added to the run; it is kept here only to show it.
+/// already added to the run; it is kept here only to show it. When <see cref="Section"/> is set, the fight also
+/// gives a hull section, offered once a piece is taken or skipped.
 /// </summary>
-public sealed record RewardOffer(IReadOnlyList<string> Pieces, int Salvage = 0);
+public sealed record RewardOffer(IReadOnlyList<string> Pieces, int Salvage = 0, bool Section = false);
 
 /// <summary>
 /// The reward after a won fight: a choice of pieces, of which the player takes one or none.
@@ -20,7 +21,9 @@ public sealed record RewardOffer(IReadOnlyList<string> Pieces, int Salvage = 0);
 /// targets. A piece is offered at most once per offer, and the bridge never. A taken piece goes to the
 /// cargo hold, even past its capacity. Defaults taken on 2026-11-22: a fight also pays salvage
 /// (<see cref="Rules.SkirmishSalvage"/> and the like), and after a hard fight or a boss the first offered
-/// piece is always rare, as the spec's node table says.
+/// piece is always rare, as the spec's node table says. The spec gives a boss a free hull section too, and the
+/// owner gave hard fights one on 2026-11-23, so their rare piece has room: it is offered as at a shipyard,
+/// after the piece, from the sections that still fit.
 /// </remarks>
 public sealed class RewardEngine(ContentDb content)
 {
@@ -38,8 +41,8 @@ public sealed class RewardEngine(ContentDb content)
             _ => Rules.SkirmishSalvage,
         };
         int salvage = run.Rng.Next(min, max + 1);
-        bool rareFirst = pool is EnemyPool.Hard or EnemyPool.Boss;
-        return new RewardOffer(RollPieces(run, Rules.RewardChoices, rareFirst), salvage);
+        bool hard = pool is EnemyPool.Hard or EnemyPool.Boss;
+        return new RewardOffer(RollPieces(run, Rules.RewardChoices, rareFirst: hard), salvage, Section: hard);
     }
 
     /// <summary>
@@ -83,19 +86,26 @@ public sealed class RewardEngine(ContentDb content)
 
         var piece = run.NewPiece(offer.Pieces[index]);
         run.Cargo.Add(piece);
-        run.Reward = null;
-        run.UndoStack.Clear();
-        MapEngine.FinishNode(run);
+        Finish(run, offer);
         return piece;
     }
 
     /// <summary>Takes no piece. The salvage was already paid when the fight was won.</summary>
-    public void Skip(RunState run)
+    public void Skip(RunState run) => Finish(run, RequireOffer(run));
+
+    /// <summary>
+    /// Ends the reward. After a boss before the last sector the next sector starts, and its hull section waits
+    /// before the first node; after a hard fight, the section waits before the next one.
+    /// </summary>
+    private void Finish(RunState run, RewardOffer offer)
     {
-        RequireOffer(run);
         run.Reward = null;
         run.UndoStack.Clear();
         MapEngine.FinishNode(run);
+        if (offer.Section)
+        {
+            ShipyardEngine.OfferSections(content, run);
+        }
     }
 
     /// <summary>The tags a piece is favored for: its own, and for a piece with a bonus, the tag the bonus targets.</summary>

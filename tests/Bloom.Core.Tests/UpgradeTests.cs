@@ -239,7 +239,8 @@ public class CardUpgradeContentTests
             [Bridge],
             [Ram with { Upgrade = upgrade }],
             [Dummy, Dummy with { Id = "late", Pool = EnemyPool.Late }, Dummy with { Id = "hard", Pool = EnemyPool.Hard }, Dummy with { Id = "boss", Pool = EnemyPool.Boss }],
-            [Ship]));
+            [Ship],
+            [.. TestContent.Db.Sections]));
         Assert.Contains(e.Errors, error => error.Contains(expectedError, StringComparison.Ordinal));
     }
 
@@ -271,7 +272,7 @@ public class CardUpgradeContentTests
              { "id": "d", "name": "D", "pool": "Boss", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] }]
             """;
         const string ships = """[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }]""";
-        var db = ContentDb.FromJson(pieces, cards, enemies, ships);
+        var db = ContentDb.FromJson(pieces, cards, enemies, ships, TestContent.SectionsJson);
         Assert.Equal(0, db.Card("ram").Upgrade!.Cost);
         Assert.Equal(1, db.Card("ram").Cost);
         Assert.Equal(0, db.Card("ram", upgraded: true).Cost);

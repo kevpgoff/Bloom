@@ -154,7 +154,7 @@ Taken as defaults, not raised by the owner (all numbers are in `Rules` and are p
 - The map has 7 rows of choices and the boss row. It is made from 4 paths that walk up 4 columns, one column left or right at most per row, never crossing. That gives 2 to 4 nodes per row, and the whole map fits on one phone screen without scrolling. The first row is at the bottom.
 - Rows 1 and 2 are skirmishes, and the row just before the boss is all groves. The rows between them are rolled: skirmish 40, event 20, hard fight 15, dock 10, shipyard 10, grove 5. Hard fights, docks, shipyards and groves never follow themselves on a path. A map has at least one dock and one shipyard. A type gets its weight only when it is built, so the first pull request rolls only skirmishes, hard fights and groves.
 - Enemies come in pools: early (skirmishes on the first 3 rows), late, hard and boss. Each enemy has a pool and a sector in `enemies.json`. The enemy is rolled when the node is chosen, and it repeats in a run only once the rest of its pool has been met.
-- A run starts with 0 salvage. A skirmish pays 20 to 30, a hard fight 40 to 55, and a boss before the last sector 60 to 80. Composting pays 10. Undo takes back composting's salvage with the piece. The salvage is paid when the fight is won, even if the piece is skipped.
+- A run starts with 0 salvage. A skirmish pays 20 to 30, a hard fight 40 to 55 (60 to 80 since the shipyards' pull request, below), and a boss before the last sector 60 to 80. Composting pays 10. Undo takes back composting's salvage with the piece. The salvage is paid when the fight is won, even if the piece is skipped.
 - After a hard fight or a boss, the first of the 3 offered pieces is always rare.
 - Refitting is allowed on the map (the Ship button) and after choosing a fight. Undo is cleared when a node is entered. The cargo limit blocks only the start of a fight.
 - Groves come with the first pull request, with only the repair option (30% of the maximum hull, rounded up, never past the maximum), so a sector of about 7 fights has some healing. The upgrade option joins it with upgrades. It did, in the second pull request (below).
@@ -190,6 +190,30 @@ Taken as defaults, not raised by the owner:
 - **Target.** About half of the runs won by a bot that plays sensibly. The game was tuned with two bots that play every card by fixed priorities (repair, free cards, a killing blow, draw, block when hit, focus, damage). The plain bot never takes a piece; it repairs at groves and docks when hurt and otherwise upgrades. The smart bot also takes, buys and fits every piece that fits, and picks hard fights while its hull is above 75%. Over 400 runs each: the plain bot wins 55% and the smart one 44%. A skirmish costs about 2 hull early and 11 later, a hard fight 22. About two thirds of the losses are to the boss, the rest on the way. Before, both bots won 399 of 400 runs.
 - **What is left alone.** The grove's repair (30%), the starting hull (60), salvage and prices. Shipyards, events and the boss's parts will each change the balance, so another pass will follow them.
 - **Why the smart bot wins less.** Hard fights cost about 22 hull, and their rare piece usually has no room on the starting ship, which has 3 free cells. Hard fights should become worth their risk once shipyards add hull to fit pieces on; if not, their reward needs a look.
+
+## Shipyards decided on 2026-11-23
+
+The third of the sector map's 5 pull requests. The owner had already decided that a shipyard is free and attaches 1 of 3 sections per visit (see above). The owner merged the second pull request and asked to go ahead with this one.
+
+Taken as defaults, not raised by the owner (all numbers are in `Rules` or `sections.json` and are placeholders):
+- **Sections.** `game/data/sections.json` holds 10 placeholder shapes in the spec's range of 3 to 5 cells: two of 3 cells, five of 4 and three of 5. A section adds cells only, not hull points, since the spec gives sections none. The validator checks that each is one group of 3 to 5 cells and that there are at least 3.
+- **The offer.** 3 different sections, all equally likely, rolled when the node is chosen, from those that can still attach somewhere. If fewer fit, fewer are offered; if none fits, the shipyard offers only Leave.
+- **Attaching.** A section can go anywhere it stays inside the 6×8 grid, covers no hull and shares an edge with the hull, in any of its 4 turns. The player may leave without one. The ship cannot be refitted at a shipyard; the new cells can be used from the map.
+- **The Shipyard screen.** The whole grid with its free cells, and the sections as 3 cards under it. The chosen section shows on the grid as a ghost, green where it attaches and red where it does not, starting where it shares the most edges with the hull. Dragging moves it, floating above the finger as on the Fitting screen; a tap on it turns it; a tap elsewhere moves it to the nearest place it fits. The main button names the section ("Attach · Keel"). There is no instruction text.
+- **A boss's free section.** As the spec's node table says, a boss before the last sector also gives a section: the same offer, after its reward and before the next sector's first node, on the same screen titled "Hull section". With one sector it cannot happen yet; tests cover it.
+- **Shipyards on the map.** Shipyards now have their weight (10) on the rolled rows, and every map has at least one.
+- **Save.** The save schema goes to 7 (a run remembers the sections on offer), so a run saved by the second pull request is set aside and a new run starts.
+- **Balance, before the owner's changes below.** The same two bots, with the smart one now choosing a shipyard over a skirmish and attaching the first section where it shares the most edges, won 59% (plain, was 55%) and 49% (smart, was 44%) of 400 runs. Shipyards take the place of some skirmishes, so a path has a few fewer fights. The smart bot attached 0.7 sections a run, about 3 cells, which did not make hard fights worth their risk. And the seedling's hull leaves lane L1 (lane 0 in the data) empty, where no enemy aimed a heavy attack, so pieces on a section there could never be hit by one.
+
+After seeing that, the owner decided:
+
+| Topic | Decision |
+| --- | --- |
+| Hard fights | Their reward goes up. Taken as the way to do it: a hard fight gives a free hull section after its piece, as a boss does, so its rare piece has room; and it pays 60 to 80 salvage instead of 40 to 55. |
+| The leftmost lane | Enemies attack it once it exists. Taken as the way to do it: a heavy attack aimed at a lane the hull does not reach hits the nearest lane it does reach. The three heavy attacks that aimed at L2 (Static Moths, Rogue Tiller, Strip Miner) now aim at L1, so they hit L2 as before until a section grows into L1, and L1 after. The Fitting and Combat screens mark the lane that will be hit. |
+
+- **The reward screen** says "+ Hull section" under the salvage when a section follows. The section's screen is titled "Hull section" there, as after a boss.
+- **Balance after them.** A third bot now picks hard fights when healthy and takes only rare pieces, fitting them once the section is attached. Over 400 runs: plain 62%, rare-only 59%, smart 44%. A hard fight now comes out about even with a skirmish for the rare-only bot instead of clearly behind. It still costs about 23 hull against 11 for a late skirmish. The smart bot loses more because it takes every piece that fits, which waters down its deck (it reaches the boss with the same hull and loses there). The bots spend almost no salvage, so the higher salvage does not show in these numbers; for a player it buys pieces and repairs at docks.
 
 ## Proposed in the spec, not yet confirmed
 

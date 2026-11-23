@@ -26,6 +26,7 @@ public sealed class RunSession
         Map = new MapEngine(content);
         Grove = new GroveEngine(content);
         Dock = new DockEngine(content);
+        Shipyard = new ShipyardEngine(content);
     }
 
     public ContentDb Content { get; }
@@ -45,6 +46,8 @@ public sealed class RunSession
     public GroveEngine Grove { get; }
 
     public DockEngine Dock { get; }
+
+    public ShipyardEngine Shipyard { get; }
 
     /// <summary>
     /// What happened in the fight during the last <see cref="Do(Action{RunSession})"/>, in order, for the game to

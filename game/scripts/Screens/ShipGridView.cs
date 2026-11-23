@@ -1,4 +1,3 @@
-using Bloom.Core.Combat;
 using Bloom.Core.Run;
 using Bloom.Game.Visuals;
 using Godot;
@@ -60,9 +59,7 @@ public partial class ShipGridView : Control
         var combat = run.Combat;
         IReadOnlyCollection<int> disabled = combat?.DisabledPieceIds ?? [];
 
-        int? heavyLane = combat is not null && _session.Combat.CurrentIntent(combat) is { Kind: IntentKind.HeavyAttack, Lane: int lane }
-            ? lane
-            : null;
+        int? heavyLane = combat is null ? null : _session.Combat.HeavyLane(run);
         GridPainter.DrawLanes(this, g, heavyLane is int marked ? [marked] : []);
         GridPainter.DrawHull(this, g, run.Ship.Grid.Cells);
         if (heavyLane is int heavy)
