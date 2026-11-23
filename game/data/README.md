@@ -10,6 +10,7 @@ All numbers are placeholders for testing, as the design spec says. Entries marke
 | `cards.json` | Cards: cost, effects and an `upgrade` |
 | `enemies.json` | Enemies: hull points, a repeating pattern of intents, a `pool` and a `sector`. The pool says which fights of the sector map draw the enemy (see below). |
 | `ships.json` | Ship classes: starting hull, hull points, starting pieces |
+| `sections.json` | Hull sections that shipyards offer: a name and a shape |
 
 ## Conventions
 
@@ -18,6 +19,7 @@ All numbers are placeholders for testing, as the design spec says. Entries marke
 - **Lanes** are grid columns, counted from 0 on the left.
 - **Effects** are objects whose first property must be `"type"` (a .NET 8 rule): `{ "type": "damage", "amount": 5 }`. Card effects are `damage`, `block`, `gainEnergy`, `draw`, `repair`, `focus` and `grow`. Bonus-only effects are `damageBonus` and `startGrown`.
 - **Upgrades.** A card's `"upgrade"` is what it becomes when its piece is upgraded: `{ "cost": 0 }`, `{ "effects": [...] }` or both. Upgraded effects replace the card's own list, so write all of them. Every shipped card has an upgrade, and a test checks it. An upgraded card is named with "+" after it.
+- **Hull sections** cover 3 to 5 cells joined by edges, and there must be at least 3 of them, since a shipyard offers 3. A section adds cells to the hull, not hull points. It turns like a piece when attached.
 - **Enums** are written as in code: `"Equipment"`, `"Weapon"`, `"HeavyAttack"`.
 - **Enemy pools** are `"Early"` (skirmishes on the map's first 3 rows), `"Late"` (skirmishes on later rows), `"Hard"` (hard fights) and `"Boss"`. Every enemy needs one. `"sector"` defaults to 1. Each sector needs at least one enemy in every pool, and the validator checks it. When a fight node is chosen, its enemy is drawn from the pool, and an enemy repeats in a run only after the rest of its pool has been met.
 
@@ -63,6 +65,23 @@ Added with docks and groves on 2026-11-22. All of them are placeholders.
 | Tend | 1: block 3, grows +2 | block 5, grows +3 |
 | Rewire | 1: repair 1, draw 1 | costs 0 |
 | Hymn | 1: next attack +6 | next attack +9 |
+
+## Placeholder hull sections
+
+Added with shipyards on 2026-11-23. All of them are placeholders, named for grown hull. Every one can attach to the starting seedling, and a test checks it.
+
+| Section | Shape | Cells |
+| --- | --- | --- |
+| Rib | `###` | 3 |
+| Knuckle | `##` / `#.` | 3 |
+| Keel | `####` | 4 |
+| Seed Pod | `##` / `##` | 4 |
+| Spur | `###` / `.#.` | 4 |
+| Crook | `#..` / `###` | 4 |
+| Twist | `.##` / `##.` | 4 |
+| Long Keel | `#####` | 5 |
+| Cradle | `#.#` / `###` | 5 |
+| Bough | `##` / `##` / `#.` | 5 |
 
 ## Placeholder rewards and enemies
 

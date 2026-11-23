@@ -20,6 +20,7 @@ public partial class MainScreen : Control
     private const string MapScene = "res://scenes/Map.tscn";
     private const string GroveScene = "res://scenes/Grove.tscn";
     private const string DockScene = "res://scenes/Dock.tscn";
+    private const string ShipyardScene = "res://scenes/Shipyard.tscn";
 
     /// <summary>The layout's margin from the edges of a desktop window, as in Main.tscn.</summary>
     private const float EdgeMargin = 16f;
@@ -77,6 +78,7 @@ public partial class MainScreen : Control
         RunPhase.Reward => RewardScene,
         RunPhase.Grove => GroveScene,
         RunPhase.Dock => GameRoot.Instance.ShipOpen ? FittingScene : DockScene,
+        RunPhase.Shipyard => ShipyardScene,
         _ => CombatScene, // the fight, and its end: defeat or the voyage complete
     };
 

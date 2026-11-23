@@ -1,3 +1,4 @@
+using Bloom.Core.Grid;
 using Bloom.Core.Pieces;
 using Bloom.Game.Visuals;
 using Godot;
@@ -5,9 +6,10 @@ using Godot;
 namespace Bloom.Game.Screens;
 
 /// <summary>
-/// A tappable card for one choice on the reward, grove and dock screens: a framed surface in an accent
-/// color, an optional piece shape on the left, and BBCode text. It grows to fit its text, but never below
-/// its minimum height. Selection is shown by <see cref="SetSelected"/>; what a tap does is up to the screen.
+/// A tappable card for one choice on the reward, grove, dock and shipyard screens: a framed surface in an
+/// accent color, an optional piece or hull shape on the left (or on top, when <c>stacked</c>), and BBCode text.
+/// It grows to fit its text, but never below its minimum height. Selection is shown by <see cref="SetSelected"/>;
+/// what a tap does is up to the screen.
 /// </summary>
 internal sealed class OptionCard
 {
@@ -15,7 +17,15 @@ internal sealed class OptionCard
     private readonly NinePatchRect? _frame;
     private readonly RichTextLabel _text;
 
-    public OptionCard(Color accent, string text, PieceDef? piece = null, float minHeight = 150, float shapeSize = 150, int fontSize = 24)
+    public OptionCard(
+        Color accent,
+        string text,
+        PieceDef? piece = null,
+        float minHeight = 150,
+        float shapeSize = 150,
+        int fontSize = 24,
+        Shape? hull = null,
+        bool stacked = false)
     {
         _accent = accent;
         Button = new Button
@@ -37,14 +47,18 @@ internal sealed class OptionCard
             margin.AddThemeConstantOverride($"margin_{side}", 16);
         }
 
-        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        row.AddThemeConstantOverride("separation", 16);
-        if (piece is not null)
+        BoxContainer row = stacked
+            ? new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore }
+            : new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", stacked ? 8 : 16);
+        if (piece is not null || hull is not null)
         {
             row.AddChild(new ShapeView
             {
                 Piece = piece,
-                CustomMinimumSize = new Vector2(shapeSize, shapeSize),
+                Hull = hull,
+                CustomMinimumSize = new Vector2(stacked ? 0 : shapeSize, shapeSize),
+                SizeFlagsHorizontal = stacked ? Control.SizeFlags.ExpandFill : Control.SizeFlags.Fill,
                 SizeFlagsVertical = Control.SizeFlags.ShrinkCenter,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
             });

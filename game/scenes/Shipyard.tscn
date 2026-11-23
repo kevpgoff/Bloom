@@ -1,0 +1,79 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/Screens/ShipyardScreen.cs" id="1_screen"]
+[ext_resource type="Script" path="res://scripts/Screens/ShipyardBoard.cs" id="2_board"]
+
+[node name="Shipyard" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_screen")
+
+[node name="Layout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Layout/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Heading"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+text = "Shipyard"
+
+[node name="StatusLabel" type="Label" parent="Layout/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 1
+theme_override_font_sizes/font_size = 26
+text = "Hull"
+vertical_alignment = 1
+
+[node name="Message" type="Label" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.498, 0.702, 0.678, 1)
+theme_override_font_sizes/font_size = 24
+autowrap_mode = 3
+
+[node name="Board" type="Control" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("2_board")
+
+[node name="Options" type="HBoxContainer" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Buttons" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="AttachButton" type="Button" parent="Layout/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+disabled = true
+text = "Attach"
+
+[node name="LeaveButton" type="Button" parent="Layout/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 96)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Leave"
