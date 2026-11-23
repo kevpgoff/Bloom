@@ -185,7 +185,8 @@ public partial class MusicDirector : Node
 
     private static Mood MoodFor(RunSession? session) => session?.State switch
     {
-        null => Mood.None,
+        // Without a run the hangar shows, unless the content failed to load.
+        null => GameRoot.Instance.Content is null ? Mood.None : Mood.Voyage,
         { Phase: RunPhase.Fight, Combat: { } combat } =>
             session.Content.Enemy(combat.Enemy.DefId).Pool == EnemyPool.Boss ? Mood.Boss : Mood.Fight,
         { Phase: RunPhase.Won } => Mood.Won,
@@ -239,19 +240,30 @@ public partial class MusicDirector : Node
     /// <summary>Moves the music to the mood of the run's current phase. Runs after every action and new run.</summary>
     private void Follow()
     {
-        // A new run starts its music from the beginning, on a new shuffle.
+        // When a run is left for the hangar, the music starts from the beginning, on a new shuffle. A run launched
+        // from the hangar keeps the hangar's music playing.
         if (GameRoot.Instance.Session != _session)
         {
+            bool launched = _session is null;
             _session = GameRoot.Instance.Session;
-            foreach (var mood in AllMoods)
+            if (!launched)
             {
-                if (mood is not (Mood.Won or Mood.Lost) && _players[(int)mood] is { } player)
+                foreach (var mood in AllMoods)
                 {
-                    _fades[(int)mood]?.Kill();
-                    player.Stop();
-                    player.StreamPaused = false;
-                    _pausedByApp.Remove(player);
-                    _started[(int)mood] = false;
+                    if (mood is not (Mood.Won or Mood.Lost) && _players[(int)mood] is { } player)
+                    {
+                        _fades[(int)mood]?.Kill();
+                        player.Stop();
+                        player.StreamPaused = false;
+                        _pausedByApp.Remove(player);
+                        _started[(int)mood] = false;
+                    }
+                }
+
+                // Every loop was stopped, so the mood counts as new even when a voyage was abandoned from the map.
+                if (_mood is not (Mood.Won or Mood.Lost))
+                {
+                    _mood = Mood.None;
                 }
             }
         }

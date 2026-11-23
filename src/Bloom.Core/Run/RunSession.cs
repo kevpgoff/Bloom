@@ -58,12 +58,16 @@ public sealed class RunSession
     /// </summary>
     public IReadOnlyList<CombatEvent> LastEvents { get; private set; } = [];
 
-    public static RunSession StartNew(ContentDb content, ISaveStore store, string shipClassId, ulong seed)
+    public static RunSession StartNew(ContentDb content, ISaveStore store, RunSetup setup)
     {
-        var session = new RunSession(content, RunFactory.NewRun(content, shipClassId, seed), store);
+        var session = new RunSession(content, RunFactory.NewRun(content, setup), store);
         session.Save();
         return session;
     }
+
+    /// <summary>A run with the ship class's first loadout and a seed that is only a number.</summary>
+    public static RunSession StartNew(ContentDb content, ISaveStore store, string shipClassId, ulong seed) =>
+        StartNew(content, store, new RunSetup(shipClassId, seed));
 
     /// <summary>Returns the saved run, or null when there is none.</summary>
     public static RunSession? TryResume(ContentDb content, ISaveStore store) =>

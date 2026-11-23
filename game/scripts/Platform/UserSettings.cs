@@ -14,6 +14,7 @@ namespace Bloom.Game.Platform;
 /// music_volume=1.0     ; 0 turns the music off, 1 is full volume
 /// sfx_volume=1.0       ; the same for the sound effects
 /// </code>
+/// The hangar also keeps the ship and loadout chosen last in a <c>[hangar]</c> section, so it opens on them.
 /// </summary>
 internal static class UserSettings
 {
@@ -24,12 +25,17 @@ internal static class UserSettings
     private const string Audio = "audio";
     private const string MusicVolumeKey = "music_volume";
     private const string SfxVolumeKey = "sfx_volume";
+    private const string Hangar = "hangar";
+    private const string ShipKey = "ship";
+    private const string LoadoutKey = "loadout";
 
     private static bool _loaded;
     private static float _shakeStrength = 1f;
     private static bool _haptics = true;
     private static float _musicVolume = 1f;
     private static float _sfxVolume = 1f;
+    private static string _hangarShip = "";
+    private static string _hangarLoadout = "";
 
     /// <summary>How strongly the screen shakes, from 0 (never) to 1.</summary>
     public static float ShakeStrength
@@ -71,6 +77,52 @@ internal static class UserSettings
         }
     }
 
+    /// <summary>The ship class chosen last in the hangar, or empty before the first choice.</summary>
+    public static string HangarShip
+    {
+        get
+        {
+            Load();
+            return _hangarShip;
+        }
+    }
+
+    /// <summary>The loadout chosen last in the hangar, for <see cref="HangarShip"/>.</summary>
+    public static string HangarLoadout
+    {
+        get
+        {
+            Load();
+            return _hangarLoadout;
+        }
+    }
+
+    /// <summary>Keeps the hangar's choice for the next time it opens. The other settings in the file stay as they are.</summary>
+    public static void RememberHangar(string ship, string loadout)
+    {
+        Load();
+        if (ship == _hangarShip && loadout == _hangarLoadout)
+        {
+            return;
+        }
+
+        _hangarShip = ship;
+        _hangarLoadout = loadout;
+        var config = new ConfigFile();
+        if (config.Load(FilePath) is not (Error.Ok or Error.FileNotFound))
+        {
+            // The file is one the player may have mistyped; leave it alone.
+            return;
+        }
+
+        config.SetValue(Hangar, ShipKey, ship);
+        config.SetValue(Hangar, LoadoutKey, loadout);
+        if (config.Save(FilePath) is var saved and not Error.Ok)
+        {
+            GD.PushWarning($"UserSettings: could not write {FilePath} ({saved}).");
+        }
+    }
+
     /// <summary>Reads the file, or writes it with the defaults. Called at startup so the file is there to edit.</summary>
     public static void Load()
     {
@@ -93,6 +145,8 @@ internal static class UserSettings
         _haptics = config.GetValue(Feedback, HapticsKey, true).AsBool();
         _musicVolume = Mathf.Clamp(config.GetValue(Audio, MusicVolumeKey, 1f).AsSingle(), 0f, 1f);
         _sfxVolume = Mathf.Clamp(config.GetValue(Audio, SfxVolumeKey, 1f).AsSingle(), 0f, 1f);
+        _hangarShip = config.GetValue(Hangar, ShipKey, "").AsString();
+        _hangarLoadout = config.GetValue(Hangar, LoadoutKey, "").AsString();
         if (config.HasSectionKey(Feedback, ShakeKey) && config.HasSectionKey(Feedback, HapticsKey) &&
             config.HasSectionKey(Audio, MusicVolumeKey) && config.HasSectionKey(Audio, SfxVolumeKey))
         {

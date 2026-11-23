@@ -47,16 +47,22 @@ public enum RunPhase
 /// </summary>
 public sealed class RunState
 {
-    public const int CurrentSchemaVersion = 9;
+    public const int CurrentSchemaVersion = 10;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
     public ulong Seed { get; set; }
 
+    /// <summary>The seed as the player sees it (<see cref="RunSeed"/>), or null when the run was started from a number.</summary>
+    public string? SeedText { get; set; }
+
     /// <summary>All randomness in the run comes from here.</summary>
     public required Pcg32 Rng { get; set; }
 
     public required string ShipClassId { get; set; }
+
+    /// <summary>Which of the ship class's loadouts the run started with.</summary>
+    public required string LoadoutId { get; set; }
 
     public int Hull { get; set; }
 

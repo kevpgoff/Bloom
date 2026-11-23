@@ -14,14 +14,23 @@ namespace Bloom.Game.Autoload;
 /// (so it is saved) and then raises <see cref="CombatEvents"/> and <see cref="Changed"/>.
 /// </summary>
 /// <remarks>
+/// <para>
+/// There is one voyage at a time. A launch of the game resumes the saved run. Without one there is no
+/// <see cref="Session"/>, and the hangar shows: there the player chooses a ship, a loadout and a seed, and
+/// <see cref="Launch"/> starts the run. <see cref="LeaveRun"/> ends a run, finished or not, and goes back to the hangar.
+/// </para>
+/// <para>
 /// With <c>-- --fx-demo</c> in a debug build, the run is kept in memory with a fixed seed and an
 /// <see cref="FxDemo"/> plays it, so the saved run is never touched. With <c>--ship=&lt;id&gt;</c> as well, the
 /// demo plays that ship class.
+/// </para>
 /// </remarks>
 public partial class GameRoot : Node
 {
     public const string DataDir = "res://data";
-    public const string StartingShip = "seedling";
+
+    /// <summary>The ship class the FX demo plays when <c>--ship=</c> names none.</summary>
+    public const string DemoShip = "seedling";
 
     private const string UnreadableSaveCopy = "user://run.unreadable.json";
     private const string ShipFlag = "--ship=";
@@ -30,12 +39,12 @@ public partial class GameRoot : Node
 
     private readonly GodotSaveStore _fileStore = new();
     private ISaveStore _store = null!;
-    private string _startingShip = StartingShip;
 
     public static GameRoot Instance { get; private set; } = null!;
 
     public ContentDb? Content { get; private set; }
 
+    /// <summary>The run in progress or just finished, or null while the hangar shows.</summary>
     public RunSession? Session { get; private set; }
 
     /// <summary>One line for the status label, shown when no run could be started.</summary>
@@ -47,7 +56,7 @@ public partial class GameRoot : Node
     /// </summary>
     public bool ShipOpen { get; private set; }
 
-    /// <summary>Raised after every action and after a new run starts. Screens redraw on it.</summary>
+    /// <summary>Raised after every action, after a run starts and after one is left. Screens redraw on it.</summary>
     public event Action? Changed;
 
     /// <summary>
@@ -78,14 +87,12 @@ public partial class GameRoot : Node
                  $"events {Content.Events.Count}.";
         GD.Print($"GameRoot: {Status}");
 
-        string? requestedShip = RequestedShip(Content);
-        _startingShip = requestedShip ?? StartingShip;
-
         if (demo)
         {
-            Session = RunSession.StartNew(Content, _store, _startingShip, DemoSeed);
+            string ship = RequestedShip(Content) ?? DemoShip;
+            Session = RunSession.StartNew(Content, _store, new RunSetup(ship, DemoSeed));
             AddChild(new FxDemo());
-            GD.Print($"GameRoot: FX demo ({_startingShip}); the run is kept in memory and not saved.");
+            GD.Print($"GameRoot: FX demo ({ship}); the run is kept in memory and not saved.");
             return;
         }
 
@@ -95,47 +102,57 @@ public partial class GameRoot : Node
         }
         catch (SaveException e)
         {
-            // A new run starts right away and overwrites the file, so keep a copy of it first.
+            // The next launch from the hangar overwrites the file, so keep a copy of it first.
             _fileStore.CopyTo(UnreadableSaveCopy);
             GD.PushWarning($"GameRoot: the saved run could not be read; a copy is at {UnreadableSaveCopy}. {e.Message}");
         }
 
-        if (Session is not null && requestedShip is not null && Session.State.ShipClassId != requestedShip)
-        {
-            // Starting another ship class via --ship overwrites user://run.json, so keep the saved run aside under its own class id.
-            string copyPath = $"user://run.{Session.State.ShipClassId}.json";
-            _fileStore.CopyTo(copyPath);
-            GD.Print($"GameRoot: saved '{Session.State.ShipClassId}' run copied to {copyPath} before starting '{requestedShip}'.");
-            Session = null;
-        }
-
-        if (Session is not null)
-        {
-            GD.Print($"GameRoot: resumed the saved run ({Session.State.ShipClassId}).");
-        }
-        else
-        {
-            StartNewRun();
-            GD.Print($"GameRoot: started a new run ({_startingShip}).");
-        }
+        GD.Print(Session is { } resumed
+            ? $"GameRoot: resumed the saved run ({resumed.State.ShipClassId}, loadout {resumed.State.LoadoutId}, seed {SeedOf(resumed.State)})."
+            : "GameRoot: no saved run; the hangar is open.");
     }
 
-    /// <summary>A new run opens on the map of its first sector.</summary>
-    public RunSession StartNewRun()
+    /// <summary>A run's seed as the player reads it: its code or typed text, or the number for a run started without one.</summary>
+    public static string SeedOf(RunState run) => run.SeedText ?? run.Seed.ToString();
+
+    /// <summary>
+    /// A new seed code for the hangar to offer. This is the only non-deterministic step: everything after it
+    /// comes from the run's own RNG.
+    /// </summary>
+    public static string NewSeedCode() => RunSeed.CodeFrom(((ulong)GD.Randi() << 32) | GD.Randi());
+
+    /// <summary>Starts the run chosen in the hangar and saves it. It opens on the map of its first sector.</summary>
+    public RunSession Launch(RunSetup setup)
     {
         var content = Content ?? throw new InvalidOperationException("Content is not loaded.");
         ShipOpen = false;
-
-        // The only non-deterministic step: picking the seed. Everything after it comes from the run's own RNG.
-        ulong seed = ((ulong)GD.Randi() << 32) | GD.Randi();
-        Session = RunSession.StartNew(content, _store, _startingShip, seed);
+        Session = RunSession.StartNew(content, _store, setup);
+        GD.Print($"GameRoot: launched a new run ({Session.State.ShipClassId}, loadout {Session.State.LoadoutId}, seed {SeedOf(Session.State)}).");
         Changed?.Invoke();
         return Session;
     }
 
     /// <summary>
-    /// Debug launch option <c>-- --ship=&lt;id&gt;</c> chooses a ship class for testing before a ship choice screen
-    /// exists, for a new run or for the FX demo. Returns null when omitted or when the id is unknown (after logging an error).
+    /// Ends the run, whether it is finished or abandoned on the way, and goes back to the hangar. The save is
+    /// deleted, so the next launch of the game opens on the hangar too.
+    /// </summary>
+    public void LeaveRun()
+    {
+        if (Session is not { } session)
+        {
+            return;
+        }
+
+        GD.Print($"GameRoot: left the run ({session.State.ShipClassId}, {session.State.Phase}); the hangar is open.");
+        _store.Delete();
+        Session = null;
+        ShipOpen = false;
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Debug launch option <c>-- --ship=&lt;id&gt;</c> chooses the ship class that the FX demo plays. Returns null
+    /// when omitted or when the id is unknown (after logging an error).
     /// </summary>
     private static string? RequestedShip(ContentDb content)
     {
@@ -156,7 +173,7 @@ public partial class GameRoot : Node
             return id;
         }
 
-        GD.PushError($"GameRoot: unknown ship class '{id}' in {ShipFlag}; using '{StartingShip}'.");
+        GD.PushError($"GameRoot: unknown ship class '{id}' in {ShipFlag}; using '{DemoShip}'.");
         return null;
     }
 
