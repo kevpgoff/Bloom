@@ -102,6 +102,23 @@ Taken as defaults, not raised by the owner:
 - `rendering/textures/vram_compression/import_etc2_astc` is on, because Godot won't export to Android without it. Every texture is imported lossless, so nothing looks different.
 - The preset is named `Android`, and the APK goes to `build/android/bloom-debug.apk`, which is ignored.
 
+## Phone fixes decided on 2026-11-22
+
+The owner decided these after the first test on their phone, a Pixel with Android 16.
+
+| Topic | Decision |
+| --- | --- |
+| Screen edges | The game stays full screen, and the layout keeps clear of the camera cutout and the rounded corners. The backdrop still fills the screen. The other option was to keep Android's status and navigation bars on screen. |
+| Follow-ups from the phone test | Fixed now: small text, the missing app icon and the cold start. The back gesture was tested by the owner: it quits the game, and reopening it resumes the fight. |
+
+Taken as defaults, not raised by the owner:
+- Android reports the camera cutout as the safe area. Godot can't read the rounded corners, so on a phone the layout also keeps 28 dp clear at the top and the bottom. With the 16 px side margin, that clears a corner of up to about 55 dp radius. Desktop windows keep the 16 px margin on every side.
+- After a swipe from the edge, the 3-button navigation bar still shows over the bottom of the screen for a few seconds.
+- Text is at least 19 px on the 720 px wide layout: about 11 sp on the owner's phone, which is 411 dp wide. Where a word can't fit, it shrinks: piece names to 16 px on one line, or up to 18 px on two lines; card names in a hand of 6 or more cards; and captions on cards with two effects, which share half a card's width each (14 to 19 px).
+- The app icon is a placeholder: a hologram hex cell with a sprout growing in it, in the Holo Grove colors. It has Android's adaptive layers and a monochrome layer for themed icons.
+- The engine's boot splash shows no image, only the backdrop's darkest color. Android's own launch splash shows the icon on the phone's dark system color, because Godot sets that color only in a Gradle build.
+- The cold start is left as it is: about 1.3 s from the tap to the fight on the owner's phone. About 0.5 s of it is .NET starting up, and 0.37 s is the game's own startup, mostly code being compiled on first use.
+
 ## Proposed in the spec, not yet confirmed
 
 - Three sectors for each run, about 8 nodes and 25 minutes for each sector.

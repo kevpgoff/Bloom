@@ -1,6 +1,6 @@
 # Art
 
-The game's art is "Option A", a vector solarpunk look in the "Holo Grove" style: a dark teal night, with the ship drawn as a lit hologram (see `docs/decisions.md`). Every image is a white (`#ffffff`) SVG on a transparent background. The game tints it at runtime with colors from `scripts/Screens/Palette.cs`. `scripts/Visuals/ArtLibrary.cs` finds each file by name, so new art needs no code change.
+The game's art is "Option A", a vector solarpunk look in the "Holo Grove" style: a dark teal night, with the ship drawn as a lit hologram (see `docs/decisions.md`). Every image except the app icon is a white (`#ffffff`) SVG on a transparent background. The game tints it at runtime with colors from `scripts/Screens/Palette.cs`. `scripts/Visuals/ArtLibrary.cs` finds each file by name, so new art needs no code change.
 
 | Path | Holds |
 | --- | --- |
@@ -15,6 +15,18 @@ The game's art is "Option A", a vector solarpunk look in the "Holo Grove" style:
 | `fonts/Saira.ttf` | The one typeface, a variable font with width and weight axes. `BloomTheme` makes every font from it: Saira at width 100 for text, Saira Semi Condensed (width 87.5) for headings, numbers and labels. Godot ignores the axis names, so `BloomTheme` keys them by their numeric OpenType tags. |
 
 A `.png` with the same name works in place of an `.svg`.
+
+## App icon
+
+`app_icon/` holds the app icon, in color, since nothing tints it. It is a placeholder: a hologram hex cell with a sprout growing in it.
+
+| File | Used for |
+| --- | --- |
+| `icon.svg` | Both layers in a rounded square: the desktop window, and launchers on Android 7. It is `application/config/icon` in `project.godot`. |
+| `icon_foreground.svg`, `icon_background.svg` | Android's adaptive icon, and its launch splash. Each is 432×432. Launchers crop the layers to their own shape, so the glyph stays inside the center circle of 264 px. |
+| `icon_monochrome.svg` | Android's themed icons: the glyph's lines in white, which Android tints. |
+
+The Android preset in `export_presets.cfg` names all four under `launcher_icons/`. Godot's SVG renderer has no blur, so the glow is drawn as wide, faint strokes under each line.
 
 ## Icon style
 
