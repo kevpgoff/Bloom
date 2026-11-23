@@ -6,7 +6,7 @@ using Godot;
 namespace Bloom.Game.Screens;
 
 /// <summary>
-/// At a dock: the pieces for sale, a hull repair and the cargo hold's pieces, which the dock buys, as option
+/// At a dock: the pieces for sale, its hull repairs and the cargo hold's pieces, which the dock buys, as option
 /// cards. Tapping a card selects it and the middle button, which names the trade and its price, makes it
 /// through <see cref="GameRoot.Act"/>. The dock stays until the player leaves, so the cards are rebuilt
 /// after every trade. Ship opens the Fitting screen, where the dock also buys fitted pieces.
@@ -92,10 +92,10 @@ public partial class DockScreen : Control
         }
 
         int repair = DockEngine.RepairAmount(run);
-        string title = $"[b][color=#{Palette.Label(Palette.Repair).ToHtml(false)}]Repair hull[/color][/b]";
-        string detail = repair > 0
-            ? $"+{repair} hull  ·  {run.Hull} → {run.Hull + repair}   [color=#{(run.Salvage >= Rules.DockRepairPrice ? Palette.Energy : Palette.Refused).ToHtml(false)}]{Rules.DockRepairPrice} salvage[/color]"
-            : "The hull is already whole.";
+        string title = $"[b][color=#{Palette.Label(Palette.Repair).ToHtml(false)}]Repair hull[/color][/b]{(dock.Repairs > 0 ? $"   [color=#{muted}]{dock.Repairs} left[/color]" : "")}";
+        string detail = dock.Repairs == 0 ? "None left."
+            : repair == 0 ? "The hull is already whole."
+            : $"+{repair} hull  ·  {run.Hull} → {run.Hull + repair}   [color=#{(run.Salvage >= Rules.DockRepairPrice ? Palette.Energy : Palette.Refused).ToHtml(false)}]{Rules.DockRepairPrice} salvage[/color]";
         Add(new OptionCard(Palette.Repair, $"{title}\n{detail}", minHeight: 120), Trade.Repair, 0);
 
         if (run.Cargo.Pieces.Count > 0)

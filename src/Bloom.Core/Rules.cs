@@ -117,8 +117,14 @@ public static class Rules
     /// <summary>Pieces for sale at each dock, rolled like a reward's.</summary>
     public const int DockPieces = 3;
 
-    /// <summary>Hull points one repair at a dock restores, for <see cref="DockRepairPrice"/>. It can be bought again.</summary>
+    /// <summary>Hull points one repair at a dock restores, for <see cref="DockRepairPrice"/>.</summary>
     public const int DockRepairHull = 10;
+
+    /// <summary>
+    /// Repairs a dock can sell, rolled from the first number up to and including the second when its node is
+    /// chosen. Decided by the owner on 2026-11-23: a variable number, not as many as the player can pay for.
+    /// </summary>
+    public static readonly (int Min, int Max) DockRepairs = (1, 3);
 
     public const int DockRepairPrice = 20;
 }

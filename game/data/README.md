@@ -79,19 +79,19 @@ The owner approved these on 2026-11-21 so that rewards and refitting can be trie
 | Drone Wrangler | Crew, Uncommon | `##` | 1 Rewire (1: repair 1, draw 1) | adjacent Drone pieces deal 2 more damage |
 | Choir Elder | Crew, Rare | `###` | 1 Hymn (1: next attack +6) | adjacent Weapon pieces deal 3 more damage |
 
-The enemies of sector 1, by pool. Lanes are 0-based; the seedling's hull covers lanes 1–5. The first four were the old placeholder run of four fights; the rest were added with the sector map on 2026-11-22. The boss is a big normal enemy until boss parts exist.
+The enemies of sector 1, by pool. Lanes are 0-based; the seedling's hull covers lanes 1–5. The first four were the old placeholder run of four fights; the rest were added with the sector map on 2026-11-22. On 2026-11-23 the owner asked for a harder game, and every enemy now hits about half again as hard (see `docs/decisions.md`, "Difficulty"). The boss is a big normal enemy until boss parts exist.
 
 | Pool | Enemy | Hull | Pattern |
 | --- | --- | --- | --- |
-| Early | Feral Harvester | 40 | Attack 6, heavy 10 on lane 2, block 8 |
-| Early | Pollen Squall | 42 | Attack 5, heavy 9 on lane 4, attack 5 |
-| Early | Rust Gleaner | 36 | Attack 5, attack 5, heavy 8 on lane 3 |
-| Early | Static Moths | 34 | Attack 4, block 6, attack 4, heavy 9 on lane 1 |
-| Late | Rogue Tiller | 50 | Block 10, heavy 12 on lane 1, attack 8 |
-| Late | Singing Comet | 60 | Attack 7, heavy 12 on lane 3, block 8, heavy 12 on lane 5 |
-| Late | Toll Beacon | 54 | Block 12, attack 9, heavy 13 on lane 4 |
-| Late | Bramble Drift | 58 | Attack 6, attack 6, heavy 11 on lane 2, block 10 |
-| Hard | Strip Miner | 80 | Heavy 14 on lane 3, attack 10, block 12, heavy 14 on lane 1 |
-| Hard | Aurora Knot | 72 | Attack 8, attack 8, heavy 16 on lane 5, block 10 |
-| Hard | Salvage Hound | 76 | Attack 12, block 8, heavy 15 on lane 2 |
-| Boss | Grand Combine | 140 | Attack 10, heavy 16 on lane 2, block 15, attack 12, heavy 16 on lane 4 |
+| Early | Feral Harvester | 36 | Attack 10, heavy 13 on lane 2, block 8 |
+| Early | Pollen Squall | 38 | Attack 9, heavy 13 on lane 4, attack 9 |
+| Early | Rust Gleaner | 34 | Attack 9, attack 9, heavy 13 on lane 3 |
+| Early | Static Moths | 32 | Attack 8, block 6, attack 10, heavy 13 on lane 1 |
+| Late | Rogue Tiller | 50 | Block 10, heavy 18 on lane 1, attack 14 |
+| Late | Singing Comet | 56 | Attack 13, heavy 17 on lane 3, block 8, heavy 17 on lane 5 |
+| Late | Toll Beacon | 52 | Block 12, attack 15, heavy 18 on lane 4 |
+| Late | Bramble Drift | 54 | Attack 12, attack 12, heavy 17 on lane 2, block 10 |
+| Hard | Strip Miner | 70 | Heavy 19 on lane 3, attack 15, block 12, heavy 19 on lane 1 |
+| Hard | Aurora Knot | 64 | Attack 13, attack 13, heavy 21 on lane 5, block 10 |
+| Hard | Salvage Hound | 68 | Attack 17, block 8, heavy 20 on lane 2 |
+| Boss | Grand Combine | 120 | Attack 14, heavy 20 on lane 2, block 14, attack 16, heavy 20 on lane 4 |

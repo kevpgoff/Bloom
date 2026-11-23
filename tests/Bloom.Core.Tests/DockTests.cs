@@ -13,12 +13,12 @@ public class DockTests
 
     private static string Json(RunState run) => SaveSerializer.Serialize(run);
 
-    /// <summary>Test setup: the ship at a dock that sells a common lance, the uncommon drone and the rare spear.</summary>
-    private static RunState AtDock(int salvage = 500)
+    /// <summary>Test setup: the ship at a dock that sells a common lance, the uncommon drone and the rare spear, and has 3 repairs.</summary>
+    private static RunState AtDock(int salvage = 500, int repairs = 3)
     {
         var run = NewRun();
         run.Salvage = salvage;
-        run.Dock = new DockVisit(["lance", "drone", "spear"]);
+        run.Dock = new DockVisit(["lance", "drone", "spear"], repairs);
         return run;
     }
 
@@ -32,6 +32,39 @@ public class DockTests
         Assert.Equal(Rules.DockPieces, run.Dock!.Pieces.Count);
         Assert.Equal(run.Dock.Pieces.Distinct(), run.Dock.Pieces);
         Assert.DoesNotContain("bridge", run.Dock.Pieces);
+        Assert.InRange(run.Dock.Repairs, Rules.DockRepairs.Min, Rules.DockRepairs.Max);
+    }
+
+    [Fact]
+    public void DocksHaveAVariableNumberOfRepairs()
+    {
+        var seen = new HashSet<int>();
+        for (ulong seed = 1; seed <= 40; seed++)
+        {
+            var run = UseTinyMap(NewRun(seed), middle: NodeType.Dock);
+            run.Path.Add(0);
+            _map.Choose(run, 1);
+            seen.Add(run.Dock!.Repairs);
+        }
+
+        Assert.Equal(Enumerable.Range(Rules.DockRepairs.Min, Rules.DockRepairs.Max - Rules.DockRepairs.Min + 1), seen.Order());
+    }
+
+    [Fact]
+    public void ADocksRepairsRunOut()
+    {
+        var run = AtDock(repairs: 2);
+        run.Hull = 10;
+        _dock.Repair(run);
+        Assert.Equal(1, run.Dock!.Repairs);
+        _dock.Repair(run);
+        Assert.Equal(0, run.Dock!.Repairs);
+        Assert.Equal(30, run.Hull);
+
+        Assert.False(DockEngine.CanRepair(run));
+        string before = Json(run);
+        Assert.Throws<InvalidOperationException>(() => _dock.Repair(run));
+        Assert.Equal(before, Json(run));
     }
 
     [Fact]

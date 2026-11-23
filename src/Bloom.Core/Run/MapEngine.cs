@@ -76,7 +76,8 @@ public sealed class MapEngine(ContentDb content)
         }
         else if (node.Type == NodeType.Dock)
         {
-            run.Dock = new DockVisit(_rewards.RollPieces(run, Rules.DockPieces));
+            var pieces = _rewards.RollPieces(run, Rules.DockPieces);
+            run.Dock = new DockVisit(pieces, run.Rng.Next(Rules.DockRepairs.Min, Rules.DockRepairs.Max + 1));
         }
         else
         {

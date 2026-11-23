@@ -11,8 +11,9 @@ namespace Bloom.Core.Run;
 /// Defaults taken on 2026-11-22: <see cref="Rules.DockPieces"/> pieces are for sale, rolled by the reward
 /// rules when the node is chosen; prices are the spec's (<see cref="Rules.PiecePrice"/>); a dock buys any
 /// piece but the bridge, fitted or held, for <see cref="Rules.SellPercent"/>% of its price; a repair restores
-/// <see cref="Rules.DockRepairHull"/> hull for <see cref="Rules.DockRepairPrice"/> salvage and can be bought
-/// again. A bought piece goes to the cargo hold, even past its capacity. Each trade clears Undo, since a
+/// <see cref="Rules.DockRepairHull"/> hull for <see cref="Rules.DockRepairPrice"/> salvage. A bought piece
+/// goes to the cargo hold, even past its capacity. Decided by the owner on 2026-11-23: each dock has a
+/// variable number of repairs (<see cref="Rules.DockRepairs"/>), rolled with its pieces. Each trade clears Undo, since a
 /// refit step undone past a trade would take back salvage or pieces the trade already moved.
 /// </remarks>
 public sealed class DockEngine(ContentDb content)
@@ -33,7 +34,7 @@ public sealed class DockEngine(ContentDb content)
         && run.Salvage >= Price(dock.Pieces[index]);
 
     public static bool CanRepair(RunState run) =>
-        run.Phase == RunPhase.Dock && RepairAmount(run) > 0 && run.Salvage >= Rules.DockRepairPrice;
+        run.Phase == RunPhase.Dock && run.Dock is { Repairs: > 0 } && RepairAmount(run) > 0 && run.Salvage >= Rules.DockRepairPrice;
 
     /// <summary>Whether the dock would buy this piece now: it is held, or fitted and not the bridge.</summary>
     public bool CanSell(RunState run, int pieceId) =>
@@ -63,10 +64,15 @@ public sealed class DockEngine(ContentDb content)
         return piece;
     }
 
-    /// <summary>Repairs <see cref="RepairAmount"/> hull for <see cref="Rules.DockRepairPrice"/> salvage.</summary>
+    /// <summary>Repairs <see cref="RepairAmount"/> hull for <see cref="Rules.DockRepairPrice"/> salvage, using one of the dock's repairs.</summary>
     public void Repair(RunState run)
     {
-        RequireDock(run);
+        var dock = RequireDock(run);
+        if (dock.Repairs <= 0)
+        {
+            throw new InvalidOperationException("The dock has no repairs left.");
+        }
+
         if (RepairAmount(run) == 0)
         {
             throw new InvalidOperationException("The hull is already whole.");
@@ -79,6 +85,7 @@ public sealed class DockEngine(ContentDb content)
 
         run.Salvage -= Rules.DockRepairPrice;
         run.Hull += RepairAmount(run);
+        run.Dock = dock with { Repairs = dock.Repairs - 1 };
         run.UndoStack.Clear();
     }
 
