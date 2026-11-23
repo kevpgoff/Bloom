@@ -126,7 +126,7 @@ The enemies of sector 1, by pool. Lanes are 0-based; the seedling's hull covers 
 
 ## Placeholder events
 
-Sketched with the owner on 2026-11-23. All of them are placeholders. A choice marked with a tag appears only when a fitted piece carries that tag. The text of each is in `events.json`.
+The first 10 were sketched with the owner on 2026-11-23. The other 10 were written by another agent from the owner's writer prompt the same day, then revised so their stories hint at outcomes instead of listing them. All of them are placeholders. A choice marked with a tag appears only when a fitted piece carries that tag. The text of each is in `events.json`.
 
 | Event | Choices and what they come to |
 | --- | --- |
@@ -140,3 +140,13 @@ Sketched with the owner on 2026-11-23. All of them are placeholders. A choice ma
 | Comet's Wake | Gather the singing ice: +6 max hull. Chase the comet: fight the Singing Comet. Sail on: nothing |
 | Extraction Rig | Shut it down: fight the Strip Miner (a hard fight's reward). Siphon its reactor: an upgrade and −8 hull. Leave it be: nothing |
 | Drift Market | Buy a sealed crate (40 salvage): a common piece (6 in 10), uncommon (3 in 10) or rare (1 in 10). Trade stories: +15 salvage. Moor for a meal: +8 hull |
+| Kiln Buoy | Hold a fitting in the glare: an upgrade and −8 hull. Shade the jammed shutters (Shield): +30 salvage. Give the buoy wide berth: nothing |
+| Lace Coral | Graft a sprig aboard: a hull section and −6 max hull. Scrape resin off the marker: 2 in 3 +30 salvage, else +20 salvage and −4 max hull. Leave the coral untouched: nothing |
+| Sleeping Miner | Slip a drone inside (Drone): an uncommon equipment piece. Grapple the loose coils: 1 in 3 +45 salvage, else fight the Strip Miner. Wake and calm the giant: fight the Strip Miner. Drift past in silence: nothing |
+| Marooned Choir | Rig her cradle aboard (40 salvage): Choir Elder. Tow the pod into sunlight: 2 in 3 +10 hull, else +8 hull and Spore Singer. Chime farewell and sail on: nothing |
+| Tinker Barge | Trade for a seed drone (30 salvage): Seed Drone. Let the new bots tinker: 2 in 3 an upgrade, else −9 hull. Share your drone flight charts (Drone): +30 salvage and +8 hull. Wave and keep course: nothing |
+| Tangled Nursery | Hack the main knot loose: Orchard Keeper, then fight the Bramble Drift. Snip the outer runners (Weapon): +10 hull. Leave the raft behind: nothing |
+| Sun Well | Bask deep in the warm ring: 3 in 5 +6 max hull, else fight the Pollen Squall. Skim the rim on solar sails (Solar): +10 hull. Steer clear of the clouds: nothing |
+| Lantern Tiller | Answer with living vines (Garden): +4 max hull. Snatch the crate between turns: even odds of a common equipment piece and +15 salvage, or a fight with the Rogue Tiller. Calm the tiller head-on: fight it. Leave it to its furrow: nothing |
+| Moth Lighthouse | Coast in dark to fetch him: 3 in 5 Lens Grinder, else fight the Static Moths. Pluck the loose prism shards: +25 salvage and −6 hull. Log the drift and sail on: nothing |
+| Hound's Cache | Toss bait and open one (35 salvage): even odds of Sunspear or a fight with the Salvage Hound. Pry a crate straight away: +20 salvage, then fight the Salvage Hound. Slip away from the shadow: nothing |

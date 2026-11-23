@@ -268,5 +268,300 @@
         ]
       }
     ]
+  },
+  {
+    "id": "kiln_buoy",
+    "name": "Kiln Buoy",
+    "placeholder": true,
+    "text": "A Sunwright kiln buoy flares wild, its shutters jammed open and pouring white heat into the dark. Inside, an apprentice hangs on her levers and shouts that the beam would temper fine metal, if anything could stand that close. Your bark is already curling at the edges.",
+    "choices": [
+      {
+        "label": "Hold a fitting in the glare",
+        "results": [
+          { "text": "Your crew braces a fitting in the white beam until it gleams anew, though the heat chars your outer bark.", "outcomes": [ { "type": "upgrade" }, { "type": "hull", "amount": -8 } ] }
+        ]
+      },
+      {
+        "label": "Shade the jammed shutters",
+        "needsTag": "Shield",
+        "results": [
+          { "text": "You angle your shields across the flare until she cools the kiln. She launches a bundle of spare lens alloys in thanks.", "outcomes": [ { "type": "salvage", "amount": 30 } ] }
+        ]
+      },
+      {
+        "label": "Give the buoy wide berth",
+        "results": [
+          { "text": "You bank away and leave the apprentice wrestling with her levers.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lace_coral",
+    "name": "Lace Coral",
+    "placeholder": true,
+    "text": "Pale lace coral cloaks a derelict waymarker, weeping beads of bright resin. It has grown the marker a dozen new chambers, each one lovely, and eaten the iron ribs beneath them thin as paper. Fine filaments drift from it, feeling for anything solid.",
+    "choices": [
+      {
+        "label": "Graft a sprig aboard",
+        "results": [
+          { "text": "The coral races outward into a lacy new chamber, drinking deep from your existing ribs as it grows.", "outcomes": [ { "type": "section" }, { "type": "maxHull", "amount": -6 } ] }
+        ]
+      },
+      {
+        "label": "Scrape resin off the marker",
+        "results": [
+          { "weight": 2, "text": "You chip the resin beads cleanly into your scoops before a single tendril can reach your bow.", "outcomes": [ { "type": "salvage", "amount": 30 } ] },
+          { "weight": 1, "text": "You fill your scoops with resin, but a fine filament roots into your keel and thins the timber before you tear loose.", "outcomes": [ { "type": "salvage", "amount": 20 }, { "type": "maxHull", "amount": -4 } ] }
+        ]
+      },
+      {
+        "label": "Leave the coral untouched",
+        "results": [
+          { "text": "You drift past the delicate ivory lattice without disturbing a thread.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sleeping_miner",
+    "name": "Sleeping Miner",
+    "placeholder": true,
+    "text": "A strip miner the size of a habitat grinds along ahead, half asleep, its split belly gleaming with refined coils. Its plating is scarred with old grapple marks, and its cutters twitch at every touch. Through the split, crates sit stacked in the dark.",
+    "choices": [
+      {
+        "label": "Slip a drone inside",
+        "needsTag": "Drone",
+        "results": [
+          { "text": "Your drone threads the crack without a chime and hauls out a wrapped rigging crate while the giant snores on.", "outcomes": [ { "type": "piece", "rarity": "Uncommon", "kind": "Equipment" } ] }
+        ]
+      },
+      {
+        "label": "Grapple the loose coils",
+        "results": [
+          { "weight": 1, "text": "Your grapples hook a heavy bundle of refined coils and haul free before the old drills register the tug.", "outcomes": [ { "type": "salvage", "amount": 45 } ] },
+          { "weight": 2, "text": "A grapple rings loud against the casing. Floodlights snap open and the giant swings its cutters toward you.", "outcomes": [ { "type": "fight", "enemy": "strip_miner" } ] }
+        ]
+      },
+      {
+        "label": "Wake and calm the giant",
+        "results": [
+          { "text": "You flash your bow lamps across its sensors and take station as the miner wheels about.", "outcomes": [ { "type": "fight", "enemy": "strip_miner" } ] }
+        ]
+      },
+      {
+        "label": "Drift past in silence",
+        "results": [
+          { "text": "You trim your sails and glide past in the giant's shadow.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "marooned_choir",
+    "name": "Marooned Choir",
+    "placeholder": true,
+    "text": "A Mycelial Choir relay pod drifts with torn sails, its fungal threads humming a low hail. Their elder sings that she has crossed the dark before, and would again for the price of new rigging. The young singers only want the sun.",
+    "choices": [
+      {
+        "label": "Rig her cradle aboard",
+        "cost": 40,
+        "results": [
+          { "text": "Her pale cradle roots into a corner of the hold, and the elder settles in to sing with your ship.", "outcomes": [ { "type": "piece", "id": "choir_elder" } ] }
+        ]
+      },
+      {
+        "label": "Tow the pod into sunlight",
+        "results": [
+          { "weight": 2, "text": "Once the pod warms in open sun, the singers knit fresh hyphae across your hull splits before parting ways.", "outcomes": [ { "type": "hull", "amount": 10 } ] },
+          { "weight": 1, "text": "The singers mend your hull splits in the warm lane, and one eager junior asks to carry her culture onward with your vault.", "outcomes": [ { "type": "hull", "amount": 8 }, { "type": "piece", "id": "spore_singer" } ] }
+        ]
+      },
+      {
+        "label": "Chime farewell and sail on",
+        "results": [
+          { "text": "Your crew rings a polite brass chord and leaves the pod drifting toward the inner lanes.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tinker_barge",
+    "name": "Tinker Barge",
+    "placeholder": true,
+    "text": "A Tinker Hive barge swarms with brass spider-drones practicing on an old buoy, and the buoy is not enjoying it. The foreman has seed drones crated for trade and a new batch of bots eager for real work. She watches the batch the way you would watch a pot about to boil.",
+    "choices": [
+      {
+        "label": "Trade for a seed drone",
+        "cost": 30,
+        "results": [
+          { "text": "Two apprentices set a humming seed drone onto your deck, packed in oiled shavings.", "outcomes": [ { "type": "piece", "id": "seed_drone" } ] }
+        ]
+      },
+      {
+        "label": "Let the new bots tinker",
+        "results": [
+          { "weight": 2, "text": "The spider-drones click across your deck in neat rows, tightening joints and sharpening a fitting until it hums.", "outcomes": [ { "type": "upgrade" } ] },
+          { "weight": 1, "text": "Half the batch loses sync and starts chewing through your stern planking before the foreman whistles them home.", "outcomes": [ { "type": "hull", "amount": -9 } ] }
+        ]
+      },
+      {
+        "label": "Share your drone flight charts",
+        "needsTag": "Drone",
+        "results": [
+          { "text": "The foreman studies your drone rhythms with delight, gifting spare alloys while her senior bots mend your hull.", "outcomes": [ { "type": "salvage", "amount": 30 }, { "type": "hull", "amount": 8 } ] }
+        ]
+      },
+      {
+        "label": "Wave and keep course",
+        "results": [
+          { "text": "The Hive crew waves with spanners and returns to their noisy buoy.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tangled_nursery",
+    "name": "Tangled Nursery",
+    "placeholder": true,
+    "text": "A Tide Orchard raft is snared in a bramble drift, its domes straining in the vines. The thorns stir in their sleep whenever the raft's crew pull at the main knot. On deck, a keeper with a grafting satchel watches you, ready to go with whoever frees them.",
+    "choices": [
+      {
+        "label": "Hack the main knot loose",
+        "results": [
+          { "text": "The orchard keeper leaps aboard with her grafting satchel just as the torn bramble lashes back at your hull.", "outcomes": [ { "type": "piece", "id": "orchard_keeper" }, { "type": "fight", "enemy": "bramble_drift" } ] }
+        ]
+      },
+      {
+        "label": "Snip the outer runners",
+        "needsTag": "Weapon",
+        "results": [
+          { "text": "A tight beam severs the trailing vines before the drift stirs. The raft coasts clear and tosses over jars of healing sap.", "outcomes": [ { "type": "hull", "amount": 10 } ] }
+        ]
+      },
+      {
+        "label": "Leave the raft behind",
+        "results": [
+          { "text": "You hold your course while the nursery crew works at the thorns with hand shears.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sun_well",
+    "name": "Sun Well",
+    "placeholder": true,
+    "text": "A warm eddy of dense sunlight pools inside a ring of drifting pollen clouds. Hulls that wintered here came out thick-barked and strong, the almanac says. The pollen hangs very still, the way pollen does just before a squall.",
+    "choices": [
+      {
+        "label": "Bask deep in the warm ring",
+        "results": [
+          { "weight": 3, "text": "Your timber drinks the bright warmth in silence, swelling thicker and sealing old cracks along every rib.", "outcomes": [ { "type": "maxHull", "amount": 6 } ] },
+          { "weight": 2, "text": "Your wake eddies through the golden puffs before your bark can drink deep. The pollen swirls together and rushes your sails.", "outcomes": [ { "type": "fight", "enemy": "pollen_squall" } ] }
+        ]
+      },
+      {
+        "label": "Skim the rim on solar sails",
+        "needsTag": "Solar",
+        "results": [
+          { "text": "Your sails catch the edge of the bright current, channeling gentle warmth that closes the splits in your hull.", "outcomes": [ { "type": "hull", "amount": 10 } ] }
+        ]
+      },
+      {
+        "label": "Steer clear of the clouds",
+        "results": [
+          { "text": "You tack around the golden ring and leave the pollen hanging undisturbed.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lantern_tiller",
+    "name": "Lantern Tiller",
+    "placeholder": true,
+    "text": "A rogue tiller circles a gravel moonlet, chiming old planting songs as its blades chew empty rock. A sealed crate rides its rack, swinging past every few seconds. It has been looking for something green to plant for a very long time.",
+    "choices": [
+      {
+        "label": "Answer with living vines",
+        "needsTag": "Garden",
+        "results": [
+          { "text": "The tiller scents your greenery, folds its blades in relief, and mists your hull with rich sap that thickens your bark.", "outcomes": [ { "type": "maxHull", "amount": 4 } ] }
+        ]
+      },
+      {
+        "label": "Snatch the crate between turns",
+        "results": [
+          { "weight": 1, "text": "You time its wide sweep cleanly, unlatch the gear crate, and drift clear while it resets its furrow.", "outcomes": [ { "type": "piece", "rarity": "Common", "kind": "Equipment" }, { "type": "salvage", "amount": 15 } ] },
+          { "weight": 1, "text": "Your grapple catches its plowshare. The tiller shrieks out of its circle and charges your bow.", "outcomes": [ { "type": "fight", "enemy": "rogue_tiller" } ] }
+        ]
+      },
+      {
+        "label": "Calm the tiller head-on",
+        "results": [
+          { "text": "You swing across its furrow and brace as the old plow wheels to meet you.", "outcomes": [ { "type": "fight", "enemy": "rogue_tiller" } ] }
+        ]
+      },
+      {
+        "label": "Leave it to its furrow",
+        "results": [
+          { "text": "You slip past while the tiller resumes its lonely chime over the stones.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moth_lighthouse",
+    "name": "Moth Lighthouse",
+    "placeholder": true,
+    "text": "Luminous static moths blanket a Sunwright lantern, drinking sparks from its cracked prism. A lens grinder marooned inside flashes a mirror at you, slow and careful, so as not to wake them. Loose prism shards crackle along the rim.",
+    "choices": [
+      {
+        "label": "Coast in dark to fetch him",
+        "results": [
+          { "weight": 3, "text": "With lamps cold and sails hushed, the moths barely stir. The lens grinder floats across with his satchel and grins.", "outcomes": [ { "type": "piece", "id": "lens_grinder" } ] },
+          { "weight": 2, "text": "A hatch latch clicks sharp in the dark. Blue arcs ripple through the swarm, and the moths peel off the prism straight for you.", "outcomes": [ { "type": "fight", "enemy": "static_moths" } ] }
+        ]
+      },
+      {
+        "label": "Pluck the loose prism shards",
+        "results": [
+          { "text": "Your grapples snap off a handful of gleaming shards while stray static arcs singe your outer bark.", "outcomes": [ { "type": "salvage", "amount": 25 }, { "type": "hull", "amount": -6 } ] }
+        ]
+      },
+      {
+        "label": "Log the drift and sail on",
+        "results": [
+          { "text": "You log the lantern's bearing on the Sunwright channel and leave him waiting for a cutter.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hounds_cache",
+    "name": "Hound's Cache",
+    "placeholder": true,
+    "text": "Sunwright armory crates bob in a rock's shadow, scored with deep claw-grooves. Something large breathes in that shadow, waiting. Salvage hounds love a thrown scrap almost as much as they love what they already guard.",
+    "choices": [
+      {
+        "label": "Toss bait and open one",
+        "cost": 35,
+        "results": [
+          { "weight": 1, "text": "The hound chases your clattering decoy into the dark, giving you time to haul a gleaming sunspear crate aboard.", "outcomes": [ { "type": "piece", "id": "sunspear" } ] },
+          { "weight": 1, "text": "The hound sniffs your decoy once, drops it, and bounds out of the shadow straight for your open airlock.", "outcomes": [ { "type": "fight", "enemy": "salvage_hound" } ] }
+        ]
+      },
+      {
+        "label": "Pry a crate straight away",
+        "results": [
+          { "text": "You snatch a bundle of loose fittings before a heavy shape bounds off the rock with bright jaws.", "outcomes": [ { "type": "salvage", "amount": 20 }, { "type": "fight", "enemy": "salvage_hound" } ] }
+        ]
+      },
+      {
+        "label": "Slip away from the shadow",
+        "results": [
+          { "text": "You dim your bow lamps and leave the hound to guard its hoard.", "outcomes": [] }
+        ]
+      }
+    ]
   }
 ]

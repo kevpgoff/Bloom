@@ -70,7 +70,7 @@ A run is one sector: a branching map of about 20 nodes in 7 rows, ending in a bo
 | Sector map: generation, choosing nodes, skirmishes, hard fights, the boss, groves (repair), salvage from fights and composting | Done, tested; rulings in `docs/decisions.md`. One sector per run (`Rules.SectorsPerRun`) |
 | Docks (buy, sell, repair) and piece upgrades at groves, with an upgrade written for every card | Done, tested; rulings in `docs/decisions.md` |
 | Shipyards: 1 of 3 hull sections, attached where the player chooses. Hard fights and bosses give a free section after their reward. Heavy attacks aimed past the hull's edge hit its edge lane | Done, tested; rulings in `docs/decisions.md` |
-| Events: 10 placeholder stories, each with 2 to 4 choices. A choice can cost salvage or need a fitted piece with a tag, and can give or take salvage, hull, max hull, pieces, an upgrade or a hull section, or start a fight | Done, tested; rulings in `docs/decisions.md` |
+| Events: 20 placeholder stories, each with 2 to 4 choices. A choice can cost salvage or need a fitted piece with a tag, and can give or take salvage, hull, max hull, pieces, an upgrade or a hull section, or start a fight | Done, tested; rulings in `docs/decisions.md` |
 | The boss's parts | Next, the last of the sector map's pull requests |
 | Renown, unlocks, logbook | Not started |
 | Art | Option A, "Holo Grove" (see `docs/decisions.md` and `game/art/README.md`). Done: palette, Saira font, ship drawing, icons, card, panel and button frames, backdrop, and the enemy shown large in a target-lock reticle |

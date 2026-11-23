@@ -228,7 +228,7 @@ public class ShippedContentTests
         Assert.Equal(12, db.Enemies.Count);
         Assert.Single(db.Ships);
         Assert.Equal(10, db.Sections.Count);
-        Assert.Equal(10, db.Events.Count); // the 10 placeholder events sketched with the owner on 2026-11-23
+        Assert.Equal(20, db.Events.Count); // 10 sketched with the owner and 10 from the owner's writer prompt, 2026-11-23
     }
 
     /// <summary>

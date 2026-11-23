@@ -224,6 +224,7 @@ Decided by the owner:
 | Topic | Decision |
 | --- | --- |
 | The events | The 10 sketched together (see `game/data/README.md`, "Placeholder events"), all placeholders. The spec's first playable asked for 6; with about 1 to 3 events a run, 10 keeps back-to-back runs from repeating. |
+| More events | 10 more, written by another agent from a writer prompt the owner gave it. The owner found that it "got the instructions wrong": its stories listed what each choice does and stated the odds ("about half the time"). Their stories were rewritten to hint instead, keeping the agent's choices and results, so there are 20. |
 | Outcomes | Hidden. A choice shows only its label, plus its salvage cost and the tag it needs. In the owner's words: "just because the game is on the phone doesn't mean it should be handholding experience. I'm much more interested in old-school design where reading matters." The story text carries the hints, such as "if it still listens to them" for a code that works 3 times in 5. |
 
 Taken as defaults, not raised by the owner (numbers are in `Rules` or `events.json` and are placeholders):
@@ -236,7 +237,8 @@ Taken as defaults, not raised by the owner (numbers are in `Rules` or `events.js
 - **Events on the map.** Event nodes have their weight (20) on the rolled rows.
 - **No refitting** during an event, as at a shipyard.
 - **Save.** The save schema goes to 8 (a run remembers its event and the events it has met), so a run saved by the third pull request is set aside and a new run starts.
-- **Balance.** The three bots, which take an event only when nothing else they want is reachable and then the first open choice, met 0.6 events a run and won 67% (plain, was 62%), 52% (smart, was 44%) and 64% (rare-only, was 59%) of 400 runs. Event nodes take the place of some fights (about 4.6 fights won a run), so a path costs less hull. Players who chase fights and gambles in events will see something different from the bots.
+- **Revising the agent's events.** Besides the stories, a story no longer names a choice that needs a tag, since a player without the tag never sees that choice. Marooned Choir's elder costs only her 40 salvage, not also 5 max hull, because Humming Wreck already gives the same crew member for max hull.
+- **Balance.** The three bots, which take an event only when nothing else they want is reachable and then the first open choice, met 0.6 events a run and won 67% (plain, was 62%), 52% (smart, was 44%) and 64% (rare-only, was 59%) of 400 runs with the first 10 events, and 65%, 46% and 61% with all 20 (some of the new choices they take first cost hull or max hull). Event nodes take the place of some fights (about 4.6 fights won a run), so a path costs less hull. Players who chase fights and gambles in events will see something different from the bots.
 
 ## Proposed in the spec, not yet confirmed
 
