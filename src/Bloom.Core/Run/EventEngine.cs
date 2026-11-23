@@ -147,9 +147,14 @@ public sealed class EventEngine(ContentDb content)
 
         var fresh = events.Where(e => !run.SeenEvents.Contains(e.Id)).ToList();
         var choices = fresh.Count > 0 ? fresh : events;
-        var ev = choices[run.Rng.Next(choices.Count)];
-        run.SeenEvents.Add(ev.Id);
-        return new EventVisit(ev.Id);
+        return Visit(run, choices[run.Rng.Next(choices.Count)].Id);
+    }
+
+    /// <summary>A visit to a named event, which then counts as met.</summary>
+    internal static EventVisit Visit(RunState run, string eventId)
+    {
+        run.SeenEvents.Add(eventId);
+        return new EventVisit(eventId);
     }
 
     private void Apply(RunState run, EventOutcome outcome, List<int> gained, List<int> upgraded)

@@ -69,6 +69,14 @@ public sealed class RunSession
     public static RunSession StartNew(ContentDb content, ISaveStore store, string shipClassId, ulong seed) =>
         StartNew(content, store, new RunSetup(shipClassId, seed));
 
+    /// <summary>A run for testing, started at a node (<see cref="RunFactory.NewTestRun"/>).</summary>
+    public static RunSession StartTest(ContentDb content, ISaveStore store, RunSetup setup, TestStart start)
+    {
+        var session = new RunSession(content, RunFactory.NewTestRun(content, setup, start), store);
+        session.Save();
+        return session;
+    }
+
     /// <summary>Returns the saved run, or null when there is none.</summary>
     public static RunSession? TryResume(ContentDb content, ISaveStore store) =>
         store.Load() is { } json ? new RunSession(content, SaveSerializer.Deserialize(json), store) : null;
