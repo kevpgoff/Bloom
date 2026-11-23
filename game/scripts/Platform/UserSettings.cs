@@ -9,6 +9,9 @@ namespace Bloom.Game.Platform;
 /// [feedback]
 /// shake_strength=1.0   ; 0 turns screen shake off, 1 is full strength
 /// haptics=true
+///
+/// [audio]
+/// music_volume=1.0     ; 0 turns the music off, 1 is full volume
 /// </code>
 /// </summary>
 internal static class UserSettings
@@ -17,10 +20,13 @@ internal static class UserSettings
     private const string Feedback = "feedback";
     private const string ShakeKey = "shake_strength";
     private const string HapticsKey = "haptics";
+    private const string Audio = "audio";
+    private const string MusicVolumeKey = "music_volume";
 
     private static bool _loaded;
     private static float _shakeStrength = 1f;
     private static bool _haptics = true;
+    private static float _musicVolume = 1f;
 
     /// <summary>How strongly the screen shakes, from 0 (never) to 1.</summary>
     public static float ShakeStrength
@@ -39,6 +45,16 @@ internal static class UserSettings
         {
             Load();
             return _haptics;
+        }
+    }
+
+    /// <summary>How loud the music plays, from 0 (off) to 1.</summary>
+    public static float MusicVolume
+    {
+        get
+        {
+            Load();
+            return _musicVolume;
         }
     }
 
@@ -62,7 +78,9 @@ internal static class UserSettings
 
         _shakeStrength = Mathf.Clamp(config.GetValue(Feedback, ShakeKey, 1f).AsSingle(), 0f, 1f);
         _haptics = config.GetValue(Feedback, HapticsKey, true).AsBool();
-        if (config.HasSectionKey(Feedback, ShakeKey) && config.HasSectionKey(Feedback, HapticsKey))
+        _musicVolume = Mathf.Clamp(config.GetValue(Audio, MusicVolumeKey, 1f).AsSingle(), 0f, 1f);
+        if (config.HasSectionKey(Feedback, ShakeKey) && config.HasSectionKey(Feedback, HapticsKey) &&
+            config.HasSectionKey(Audio, MusicVolumeKey))
         {
             return;
         }
@@ -70,6 +88,7 @@ internal static class UserSettings
         // Write any missing setting, so the file shows everything that can be changed.
         config.SetValue(Feedback, ShakeKey, _shakeStrength);
         config.SetValue(Feedback, HapticsKey, _haptics);
+        config.SetValue(Audio, MusicVolumeKey, _musicVolume);
         if (config.Save(FilePath) is var saved and not Error.Ok)
         {
             GD.PushWarning($"UserSettings: could not write {FilePath} ({saved}).");
