@@ -178,10 +178,10 @@ public class CombatTests
         var run = NewRun();
         var plating = Fit(run, "plating", 0, 0);
         _engine.StartFight(run, "heavy");
-        Assert.Equal(plating.Id, _engine.HeavyAttackTarget(run)?.Piece.Id);
+        Assert.Equal(plating.Id, _engine.NextActions(run).Single().Target?.Piece.Id);
 
         _engine.EndTurn(run); // disables the plating; the bridge is next in lane 0
-        Assert.Equal(BridgeId(run), _engine.HeavyAttackTarget(run)?.Piece.Id);
+        Assert.Equal(BridgeId(run), _engine.NextActions(run).Single().Target?.Piece.Id);
     }
 
     /// <summary>
@@ -197,8 +197,8 @@ public class CombatTests
         Fit(run, "bridge", 1, 4);
         var plating = Fit(run, "plating", 1, 0);
         _engine.StartFight(run, "heavy");
-        Assert.Equal(1, _engine.HeavyLane(run));
-        Assert.Equal(plating.Id, _engine.HeavyAttackTarget(run)?.Piece.Id);
+        Assert.Equal(1, _engine.NextActions(run).Single().Lane);
+        Assert.Equal(plating.Id, _engine.NextActions(run).Single().Target?.Piece.Id);
         _engine.EndTurn(run);
         Assert.Contains(plating.Id, run.Combat!.DisabledPieceIds);
 
@@ -206,8 +206,8 @@ public class CombatTests
         run.Ship.Grid.Attach([new Cell(0, 0), new Cell(0, 1), new Cell(0, 2)]);
         var lance = Fit(run, "lance", 0, 0, Rotation.R90);
         _engine.StartFight(run, "heavy");
-        Assert.Equal(0, _engine.HeavyLane(run));
-        Assert.Equal(lance.Id, _engine.HeavyAttackTarget(run)?.Piece.Id);
+        Assert.Equal(0, _engine.NextActions(run).Single().Lane);
+        Assert.Equal(lance.Id, _engine.NextActions(run).Single().Target?.Piece.Id);
     }
 
     [Fact]
@@ -215,7 +215,8 @@ public class CombatTests
     {
         var run = NewRun();
         _engine.StartFight(run, "dummy");
-        Assert.Null(_engine.HeavyAttackTarget(run));
+        var action = _engine.NextActions(run).Single();
+        Assert.Equal(new EnemyAction(null, new Intent(IntentKind.Attack, 6)), action);
     }
 
     [Fact]

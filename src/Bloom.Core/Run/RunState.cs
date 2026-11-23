@@ -47,7 +47,7 @@ public enum RunPhase
 /// </summary>
 public sealed class RunState
 {
-    public const int CurrentSchemaVersion = 8;
+    public const int CurrentSchemaVersion = 9;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 

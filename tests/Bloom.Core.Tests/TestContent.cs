@@ -15,6 +15,8 @@ namespace Bloom.Core.Tests;
 /// All pieces are common except "drone" (uncommon) and "spear" (rare), for reward tests.
 /// No piece adds the card "chorus" (draw 2); tests put it in the hand themselves, so the reward pool stays the same.
 /// Enemy pools: "dummy" and "blocker" are early, "heavy" and "mixed" late, "brute" hard and "titan" the boss.
+/// The titan has 3 parts: an arm that attacks for 3, a shell that blocks 4, and a ram that alternates a heavy
+/// attack of 4 on lane 0 with an attack of 2.
 /// Upgrades: "ram" deals 8, "lance" costs 1, "sprout" blocks 6 and grows 3, "patch" costs 0; the other cards
 /// have none, so "plating" (deflect) and "singer" (brace) cannot be upgraded.
 /// Hull sections: "rib" (line of 3), "pod" (square of 4), "crook" (L of 4) and "keel" (line of 5). The test hull
@@ -81,7 +83,10 @@ internal static class TestContent
           { "id": "mixed", "name": "Mixed", "pool": "Late", "hull": 40, "pattern": [
             { "kind": "Attack", "amount": 6 }, { "kind": "HeavyAttack", "amount": 20, "lane": 0 }, { "kind": "Block", "amount": 5 }] },
           { "id": "brute", "name": "Brute", "pool": "Hard", "hull": 45, "pattern": [{ "kind": "Attack", "amount": 7 }] },
-          { "id": "titan", "name": "Titan", "pool": "Boss", "hull": 40, "pattern": [{ "kind": "Attack", "amount": 5 }] }
+          { "id": "titan", "name": "Titan", "pool": "Boss", "hull": 40, "pattern": [{ "kind": "Attack", "amount": 5 }], "parts": [
+            { "name": "Arm", "hull": 10, "pattern": [{ "kind": "Attack", "amount": 3 }] },
+            { "name": "Shell", "hull": 8, "pattern": [{ "kind": "Block", "amount": 4 }] },
+            { "name": "Ram", "hull": 12, "pattern": [{ "kind": "HeavyAttack", "amount": 4, "lane": 0 }, { "kind": "Attack", "amount": 2 }] }] }
         ]
         """;
 

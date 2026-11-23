@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Bloom.Core.Cards;
 
 namespace Bloom.Core.Combat;
@@ -30,8 +31,15 @@ public enum EnemyPool
 }
 
 /// <summary>
-/// An enemy as defined in enemies.json. It repeats <see cref="Pattern"/> in order. <see cref="Pool"/> is
-/// required in data; it is nullable only so the validator can report it missing.
+/// A part of an enemy, such as a boss's arm. It has its own hull and repeats its own pattern, acting every turn
+/// after the body, until its hull reaches 0 and it is disabled. Its block goes into the enemy's one block.
+/// </summary>
+public sealed record EnemyPartDef(string Name, int Hull, IReadOnlyList<Intent> Pattern);
+
+/// <summary>
+/// An enemy as defined in enemies.json. Its body repeats <see cref="Pattern"/> in order, and each of its
+/// <see cref="Parts"/> (a boss's) repeats its own. The fight is won when the body's hull reaches 0.
+/// <see cref="Pool"/> is required in data; it is nullable only so the validator can report it missing.
 /// </summary>
 public sealed record EnemyDef(
     string Id,
@@ -40,7 +48,17 @@ public sealed record EnemyDef(
     IReadOnlyList<Intent> Pattern,
     EnemyPool? Pool = null,
     int Sector = 1,
-    bool Placeholder = false);
+    bool Placeholder = false,
+    IReadOnlyList<EnemyPartDef>? Parts = null)
+{
+    /// <summary>The parts, or none when the data leaves them out.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<EnemyPartDef> AllParts => Parts ?? [];
+
+    /// <summary>Every intent the enemy can show: the body's pattern, then each part's.</summary>
+    [JsonIgnore]
+    public IEnumerable<Intent> AllIntents => Pattern.Concat(AllParts.SelectMany(p => p.Pattern));
+}
 
 public enum CombatOutcome
 {
@@ -64,6 +82,23 @@ public sealed class EnemyState
 
     /// <summary>Index into the enemy's pattern; it wraps around.</summary>
     public int PatternIndex { get; set; }
+
+    /// <summary>One for each of the enemy's parts, in the order of <see cref="EnemyDef.Parts"/>. Empty for an enemy without parts.</summary>
+    public List<PartState> Parts { get; set; } = [];
+}
+
+/// <summary>A part of the enemy in a fight. It is disabled once its hull reaches 0, and then it no longer acts.</summary>
+public sealed class PartState
+{
+    public int Hull { get; set; }
+
+    public int MaxHull { get; set; }
+
+    /// <summary>Index into the part's pattern; it wraps around. It moves on only while the part works.</summary>
+    public int PatternIndex { get; set; }
+
+    [JsonIgnore]
+    public bool Disabled => Hull <= 0;
 }
 
 /// <summary>
@@ -73,6 +108,12 @@ public sealed class EnemyState
 public sealed class CombatState
 {
     public required EnemyState Enemy { get; set; }
+
+    /// <summary>
+    /// What the player's attacks hit: the index of one of the enemy's working parts, or null for the body. It stays
+    /// until the player changes it, and goes back to the body when its part is disabled.
+    /// </summary>
+    public int? Target { get; set; }
 
     public int Turn { get; set; }
 

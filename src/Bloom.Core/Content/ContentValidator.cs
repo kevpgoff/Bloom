@@ -276,13 +276,54 @@ internal static class ContentValidator
             errors.Add($"{where}: sector {enemy.Sector} is outside 1 to {Rules.SectorsPerRun}.");
         }
 
-        if (enemy.Pattern is null || enemy.Pattern.Count == 0)
+        ValidatePattern(where, enemy.Pattern, errors);
+        if (enemy.Parts is not { } parts)
+        {
+            return;
+        }
+
+        if (parts.Count > Rules.MaxEnemyParts)
+        {
+            errors.Add($"{where}: has {parts.Count} parts, but at most {Rules.MaxEnemyParts} fit on the screen.");
+        }
+
+        for (int i = 0; i < parts.Count; i++)
+        {
+            if (parts[i] is not { } part)
+            {
+                errors.Add($"{where}: part {i} is empty.");
+                continue;
+            }
+
+            string at = $"{where}, part {i}";
+            if (string.IsNullOrWhiteSpace(part.Name))
+            {
+                errors.Add($"{at}: missing name.");
+            }
+            else if (parts.Take(i).Any(p => p?.Name == part.Name))
+            {
+                errors.Add($"{at}: another part is already named '{part.Name}'.");
+            }
+
+            if (part.Hull <= 0)
+            {
+                errors.Add($"{at}: hull must be above 0.");
+            }
+
+            ValidatePattern(at, part.Pattern, errors);
+        }
+    }
+
+    /// <summary>A pattern of a body or a part: at least one intent, each with a lane exactly when it is a heavy attack.</summary>
+    private static void ValidatePattern(string where, IReadOnlyList<Intent>? pattern, List<string> errors)
+    {
+        if (pattern is null || pattern.Count == 0)
         {
             errors.Add($"{where}: needs at least one intent in its pattern.");
             return;
         }
 
-        foreach (var intent in enemy.Pattern)
+        foreach (var intent in pattern)
         {
             if (intent is null)
             {

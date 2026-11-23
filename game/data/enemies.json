@@ -141,13 +141,38 @@
     "name": "Grand Combine",
     "placeholder": true,
     "pool": "Boss",
-    "hull": 120,
+    "hull": 56,
     "pattern": [
-      { "kind": "Attack", "amount": 14 },
-      { "kind": "HeavyAttack", "amount": 20, "lane": 2 },
-      { "kind": "Block", "amount": 14 },
-      { "kind": "Attack", "amount": 16 },
-      { "kind": "HeavyAttack", "amount": 20, "lane": 4 }
+      { "kind": "Attack", "amount": 9 },
+      { "kind": "HeavyAttack", "amount": 13, "lane": 2 },
+      { "kind": "Block", "amount": 6 }
+    ],
+    "parts": [
+      {
+        "name": "Thresher Arm",
+        "hull": 15,
+        "pattern": [
+          { "kind": "Attack", "amount": 5 },
+          { "kind": "Attack", "amount": 6 },
+          { "kind": "Attack", "amount": 7 }
+        ]
+      },
+      {
+        "name": "Chaff Screen",
+        "hull": 12,
+        "pattern": [
+          { "kind": "Block", "amount": 3 }
+        ]
+      },
+      {
+        "name": "Baling Ram",
+        "hull": 16,
+        "pattern": [
+          { "kind": "HeavyAttack", "amount": 10, "lane": 4 },
+          { "kind": "Attack", "amount": 4 },
+          { "kind": "HeavyAttack", "amount": 10, "lane": 3 }
+        ]
+      }
     ]
   }
 ]

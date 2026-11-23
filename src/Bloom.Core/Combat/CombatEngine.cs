@@ -16,6 +16,17 @@ namespace Bloom.Core.Combat;
 /// <param name="RepairTargets">How many disabled pieces the player must pick to play it; 0 for cards that do not repair.</param>
 public sealed record CardPreview(CardInstance Card, CardDef Def, IReadOnlyList<Effect> Effects, bool Playable, int RepairTargets);
 
+/// <summary>One thing the enemy will do at the end of the turn, with its body (<paramref name="Part"/> null) or one of its working parts.</summary>
+/// <param name="Lane">
+/// For a heavy attack, the lane it hits: the lane it aims at, or the nearest one the hull reaches
+/// (<see cref="Grid.ShipGrid.LaneHit"/>). Null for any other intent.
+/// </param>
+/// <param name="Target">
+/// For a heavy attack, the piece it disables if its damage gets past block: the frontmost working piece in its lane,
+/// behind any that an earlier heavy attack of the same turn would disable. Null when the lane has none left.
+/// </param>
+public sealed record EnemyAction(int? Part, Intent Intent, int? Lane = null, FittedPiece? Target = null);
+
 /// <summary>
 /// The turn cycle of a fight. Each public method that changes state is one player action and leaves
 /// the run in a state that can be saved. Every method validates before it changes anything.
@@ -24,6 +35,11 @@ public sealed record CardPreview(CardInstance Card, CardDef Def, IReadOnlyList<E
 /// <para>
 /// Adjacency bonuses: <see cref="DamageBonusEffect"/> is worked out each time a card is played, from the
 /// pieces that work at that moment. <see cref="StartGrownEffect"/> is given once, when the fight starts.
+/// </para>
+/// <para>
+/// An enemy with parts (a boss) acts with its body and then with each working part, every turn. The player's
+/// attacks hit <see cref="CombatState.Target"/>: the body, or a part chosen with <see cref="SetTarget"/>. A part
+/// whose hull reaches 0 is disabled, and the aim goes back to the body. The fight is won when the body's hull reaches 0.
 /// </para>
 /// <para>
 /// Each change is reported to <paramref name="emit"/> as a <see cref="CombatEvent"/>, in the order it
@@ -62,7 +78,13 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         var enemy = content.Enemy(enemyId);
         var combat = new CombatState
         {
-            Enemy = new EnemyState { DefId = enemy.Id, Hull = enemy.Hull, MaxHull = enemy.Hull },
+            Enemy = new EnemyState
+            {
+                DefId = enemy.Id,
+                Hull = enemy.Hull,
+                MaxHull = enemy.Hull,
+                Parts = enemy.AllParts.Select(p => new PartState { Hull = p.Hull, MaxHull = p.Hull }).ToList(),
+            },
         };
         var deck = DeckBuilder.Build(run.Ship, content);
         GiveStartingGrowth(run, deck);
@@ -74,28 +96,78 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         return combat;
     }
 
-    public Intent CurrentIntent(CombatState combat)
-    {
-        var pattern = content.Enemy(combat.Enemy.DefId).Pattern;
-        return pattern[combat.Enemy.PatternIndex % pattern.Count];
-    }
-
-    /// <summary>
-    /// The piece the enemy's next action would disable if its damage gets past block, or null when the
-    /// next action is not a heavy attack or its lane has no working piece.
-    /// </summary>
-    public FittedPiece? HeavyAttackTarget(RunState run)
+    /// <summary>What the enemy will do at the end of this turn, in order: its body, then each working part.</summary>
+    public IReadOnlyList<EnemyAction> NextActions(RunState run)
     {
         var combat = RequireCombat(run);
-        return HeavyLane(run) is int lane ? _fitter.FrontmostInLane(run.Ship, lane, combat.DisabledPieceIds) : null;
+        var enemy = combat.Enemy;
+        var def = content.Enemy(enemy.DefId);
+        var disabled = combat.DisabledPieceIds.ToList();
+        var actions = new List<EnemyAction>();
+        void Add(int? part, Intent intent)
+        {
+            if (intent is not { Kind: IntentKind.HeavyAttack, Lane: int aimed })
+            {
+                actions.Add(new EnemyAction(part, intent));
+                return;
+            }
+
+            int lane = run.Ship.Grid.LaneHit(aimed);
+            var target = _fitter.FrontmostInLane(run.Ship, lane, disabled);
+            if (target is not null)
+            {
+                disabled.Add(target.Piece.Id);
+            }
+
+            actions.Add(new EnemyAction(part, intent, lane, target));
+        }
+
+        Add(null, Next(def.Pattern, enemy.PatternIndex));
+        for (int i = 0; i < enemy.Parts.Count; i++)
+        {
+            if (!enemy.Parts[i].Disabled)
+            {
+                Add(i, Next(def.AllParts[i].Pattern, enemy.Parts[i].PatternIndex));
+            }
+        }
+
+        return actions;
     }
 
+    /// <summary>Whether the player's attacks can be aimed at this part (or the body, for null) now.</summary>
+    public bool CanTarget(RunState run, int? part) =>
+        run.Combat is { } combat
+        && (part is not int index || (index >= 0 && index < combat.Enemy.Parts.Count && !combat.Enemy.Parts[index].Disabled));
+
     /// <summary>
-    /// The lane the enemy's next action hits if it is a heavy attack: the lane it aims at, or the nearest one the
-    /// hull reaches (<see cref="Grid.ShipGrid.LaneHit"/>). Null when the next action is not a heavy attack.
+    /// Aims the player's attacks at one of the enemy's working parts, or at its body (<paramref name="part"/> null).
+    /// The aim stays until it is changed or its part is disabled. Aiming where it already points changes nothing.
     /// </summary>
-    public int? HeavyLane(RunState run) =>
-        CurrentIntent(RequireCombat(run)) is { Kind: IntentKind.HeavyAttack, Lane: int aimed } ? run.Ship.Grid.LaneHit(aimed) : null;
+    public void SetTarget(RunState run, int? part)
+    {
+        var combat = RequireCombat(run);
+        if (part is int index)
+        {
+            var def = content.Enemy(combat.Enemy.DefId);
+            if (index < 0 || index >= combat.Enemy.Parts.Count)
+            {
+                throw new InvalidOperationException($"The {def.Name} has no part {index}.");
+            }
+
+            if (combat.Enemy.Parts[index].Disabled)
+            {
+                throw new InvalidOperationException($"The {def.AllParts[index].Name} is disabled.");
+            }
+        }
+
+        if (combat.Target == part)
+        {
+            return;
+        }
+
+        combat.Target = part;
+        Emit(new TargetChanged(part));
+    }
 
     public bool CanPlay(RunState run, int cardId) =>
         run.Combat is { } combat
@@ -169,8 +241,7 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
             switch (effect)
             {
                 case DamageEffect damage:
-                    var (blocked, hullDamage) = DamageEnemy(combat.Enemy, damage.Amount);
-                    Emit(new EnemyHit(damage.Amount, blocked, hullDamage, combat.Enemy.Hull));
+                    DamageEnemy(combat, damage.Amount);
                     break;
                 case BlockEffect block:
                     combat.Block += block.Amount;
@@ -313,55 +384,88 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         Draw(run, combat, CardsToDraw(run, combat));
     }
 
+    private static Intent Next(IReadOnlyList<Intent> pattern, int index) => pattern[index % pattern.Count];
+
+    /// <summary>
+    /// The body acts, then each working part in order. They stop once the ship's hull is gone. The enemy's block,
+    /// which the body and parts share, lasts until the enemy's next turn.
+    /// </summary>
     private void EnemyActs(RunState run, CombatState combat)
     {
         var enemy = combat.Enemy;
-        var intent = CurrentIntent(combat);
-
-        // Enemy block lasts until the enemy's next action.
+        var def = content.Enemy(enemy.DefId);
         enemy.Block = 0;
+        Act(run, combat, null, Next(def.Pattern, enemy.PatternIndex++));
+        for (int i = 0; i < enemy.Parts.Count && run.Hull > 0; i++)
+        {
+            var part = enemy.Parts[i];
+            if (!part.Disabled)
+            {
+                Act(run, combat, i, Next(def.AllParts[i].Pattern, part.PatternIndex++));
+            }
+        }
+    }
+
+    private void Act(RunState run, CombatState combat, int? part, Intent intent)
+    {
         switch (intent.Kind)
         {
             case IntentKind.Attack:
-                DamageShip(run, combat, intent.Amount, heavyLane: null);
+                DamageShip(run, combat, intent.Amount, heavyLane: null, part);
                 break;
             case IntentKind.HeavyAttack:
                 int lane = run.Ship.Grid.LaneHit(intent.Lane!.Value);
-                if (DamageShip(run, combat, intent.Amount, lane) > 0)
+                if (DamageShip(run, combat, intent.Amount, lane, part) > 0)
                 {
                     DisableFrontmost(run, combat, lane);
                 }
 
                 break;
             case IntentKind.Block:
-                enemy.Block += intent.Amount;
-                Emit(new EnemyBlocked(intent.Amount, enemy.Block));
+                combat.Enemy.Block += intent.Amount;
+                Emit(new EnemyBlocked(intent.Amount, combat.Enemy.Block, part));
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(combat), intent.Kind, "Unknown intent.");
+                throw new ArgumentOutOfRangeException(nameof(intent), intent.Kind, "Unknown intent.");
         }
-
-        enemy.PatternIndex++;
     }
 
     /// <summary>Block absorbs damage first; the rest reduces hull points. Returns the hull damage.</summary>
-    private int DamageShip(RunState run, CombatState combat, int amount, int? heavyLane)
+    private int DamageShip(RunState run, CombatState combat, int amount, int? heavyLane, int? part)
     {
         int absorbed = Math.Min(combat.Block, amount);
         combat.Block -= absorbed;
         int hullDamage = amount - absorbed;
         run.Hull = Math.Max(0, run.Hull - hullDamage);
-        Emit(new ShipHit(amount, absorbed, hullDamage, run.Hull, heavyLane));
+        Emit(new ShipHit(amount, absorbed, hullDamage, run.Hull, heavyLane, part));
         return hullDamage;
     }
 
-    /// <summary>Enemy block absorbs damage first; the rest reduces its hull points.</summary>
-    private static (int Blocked, int HullDamage) DamageEnemy(EnemyState enemy, int amount)
+    /// <summary>
+    /// The enemy's block absorbs damage first; the rest reduces the hull of the target, the body or a part. A part
+    /// whose hull reaches 0 is disabled and the aim goes back to the body. Damage past a part's hull is lost.
+    /// </summary>
+    private void DamageEnemy(CombatState combat, int amount)
     {
+        var enemy = combat.Enemy;
         int absorbed = Math.Min(enemy.Block, amount);
         enemy.Block -= absorbed;
-        enemy.Hull = Math.Max(0, enemy.Hull - (amount - absorbed));
-        return (absorbed, amount - absorbed);
+        int hullDamage = amount - absorbed;
+        if (combat.Target is not int index)
+        {
+            enemy.Hull = Math.Max(0, enemy.Hull - hullDamage);
+            Emit(new EnemyHit(amount, absorbed, hullDamage, enemy.Hull));
+            return;
+        }
+
+        var part = enemy.Parts[index];
+        part.Hull = Math.Max(0, part.Hull - hullDamage);
+        Emit(new EnemyHit(amount, absorbed, hullDamage, part.Hull, index));
+        if (part.Disabled)
+        {
+            combat.Target = null;
+            Emit(new PartDisabled(index));
+        }
     }
 
     private void DisableFrontmost(RunState run, CombatState combat, int lane)
