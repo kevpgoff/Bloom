@@ -16,11 +16,18 @@ public enum RunResult
 /// <summary>Where the run is in its loop. It is worked out from the state; see <see cref="RunState.Phase"/>.</summary>
 public enum RunPhase
 {
-    /// <summary>Between fights: the player may rearrange the ship, then starts the next fight.</summary>
-    Refit,
+    /// <summary>On the sector map, choosing the next node. The player may refit the ship.</summary>
+    Map,
+
+    /// <summary>A fight node was chosen and its enemy is known (<see cref="RunState.Encounter"/>). The player may refit, then starts the fight.</summary>
+    Prepare,
     Fight,
+
     /// <summary>A fight was won and the player picks a piece from <see cref="RunState.Reward"/> or skips it.</summary>
     Reward,
+
+    /// <summary>At a grove (<see cref="RunState.Grove"/>), choosing what it does for the ship.</summary>
+    Grove,
     Won,
     Lost,
 }
@@ -31,7 +38,7 @@ public enum RunPhase
 /// </summary>
 public sealed class RunState
 {
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 4;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -56,15 +63,23 @@ public sealed class RunState
 
     public int Sector { get; set; } = 1;
 
+    /// <summary>Sectors in this run, fixed when it starts (<see cref="Rules.SectorsPerRun"/>). Beating the boss of the last one wins it.</summary>
+    public int Sectors { get; set; } = Rules.SectorsPerRun;
+
+    /// <summary>The map of the current sector. Every run has one; it is null only while a run is being made.</summary>
     public SectorMap? Map { get; set; }
 
-    public int? MapNodeId { get; set; }
+    /// <summary>The nodes entered in this sector, in order. The last one is where the ship is.</summary>
+    public List<int> Path { get; set; } = [];
 
-    /// <summary>
-    /// The enemies of this run, in order, fixed when the run starts. A placeholder until the sector map
-    /// exists: the run is won when the last of them is beaten.
-    /// </summary>
-    public List<string> Encounters { get; set; } = [];
+    /// <summary>Every enemy chosen for a fight this run, so that a pool repeats an enemy only once it runs out.</summary>
+    public List<string> EnemiesMet { get; set; } = [];
+
+    /// <summary>The fight the player has committed to, from choosing its node until the fight ends.</summary>
+    public Encounter? Encounter { get; set; }
+
+    /// <summary>Set while the ship is at a grove and the player has not yet chosen what it does.</summary>
+    public GroveVisit? Grove { get; set; }
 
     public int FightsWon { get; set; }
 
@@ -88,8 +103,14 @@ public sealed class RunState
         RunResult.Lost => RunPhase.Lost,
         _ when Combat is not null => RunPhase.Fight,
         _ when Reward is not null => RunPhase.Reward,
-        _ => RunPhase.Refit,
+        _ when Encounter is not null => RunPhase.Prepare,
+        _ when Grove is not null => RunPhase.Grove,
+        _ => RunPhase.Map,
     };
+
+    /// <summary>The node the ship is at, or null before the first node of a sector.</summary>
+    [JsonIgnore]
+    public MapNode? CurrentNode => Map is { } map && Path.Count > 0 ? map.Node(Path[^1]) : null;
 
     public PieceInstance NewPiece(string defId) => new(NextPieceId++, defId);
 }

@@ -38,6 +38,12 @@ public partial class GameRoot : Node
     /// <summary>One line for the status label, shown when no run could be started.</summary>
     public string Status { get; private set; } = "";
 
+    /// <summary>
+    /// Whether the Fitting screen is open over the sector map. It is only which screen shows, not part of
+    /// the run, so it is not saved: a resumed run opens on the map.
+    /// </summary>
+    public bool ShipOpen { get; private set; }
+
     /// <summary>Raised after every action and after a new run starts. Screens redraw on it.</summary>
     public event Action? Changed;
 
@@ -98,16 +104,27 @@ public partial class GameRoot : Node
         }
     }
 
-    /// <summary>A new run opens between fights, on the Fitting screen.</summary>
+    /// <summary>A new run opens on the map of its first sector.</summary>
     public RunSession StartNewRun()
     {
         var content = Content ?? throw new InvalidOperationException("Content is not loaded.");
+        ShipOpen = false;
 
         // The only non-deterministic step: picking the seed. Everything after it comes from the run's own RNG.
         ulong seed = ((ulong)GD.Randi() << 32) | GD.Randi();
         Session = RunSession.StartNew(content, _store, StartingShip, seed);
         Changed?.Invoke();
         return Session;
+    }
+
+    /// <summary>Opens or closes the Fitting screen over the map. Changes no state, so nothing is saved.</summary>
+    public void ShowShip(bool open)
+    {
+        if (ShipOpen != open)
+        {
+            ShipOpen = open;
+            Changed?.Invoke();
+        }
     }
 
     /// <summary>

@@ -33,14 +33,56 @@ public class RewardTests
     }
 
     [Fact]
-    public void WinningTheLastEncounterWinsTheRunWithoutAReward()
+    public void BeatingTheBossOfTheLastSectorWinsTheRunWithoutAReward()
     {
-        var run = NewRun();
-        run.Encounters = ["dummy"];
-        WinFight(run);
+        var run = WinFight(NewRun(), "titan");
         Assert.Equal(RunResult.Won, run.Result);
         Assert.Equal(RunPhase.Won, run.Phase);
         Assert.Null(run.Reward);
+    }
+
+    [Fact]
+    public void ABossBeforeTheLastSectorGivesARewardThenTheNextSector()
+    {
+        var run = UseTinyMap(NewRun());
+        run.Sectors = 2;
+        run.Path.AddRange([0, 1, 2, 3]);
+        WinFight(run, "titan");
+        Assert.Equal(RunPhase.Reward, run.Phase);
+        Assert.Equal(Rarity.Rare, Db.Piece(run.Reward!.Pieces[0]).Rarity);
+
+        _rewards.Skip(run);
+        Assert.Equal(2, run.Sector);
+        Assert.Equal(2, run.Map!.Sector);
+        Assert.Empty(run.Path);
+        Assert.Equal(RunPhase.Map, run.Phase);
+    }
+
+    [Theory]
+    [InlineData("dummy", 20, 30)]
+    [InlineData("heavy", 20, 30)]
+    [InlineData("brute", 40, 55)]
+    public void AWonFightPaysSalvage(string enemyId, int min, int max)
+    {
+        for (ulong seed = 0; seed < 20; seed++)
+        {
+            var run = NewRun(seed);
+            run.Salvage = 7;
+            WinFight(run, enemyId);
+            Assert.InRange(run.Reward!.Salvage, min, max);
+            Assert.Equal(7 + run.Reward.Salvage, run.Salvage);
+        }
+    }
+
+    [Fact]
+    public void AHardFightAlwaysOffersARarePieceFirst()
+    {
+        for (ulong seed = 0; seed < 50; seed++)
+        {
+            var offer = WinFight(NewRun(seed), "brute").Reward!.Pieces;
+            Assert.Equal("spear", offer[0]); // the only rare piece in the test content
+            Assert.Equal(Rules.RewardChoices, offer.Distinct().Count());
+        }
     }
 
     [Fact]
@@ -124,7 +166,7 @@ public class RewardTests
         Assert.Equal(new PieceInstance(id, defId), piece);
         Assert.Equal([piece], run.Cargo.Pieces);
         Assert.Null(run.Reward);
-        Assert.Equal(RunPhase.Refit, run.Phase);
+        Assert.Equal(RunPhase.Map, run.Phase);
     }
 
     [Fact]
@@ -148,7 +190,7 @@ public class RewardTests
         _rewards.Skip(run);
         Assert.Null(run.Reward);
         Assert.Empty(run.Cargo.Pieces);
-        Assert.Equal(RunPhase.Refit, run.Phase);
+        Assert.Equal(RunPhase.Map, run.Phase);
     }
 
     [Fact]

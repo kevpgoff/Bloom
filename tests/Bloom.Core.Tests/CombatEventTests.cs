@@ -259,11 +259,12 @@ public class CombatEventTests
     // Through the session
 
     [Fact]
-    public void StartingTheNextFightReportsTheStartTheTurnAndTheOpeningHand()
+    public void StartingTheChosenFightReportsTheStartTheTurnAndTheOpeningHand()
     {
         var session = RunSession.StartNew(Db, new MemorySaveStore(), "test", seed: 1);
         Assert.Empty(session.LastEvents);
-        session.Do(s => s.Refit.StartNextFight(s.State));
+        Prepare(session.State);
+        session.Do(s => s.Refit.StartFight(s.State));
 
         var events = session.LastEvents;
         Assert.Equal(new FightStarted("dummy"), events[0]);
@@ -275,7 +276,8 @@ public class CombatEventTests
     public void LastEventsHoldOnlyTheLastAction()
     {
         var session = RunSession.StartNew(Db, new MemorySaveStore(), "test", seed: 1);
-        session.Do(s => s.Refit.StartNextFight(s.State));
+        Prepare(session.State);
+        session.Do(s => s.Refit.StartFight(s.State));
         var combat = session.State.Combat!;
         int ram = Take(combat, "ram");
         int brace = Take(combat, "brace");
@@ -291,7 +293,8 @@ public class CombatEventTests
     public void ARejectedActionOrOneOutsideAFightLeavesNoEvents()
     {
         var session = RunSession.StartNew(Db, new MemorySaveStore(), "test", seed: 1);
-        session.Do(s => s.Refit.StartNextFight(s.State));
+        Prepare(session.State);
+        session.Do(s => s.Refit.StartFight(s.State));
         var combat = session.State.Combat!;
         combat.Energy = 0;
         int ram = Take(combat, "ram");

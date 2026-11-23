@@ -5,8 +5,8 @@ using Bloom.Core.Pieces;
 
 namespace Bloom.Core.Run;
 
-/// <summary>The fitted pieces and the cargo hold before one refit step, for Undo.</summary>
-public sealed record ShipSnapshot(IReadOnlyList<FittedPiece> Fitted, IReadOnlyList<PieceInstance> Cargo);
+/// <summary>The fitted pieces, the cargo hold and the salvage before one refit step, for Undo. Salvage is kept because composting pays it.</summary>
+public sealed record ShipSnapshot(IReadOnlyList<FittedPiece> Fitted, IReadOnlyList<PieceInstance> Cargo, int Salvage);
 
 /// <summary>What would happen if a piece were placed at a spot: whether it fits, and the bonuses it would give or receive there.</summary>
 public sealed record PlacementPreview(FitError Error, IReadOnlyList<ActiveBonus> Bonuses)
@@ -15,36 +15,40 @@ public sealed record PlacementPreview(FitError Error, IReadOnlyList<ActiveBonus>
 }
 
 /// <summary>
-/// Refitting between fights: moving, turning, fitting and unfitting pieces, composting them from the
-/// cargo hold, undoing those steps, and starting the next fight. The spec: rearranging is free at any
-/// time outside combat, and the layout locks when a fight starts.
+/// Refitting: moving, turning, fitting and unfitting pieces, composting them from the cargo hold, undoing
+/// those steps, and starting the fight the player committed to. The spec: rearranging is free at any time
+/// outside combat, and the layout locks when a fight starts. Refitting is allowed on the map and after
+/// choosing a fight node (<see cref="RunPhase.Map"/> and <see cref="RunPhase.Prepare"/>).
 /// </summary>
 /// <remarks>
 /// Each method that changes the ship validates first, then saves a <see cref="ShipSnapshot"/> to
-/// <see cref="RunState.UndoStack"/>, then changes it. The undo stack is cleared when the next fight starts.
-/// Fights start through <paramref name="combat"/>, so a session passes its own engine to get the fight's
-/// first events.
+/// <see cref="RunState.UndoStack"/>, then changes it. The undo stack is cleared when a node is entered and
+/// when a fight starts. Fights start through <paramref name="combat"/>, so a session passes its own engine
+/// to get the fight's first events.
 /// </remarks>
 public sealed class RefitEngine(ContentDb content, CombatEngine? combat = null)
 {
     private readonly ShipFitter _fitter = new(content);
     private readonly CombatEngine _combat = combat ?? new(content);
 
-    /// <summary>The enemy of the next fight, or null when none is left.</summary>
+    /// <summary>The enemy of the fight the player has committed to, or null when no fight is chosen.</summary>
     public EnemyDef? NextEnemy(RunState run) =>
-        run.FightsWon < run.Encounters.Count ? content.Enemy(run.Encounters[run.FightsWon]) : null;
+        run.Encounter is { } encounter ? content.Enemy(encounter.EnemyId) : null;
 
     /// <summary>Pieces that must be fitted or composted before the next fight can start.</summary>
     public int CargoExcess(RunState run) => run.Cargo.Excess;
 
-    public bool CanUndo(RunState run) => run.Phase == RunPhase.Refit && run.UndoStack.Count > 0;
+    /// <summary>Whether the ship can be changed now: on the map, or before a chosen fight.</summary>
+    public static bool CanRefit(RunState run) => run.Phase is RunPhase.Map or RunPhase.Prepare;
+
+    public bool CanUndo(RunState run) => CanRefit(run) && run.UndoStack.Count > 0;
 
     /// <summary>Whether <see cref="Rotate"/> would succeed: the run is between fights and the turned piece has room.</summary>
     public bool CanRotate(RunState run, int pieceId) =>
-        run.Phase == RunPhase.Refit && run.Ship.Find(pieceId) is { } fitted && RotatedOrigin(run.Ship, fitted) is not null;
+        CanRefit(run) && run.Ship.Find(pieceId) is { } fitted && RotatedOrigin(run.Ship, fitted) is not null;
 
     public bool CanStartFight(RunState run) =>
-        run.Phase == RunPhase.Refit && run.Cargo.Excess == 0 && NextEnemy(run) is not null;
+        run.Phase == RunPhase.Prepare && run.Cargo.Excess == 0;
 
     /// <summary>
     /// Whether a fitted or held piece would fit at a spot, and which adjacency bonuses it would give or
@@ -138,7 +142,7 @@ public sealed class RefitEngine(ContentDb content, CombatEngine? combat = null)
         run.Cargo.Add(_fitter.Remove(run.Ship, pieceId));
     }
 
-    /// <summary>Gets rid of a piece in the cargo hold. Salvage for it waits until docks exist (owner, 2026-11-21).</summary>
+    /// <summary>Gets rid of a piece in the cargo hold for <see cref="Rules.CompostSalvage"/> salvage.</summary>
     public void Compost(RunState run, int pieceId)
     {
         RequireRefit(run);
@@ -149,6 +153,7 @@ public sealed class RefitEngine(ContentDb content, CombatEngine? combat = null)
 
         PushUndo(run);
         run.Cargo.Take(pieceId);
+        run.Salvage += Rules.CompostSalvage;
     }
 
     /// <summary>Takes back the last refit step.</summary>
@@ -164,20 +169,25 @@ public sealed class RefitEngine(ContentDb content, CombatEngine? combat = null)
         run.UndoStack.RemoveAt(run.UndoStack.Count - 1);
         run.Ship.Fitted = snapshot.Fitted.ToList();
         run.Cargo.Pieces = snapshot.Cargo.ToList();
+        run.Salvage = snapshot.Salvage;
     }
 
-    /// <summary>Starts the next encounter. The cargo hold must be within its capacity.</summary>
-    public CombatState StartNextFight(RunState run)
+    /// <summary>Starts the fight the player committed to on the map. The cargo hold must be within its capacity.</summary>
+    public CombatState StartFight(RunState run)
     {
         RequireRefit(run);
+        if (run.Encounter is not { } encounter)
+        {
+            throw new InvalidOperationException("Choose a fight on the map first.");
+        }
+
         if (run.Cargo.Excess > 0)
         {
             throw new InvalidOperationException(
                 $"The cargo hold holds {Rules.CargoCapacity} pieces; fit or compost {run.Cargo.Excess} more before the next fight.");
         }
 
-        var enemy = NextEnemy(run) ?? throw new InvalidOperationException("No fights are left in this run.");
-        var combat = _combat.StartFight(run, enemy.Id);
+        var combat = _combat.StartFight(run, encounter.EnemyId);
         run.UndoStack.Clear();
         return combat;
     }
@@ -223,7 +233,7 @@ public sealed class RefitEngine(ContentDb content, CombatEngine? combat = null)
 
     private static void PushUndo(RunState run)
     {
-        run.UndoStack.Add(new ShipSnapshot(run.Ship.Fitted.ToList(), run.Cargo.Pieces.ToList()));
+        run.UndoStack.Add(new ShipSnapshot(run.Ship.Fitted.ToList(), run.Cargo.Pieces.ToList(), run.Salvage));
         if (run.UndoStack.Count > Rules.MaxUndoSteps)
         {
             run.UndoStack.RemoveAt(0);
@@ -234,12 +244,14 @@ public sealed class RefitEngine(ContentDb content, CombatEngine? combat = null)
     {
         switch (run.Phase)
         {
-            case RunPhase.Refit:
+            case RunPhase.Map or RunPhase.Prepare:
                 return;
             case RunPhase.Fight:
                 throw new InvalidOperationException("The layout is locked during a fight.");
             case RunPhase.Reward:
                 throw new InvalidOperationException("Take or skip the reward first.");
+            case RunPhase.Grove:
+                throw new InvalidOperationException("Finish at the grove first.");
             default:
                 throw new InvalidOperationException("The run is over.");
         }

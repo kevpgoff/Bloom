@@ -2,6 +2,7 @@ using System.Reflection;
 using Bloom.Core.Combat;
 using Bloom.Core.Content;
 using Bloom.Core.Grid;
+using Bloom.Core.Map;
 using Bloom.Core.Pieces;
 using Bloom.Core.Run;
 
@@ -11,9 +12,10 @@ namespace Bloom.Core.Tests;
 /// Small fixed content for rule tests, so they don't break when the shipped data in game/data is
 /// rebalanced. The test ship is a 5x5 hull at the top-left of the grid (x 0-4, y 0-4) with the
 /// bridge on cells (0,4) and (1,4). The enemies "heavy" and "mixed" make heavy attacks on lane 0.
-/// All pieces are common except "drone" (uncommon) and "spear" (rare), for reward tests. A new run's
-/// encounters are the four enemies in order; tests that need others set <see cref="RunState.Encounters"/>.
+/// All pieces are common except "drone" (uncommon) and "spear" (rare), for reward tests.
 /// No piece adds the card "chorus" (draw 2); tests put it in the hand themselves, so the reward pool stays the same.
+/// Enemy pools: "dummy" and "blocker" are early, "heavy" and "mixed" late, "brute" hard and "titan" the boss.
+/// A new run gets a generated map; <see cref="UseTinyMap"/> swaps in a short fixed one.
 /// </summary>
 internal static class TestContent
 {
@@ -63,11 +65,13 @@ internal static class TestContent
 
     private const string Enemies = """
         [
-          { "id": "dummy", "name": "Dummy", "hull": 30, "pattern": [{ "kind": "Attack", "amount": 6 }] },
-          { "id": "heavy", "name": "Heavy", "hull": 100, "pattern": [{ "kind": "HeavyAttack", "amount": 10, "lane": 0 }] },
-          { "id": "blocker", "name": "Blocker", "hull": 30, "pattern": [{ "kind": "Block", "amount": 5 }] },
-          { "id": "mixed", "name": "Mixed", "hull": 40, "pattern": [
-            { "kind": "Attack", "amount": 6 }, { "kind": "HeavyAttack", "amount": 20, "lane": 0 }, { "kind": "Block", "amount": 5 }] }
+          { "id": "dummy", "name": "Dummy", "pool": "Early", "hull": 30, "pattern": [{ "kind": "Attack", "amount": 6 }] },
+          { "id": "heavy", "name": "Heavy", "pool": "Late", "hull": 100, "pattern": [{ "kind": "HeavyAttack", "amount": 10, "lane": 0 }] },
+          { "id": "blocker", "name": "Blocker", "pool": "Early", "hull": 30, "pattern": [{ "kind": "Block", "amount": 5 }] },
+          { "id": "mixed", "name": "Mixed", "pool": "Late", "hull": 40, "pattern": [
+            { "kind": "Attack", "amount": 6 }, { "kind": "HeavyAttack", "amount": 20, "lane": 0 }, { "kind": "Block", "amount": 5 }] },
+          { "id": "brute", "name": "Brute", "pool": "Hard", "hull": 45, "pattern": [{ "kind": "Attack", "amount": 7 }] },
+          { "id": "titan", "name": "Titan", "pool": "Boss", "hull": 40, "pattern": [{ "kind": "Attack", "amount": 5 }] }
         ]
         """;
 
@@ -82,6 +86,38 @@ internal static class TestContent
     public static ContentDb Db { get; } = ContentDb.FromJson(Pieces, Cards, Enemies, Ships);
 
     public static RunState NewRun(ulong seed = 1) => RunFactory.NewRun(Db, "test", seed);
+
+    /// <summary>
+    /// Test setup: commits the run to a fight against <paramref name="enemyId"/>, as choosing a fight node
+    /// on the map does, without moving on the map. Returns the run.
+    /// </summary>
+    public static RunState Prepare(RunState run, string enemyId = "dummy")
+    {
+        run.Encounter = new Encounter(enemyId);
+        return run;
+    }
+
+    /// <summary>
+    /// Test setup: replaces the run's map with a fixed one that is a straight line: a skirmish on row 0
+    /// (node 0), a grove on row 1 (node 1), a hard fight on row 2 (node 2), then the boss (node 3). Returns the run.
+    /// </summary>
+    public static RunState UseTinyMap(RunState run)
+    {
+        run.Map = new SectorMap
+        {
+            Sector = run.Sector,
+            Nodes =
+            [
+                new MapNode(0, NodeType.Skirmish, 0, 0),
+                new MapNode(1, NodeType.Grove, 1, 0),
+                new MapNode(2, NodeType.HardFight, 2, 0),
+                new MapNode(3, NodeType.Boss, 3, 0),
+            ],
+            Edges = [new MapEdge(0, 1), new MapEdge(1, 2), new MapEdge(2, 3)],
+        };
+        run.Path.Clear();
+        return run;
+    }
 
     public static int BridgeId(RunState run) =>
         run.Ship.Fitted.Single(f => Db.Piece(f.Piece.DefId).IsBridge).Piece.Id;

@@ -719,7 +719,7 @@ public partial class CombatScreen : Control
         _chosenTargets.Clear();
     }
 
-    /// <summary>The overlay at the end of a run: defeat, or the voyage complete after the last fight.</summary>
+    /// <summary>The overlay at the end of a run: defeat, or the voyage complete after the last boss.</summary>
     private void ShowResult(RunSession session, RunState run)
     {
         _resultOverlay.Visible = (run.Phase is RunPhase.Lost or RunPhase.Won) && !_resultHeld;
@@ -733,7 +733,7 @@ public partial class CombatScreen : Control
         if (run.Phase == RunPhase.Won)
         {
             _resultTitle.Text = "Voyage complete";
-            _resultMessage.Text = $"The {enemy} powers down and drifts away.\n" +
+            _resultMessage.Text = $"The {enemy} powers down and drifts away. The way to the dark habitat is open.\n" +
                                   $"{run.FightsWon} fights won, with {run.Hull} / {run.MaxHull} hull left.";
         }
         else

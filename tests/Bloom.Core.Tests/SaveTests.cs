@@ -148,16 +148,16 @@ public class SaveTests
     }
 
     /// <summary>
-    /// Plays a whole run of two fights through <see cref="RunSession"/>: fight, reward, refit (fit, move,
-    /// turn, undo), next fight. After every action the session is resumed from the saved JSON and compared
-    /// with a copy that is never saved.
+    /// Plays a whole run through <see cref="RunSession"/> on a short fixed map: a skirmish, a grove, a hard
+    /// fight and the boss, with rewards, and refitting (fit, move, turn, undo) before each fight. After every
+    /// action the session is resumed from the saved JSON and compared with a copy that is never saved.
     /// </summary>
     [Fact]
     public void ResumingAfterEveryActionPlaysTheSameVoyage()
     {
         var store = new MemorySaveStore();
         var session = RunSession.StartNew(Db, store, "test", seed: 5);
-        session.State.Encounters = ["dummy", "blocker"];
+        UseTinyMap(session.State);
         Fit(session.State, "lance", 1, 1);
         Fit(session.State, "plating", 1, 3);
         session.Save();
@@ -165,6 +165,8 @@ public class SaveTests
         var combat = new CombatEngine(Db);
         var rewards = new RewardEngine(Db);
         var refit = new RefitEngine(Db);
+        var map = new MapEngine(Db);
+        var grove = new GroveEngine();
 
         var seen = new HashSet<string>();
         int refitStep = 0;
@@ -174,13 +176,22 @@ public class SaveTests
             Action<RunState>? action = null;
             switch (reference.Phase)
             {
-                case RunPhase.Fight:
+                case RunPhase.Map:
+                    seen.Add("map");
                     refitStep = 0;
+                    int next = map.Reachable(reference)[0].Id;
+                    action = r => map.Choose(r, next);
+                    break;
+                case RunPhase.Fight:
                     action = NextAction(combat, reference, ref unusedRepair);
                     break;
                 case RunPhase.Reward:
                     seen.Add("reward");
                     action = r => rewards.Take(r, 0);
+                    break;
+                case RunPhase.Grove:
+                    seen.Add("grove");
+                    action = r => grove.Repair(r);
                     break;
                 default:
                     while (action is null)
@@ -199,10 +210,11 @@ public class SaveTests
         }
 
         Assert.Equal(RunPhase.Won, reference.Phase);
-        Assert.Equal(["fit", "move", "reward", "rotate", "undo"], seen.Order());
+        Assert.Equal(["fit", "grove", "map", "move", "reward", "rotate", "undo"], seen.Order());
+        Assert.Equal([0, 1, 2, 3], reference.Path);
     }
 
-    /// <summary>One refit step of a fixed script, or null to skip that step. The last step starts the next fight.</summary>
+    /// <summary>One refit step of a fixed script, or null to skip that step. The last step starts the chosen fight.</summary>
     private static Action<RunState>? NextRefitAction(RefitEngine refit, RunState run, int step, HashSet<string> seen)
     {
         switch (step)
@@ -222,7 +234,7 @@ public class SaveTests
                 seen.Add("undo");
                 return r => refit.Undo(r);
             case 4:
-                return r => refit.StartNextFight(r);
+                return r => refit.StartFight(r);
             default:
                 return step > 4 ? throw new InvalidOperationException("The refit script ran out of steps.") : null;
         }

@@ -1,5 +1,6 @@
 using Bloom.Core.Cards;
 using Bloom.Core.Combat;
+using Bloom.Core.Map;
 using Bloom.Core.Pieces;
 using Godot;
 
@@ -79,6 +80,17 @@ internal static class ArtLibrary
         IntentKind.Block => Load("res://art/icons/effects/block"),
         _ => null,
     };
+
+    /// <summary>The icon for a kind of node on the sector map, or null if it is missing.</summary>
+    public static Texture2D? NodeIcon(NodeType type)
+    {
+        string name = type switch
+        {
+            NodeType.HardFight => "hard_fight",
+            _ => type.ToString().ToLowerInvariant(),
+        };
+        return Load($"res://art/icons/nodes/{name}");
+    }
 
     public static Texture2D? EnemyIcon(string enemyDefId) =>
         Load($"res://art/icons/enemies/{enemyDefId}") ?? Load("res://art/icons/enemies/feral_harvester");

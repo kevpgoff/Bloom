@@ -37,7 +37,13 @@ public partial class RewardScreen : Control
             string turns = last.Turns == 1 ? "1 turn" : $"{last.Turns} turns";
             GetNode<Label>("%Message").Text =
                 $"The {session.Content.Enemy(last.EnemyId).Name} powers down and drifts away. Won in {turns}.\n" +
-                $"Hull {run.Hull} / {run.MaxHull}  ·  {run.FightsWon} of {run.Encounters.Count} fights won";
+                $"Salvage +{offer.Salvage}  ·  {run.Salvage} in all  ·  Hull {run.Hull} / {run.MaxHull}";
+        }
+
+        if (offer.Pieces.Count == 0)
+        {
+            GetNode<Label>("%Prompt").Text = "There are no pieces to offer this time.";
+            GetNode<Button>("%SkipButton").Text = "Continue";
         }
 
         GetNode<Control>("%CargoNote").Visible = run.Cargo.IsFull;

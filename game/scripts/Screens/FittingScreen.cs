@@ -1,5 +1,6 @@
 using Bloom.Core;
 using Bloom.Core.Cards;
+using Bloom.Core.Combat;
 using Bloom.Core.Pieces;
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
@@ -9,9 +10,10 @@ using Godot;
 namespace Bloom.Game.Screens;
 
 /// <summary>
-/// Refitting between fights: the ship and cargo hold on a <see cref="FittingBoard"/>, an info strip for
-/// the selected or dragged piece, Undo, and the button that starts the next fight. Whether the fight can
-/// start, and what a placement would do, come from <see cref="RefitEngine"/>.
+/// Refitting: the ship and cargo hold on a <see cref="FittingBoard"/>, an info strip for the selected or
+/// dragged piece, Undo, and one main button. Opened from the map, that button goes back to the map; after
+/// choosing a fight node it names the enemy and starts the fight. Whether the fight can start, and what a
+/// placement would do, come from <see cref="RefitEngine"/>.
 /// </summary>
 public partial class FittingScreen : Control
 {
@@ -39,7 +41,8 @@ public partial class FittingScreen : Control
         BloomTheme.AttachPanelFrame(GetNode<Control>("Layout/InfoPanel"));
 
         _undo.Pressed += () => GameRoot.Instance.Act(s => s.Refit.Undo(s.State));
-        _fight.Pressed += () => GameRoot.Instance.Act(s => s.Refit.StartNextFight(s.State));
+        _fight.Pressed += OnMainButton;
+        _compost.Text = $"Compost +{Rules.CompostSalvage}";
         _compost.Pressed += Compost;
         _board.StateChanged += Refresh;
         GameRoot.Instance.Changed += Refresh;
@@ -47,8 +50,8 @@ public partial class FittingScreen : Control
         Refresh();
         if (Session?.State is { } run)
         {
-            GD.Print($"FittingScreen: hull {run.Hull}/{run.MaxHull}, fight {run.FightsWon + 1} of {run.Encounters.Count}, " +
-                     $"next {Session.Refit.NextEnemy(run)?.Name ?? "none"}, cargo {run.Cargo.Pieces.Count}/{Rules.CargoCapacity}.");
+            GD.Print($"FittingScreen: hull {run.Hull}/{run.MaxHull}, salvage {run.Salvage}, " +
+                     $"next {Session.Refit.NextEnemy(run)?.Name ?? "none chosen"}, cargo {run.Cargo.Pieces.Count}/{Rules.CargoCapacity}.");
         }
     }
 
@@ -63,16 +66,17 @@ public partial class FittingScreen : Control
 
         var run = session.State;
         int deck = DeckBuilder.Build(run.Ship, session.Content).Count;
-        _status.Text = $"Hull {run.Hull} / {run.MaxHull}  ·  Fight {Math.Min(run.FightsWon + 1, run.Encounters.Count)} of {run.Encounters.Count}  ·  Deck {deck}";
+        _status.Text = $"Hull {run.Hull} / {run.MaxHull}  ·  Salvage {run.Salvage}  ·  Deck {deck}";
 
         var enemy = session.Refit.NextEnemy(run);
         _next.Text = enemy is null
-            ? ""
-            : $"Next: {enemy.Name}, hull {enemy.Hull}. Its heavy attacks hit the marked lanes.";
+            ? "Refit the ship here, then choose the next node on the map."
+            : $"Next: {enemy.Name}{PoolNote(enemy.Pool)}, hull {enemy.Hull}. Its heavy attacks hit the marked lanes.";
 
         _undo.Disabled = !session.Refit.CanUndo(run);
-        _fight.Text = run.FightsWon == 0 ? "Start fight" : "Next fight";
-        _fight.Disabled = !session.Refit.CanStartFight(run);
+        bool prepare = run.Phase == RunPhase.Prepare;
+        _fight.Text = prepare ? "Start fight" : "Back to map";
+        _fight.Disabled = prepare && !session.Refit.CanStartFight(run);
         int excess = session.Refit.CargoExcess(run);
         _fightHint.Visible = excess > 0;
         _fightHint.Text = excess == 1
@@ -80,6 +84,25 @@ public partial class FittingScreen : Control
             : $"The cargo hold holds {Rules.CargoCapacity}. Fit or compost {excess} pieces before the next fight.";
 
         ShowInfo(session, run);
+    }
+
+    private static string PoolNote(EnemyPool? pool) => pool switch
+    {
+        EnemyPool.Hard => " (hard fight)",
+        EnemyPool.Boss => " (the sector's boss)",
+        _ => "",
+    };
+
+    private static void OnMainButton()
+    {
+        if (Session?.State.Phase == RunPhase.Prepare)
+        {
+            GameRoot.Instance.Act(s => s.Refit.StartFight(s.State));
+        }
+        else
+        {
+            GameRoot.Instance.ShowShip(false);
+        }
     }
 
     private void ShowInfo(RunSession session, RunState run)

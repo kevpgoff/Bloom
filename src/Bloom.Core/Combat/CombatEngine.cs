@@ -34,7 +34,10 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
     private readonly ShipFitter _fitter = new(content);
     private readonly RewardEngine _rewards = new(content);
 
-    /// <summary>Starts a fight against an enemy. Players start fights through <see cref="RefitEngine.StartNextFight"/>.</summary>
+    /// <summary>
+    /// Starts a fight against an enemy. Players start fights through <see cref="RefitEngine.StartFight"/>,
+    /// against the enemy of the node they chose; tests may start one from the map.
+    /// </summary>
     public CombatState StartFight(RunState run, string enemyId)
     {
         switch (run.Phase)
@@ -43,6 +46,8 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
                 throw new InvalidOperationException("A fight is already in progress.");
             case RunPhase.Reward:
                 throw new InvalidOperationException("Take or skip the reward first.");
+            case RunPhase.Grove:
+                throw new InvalidOperationException("Finish at the grove first.");
             case RunPhase.Won or RunPhase.Lost:
                 throw new InvalidOperationException("The run is over.");
         }
@@ -400,12 +405,13 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
 
     /// <summary>
     /// Records the result on the run. Disabled pieces come back at no cost: the next fight rebuilds the
-    /// deck from the ship. A win counts toward the run: after the last encounter the run is won, and
-    /// otherwise a reward is offered. All of it happens in the same action, so it is saved together.
+    /// deck from the ship. Beating the boss of the last sector wins the run; any other win pays salvage
+    /// and offers a reward. All of it happens in the same action, so it is saved together.
     /// </summary>
     private CombatOutcome EndFight(RunState run, CombatState combat, CombatOutcome outcome)
     {
         run.Combat = null;
+        run.Encounter = null;
         run.LastFight = new FightRecord(combat.Enemy.DefId, outcome, combat.Turn);
         if (outcome == CombatOutcome.Lost)
         {
@@ -414,13 +420,16 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         else
         {
             run.FightsWon++;
-            if (run.FightsWon >= run.Encounters.Count)
+            var pool = content.Enemy(combat.Enemy.DefId).Pool ?? EnemyPool.Early;
+            if (pool == EnemyPool.Boss && run.Sector >= run.Sectors)
             {
                 run.Result = RunResult.Won;
             }
             else
             {
-                run.Reward = _rewards.Roll(run);
+                var offer = _rewards.Roll(run, pool);
+                run.Salvage += offer.Salvage;
+                run.Reward = offer;
             }
         }
 

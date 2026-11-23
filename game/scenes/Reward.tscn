@@ -40,7 +40,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.627, 0.659, 0.678, 1)
 theme_override_font_sizes/font_size = 24
-text = "Choose one piece. It goes to the cargo hold, and you can fit it next."
+text = "Choose one piece. It goes to the cargo hold; fit it from the ship before your next fight."
 horizontal_alignment = 1
 autowrap_mode = 3
 

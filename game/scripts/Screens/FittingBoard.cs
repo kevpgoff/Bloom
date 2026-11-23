@@ -103,7 +103,7 @@ public partial class FittingBoard : Control
                 }
                 else
                 {
-                    if (_drag is null && _press.PieceId is int id && session.State.Phase == RunPhase.Refit
+                    if (_drag is null && _press.PieceId is int id && RefitEngine.CanRefit(session.State)
                         && motion.Position.DistanceTo(_press.Start) > DragThreshold)
                     {
                         _drag = new Drag(id, _press.FromCargo, RotationOf(session.State, id));

@@ -13,8 +13,34 @@ public enum IntentKind
 /// <summary>What an enemy will do on its next action. <see cref="Lane"/> is a grid column (0-based), for heavy attacks only.</summary>
 public sealed record Intent(IntentKind Kind, int Amount, int? Lane = null);
 
-/// <summary>An enemy as defined in enemies.json. It repeats <see cref="Pattern"/> in order.</summary>
-public sealed record EnemyDef(string Id, string Name, int Hull, IReadOnlyList<Intent> Pattern, bool Placeholder = false);
+/// <summary>Which fights of a sector an enemy can be met in.</summary>
+public enum EnemyPool
+{
+    /// <summary>Skirmishes on the first rows of the map (<see cref="Rules.MapEarlyRows"/>).</summary>
+    Early,
+
+    /// <summary>Skirmishes on the later rows.</summary>
+    Late,
+
+    /// <summary>Hard fights. Their reward includes a rare piece.</summary>
+    Hard,
+
+    /// <summary>The fight that ends a sector.</summary>
+    Boss,
+}
+
+/// <summary>
+/// An enemy as defined in enemies.json. It repeats <see cref="Pattern"/> in order. <see cref="Pool"/> is
+/// required in data; it is nullable only so the validator can report it missing.
+/// </summary>
+public sealed record EnemyDef(
+    string Id,
+    string Name,
+    int Hull,
+    IReadOnlyList<Intent> Pattern,
+    EnemyPool? Pool = null,
+    int Sector = 1,
+    bool Placeholder = false);
 
 public enum CombatOutcome
 {

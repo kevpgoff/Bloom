@@ -65,8 +65,12 @@ public partial class FxDemo : Node
         var run = session.State;
         switch (run.Phase)
         {
-            case RunPhase.Refit:
-                Act("start the fight", s => s.Refit.StartNextFight(s.State));
+            case RunPhase.Map when run.Path.Count == 0:
+                int first = session.Map.Reachable(run)[0].Id;
+                Act("choose the first node", s => s.Map.Choose(s.State, first));
+                return 1.0;
+            case RunPhase.Prepare:
+                Act("start the fight", s => s.Refit.StartFight(s.State));
                 return 2.0;
             case RunPhase.Fight:
                 return Fight(session, run);

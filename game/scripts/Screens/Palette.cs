@@ -1,4 +1,5 @@
 using Bloom.Core.Cards;
+using Bloom.Core.Map;
 using Bloom.Core.Pieces;
 using Godot;
 
@@ -98,6 +99,19 @@ internal static class Palette
         RepairEffect => Repair,
         FocusEffect => Focus,
         GrowEffect => GardenGlow,
+        _ => Ink,
+    };
+
+    /// <summary>The color of a node on the sector map: fights in threat colors, the rest in the colors of what they give.</summary>
+    public static Color ForNode(NodeType type) => type switch
+    {
+        NodeType.Skirmish => Threat,
+        NodeType.HardFight => Heavy,
+        NodeType.Boss => new Color("ff5fa2"),
+        NodeType.Grove => GardenGlow,
+        NodeType.Dock => Energy,
+        NodeType.Shipyard => HoloLine,
+        NodeType.Event => Draw,
         _ => Ink,
     };
 
