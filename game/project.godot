@@ -16,6 +16,7 @@ config/icon="res://art/app_icon/icon.svg"
 [autoload]
 
 GameRoot="*res://scripts/Autoload/GameRoot.cs"
+MusicDirector="*res://scripts/Audio/MusicDirector.cs"
 
 [display]
 

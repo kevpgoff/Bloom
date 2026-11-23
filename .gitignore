@@ -12,6 +12,11 @@ export_credentials.cfg
 # Exported builds
 /build/
 
+# Music: a paid pack whose license doesn't cover sharing the files, so neither the
+# downloaded zips nor the files that tools/import-music.sh builds from them are committed.
+/music/
+/game/audio/music/
+
 # Editors and OS
 .vs/
 .idea/

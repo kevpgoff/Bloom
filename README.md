@@ -7,6 +7,7 @@ A paid, single-player card roguelite for phones, where the ship is the deck (wor
 - .NET SDK 10.0 (pinned in `global.json`). The rules and the game target .NET 8, Godot's minimum. Android builds compile the game ahead of time on .NET 10.
 - Godot 4.7.2, **.NET build**, only to open and run the game. It must match the `Godot.NET.Sdk` version in `game/Bloom.csproj`.
 - For Android builds, the tools in [Android debug build](#android-debug-build).
+- For the music, ffmpeg (with libvorbis) and unzip, and the pack's zips; see [Music](#music).
 
 ## Commands
 
@@ -17,6 +18,7 @@ godot --path game               # runs the game (portrait window, 405×720)
 godot -e --path game            # opens the project in the editor
 godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 16, …" and a screen line ("MapScreen: …" on a new run)
 godot --path game -- --fx-demo                 # debug builds: plays the first fight by itself to show the combat feedback; add =lose to show a defeat. The run stays in memory, so the save is untouched
+tools/import-music.sh                          # builds the game's music from the zips in music/; see Music below
 tools/android-debug.sh                         # exports a debug APK, installs it on the phone connected by USB and starts it; --log follows its log, --no-install only exports
 ```
 
@@ -37,6 +39,15 @@ Keystores and passwords never go in the repo. Godot keeps preset passwords in `g
 
 On the phone, the game logs to `adb logcat` under the tag `godot`, and its files (`run.json`, `settings.cfg`) can be read with `adb shell run-as com.kevpgoff.bloom ls files`. At startup Godot logs `Can't open dynamic library: libmonosgen-2.0.so`: it always tries the Mono runtime first, then loads the compiled game. That error is expected. To build with Mono instead, set `dotnet/android_use_linux_bionic` to `false` in the preset. Launch arguments such as `--fx-demo` can't be passed to the installed game: Godot ignores them. Only the preset's `command_line/extra_args` adds arguments, and it is baked into the APK.
 
+## Music
+
+The music is Voltz Supreme's ["Analog Ambience"](https://voltzsupreme.itch.io/analog-ambience), a paid pack. Its license doesn't cover sharing the files, and this repo is public, so the repo holds neither the pack nor the music built from it. Without them, the game runs in silence and logs `MusicDirector: no music in res://audio/music`. To add the music:
+
+1. Download the pack's three zips from itch.io into `music/` at the repo root.
+2. Run `tools/import-music.sh`. It cuts and encodes the tracks listed in `tools/music-tracks.tsv` into `game/audio/music/<mood>/`, brings each to the same loudness, and then lets Godot import them. An Android export made afterwards includes them.
+
+To change which track plays where, or to cut a track, edit `tools/music-tracks.tsv` and run the script again. The moods are voyage (every screen outside a fight), fight, boss, and two stings for a run that is won or lost. `game/scripts/Audio/MusicDirector.cs` plays them. The credit the game owes is in `game/audio/CREDITS.md`.
+
 ## Layout
 
 ```
@@ -47,6 +58,7 @@ tests/Bloom.Core.Tests/       xUnit tests for the rules and the shipped data
 game/                         the Godot project (res://)
   Bloom.csproj                game assembly; references Bloom.Core
   data/                       content as JSON; see game/data/README.md
+  audio/                      the music, built by tools/import-music.sh and not committed; its credits
   scenes/ scripts/ art/
 docs/decisions.md             decisions made so far
 ```
@@ -78,6 +90,7 @@ A run is one sector: a branching map of about 20 nodes in 7 rows, ending in a bo
 | Reward screen | Done: 3 offered pieces with their shapes and cards, Take and Skip |
 | Fitting screen | Done: drag and drop with the piece floating above the finger, fit and bonus preview, tap to select and tap again to turn, cargo hold, Compost (for salvage), Undo. Opened from the map or a dock it goes back there; after choosing a fight it names the enemy, marks its heavy lanes and starts the fight. Upgraded pieces have "+" after their names |
 | Combat feedback | Done: particles, screen shake and haptics for every card effect, enemy action and the end of a fight (`game/scripts/Feedback/`). Shake strength and haptics are set in `user://settings.cfg`; there is no settings screen yet. Timings are placeholders in `CombatFeedback.Tuning` |
+| Music | Done: Voltz Supreme's "Analog Ambience" in four moods: voyage, fight, boss, and a short sting when a run is won or lost (see [Music](#music)). The voyage music pauses during a fight and resumes after it, and the music pauses while the phone shows another app. The volume is set in `user://settings.cfg`, and the fade times are placeholders in `MusicDirector.Tuning`. Before release, the game must show players the credit "Music by Voltz Supreme", but there is no credits screen yet |
 | Map screen | Done: the whole sector, with the path taken lit and the reachable nodes pulsing; tap a reachable node, then Set course (which names it) to go there, and Ship to refit. Node icons are in `art/icons/nodes/` |
 | Grove screen | Done: repair the hull, or upgrade one piece, with its cards shown as they would be |
 | Dock screen | Done: 3 pieces for sale, hull repair, and the cargo hold's pieces to sell. Ship opens the Fitting screen, where the selected piece can be sold too |
