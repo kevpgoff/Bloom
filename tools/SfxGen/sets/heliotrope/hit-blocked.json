@@ -1,0 +1,19 @@
+{
+  "id": "hit-blocked",
+  "family": "attack",
+  "description": "The enemy's block takes your whole attack: a choked 'thup' through a filter that is nearly shut, and a short hiss of static.",
+  "level": -7,
+  "variants": 2,
+  "vary": { "pitch": 0.4, "time": 0.1, "tone": 0.2 },
+  "layers": [
+    { "wave": "square", "note": "G4", "decay": 80,
+      "pitch": { "from": 4, "time": 20 },
+      "drift": { "cents": 10 },
+      "filter": { "type": "ladder", "cutoff": 1400, "to": 400, "time": 50, "q": 2 } },
+    { "wave": "noise", "gain": -5, "attack": 2, "decay": 60, "curve": 4,
+      "filter": { "type": "bandpass", "cutoff": 800, "q": 1 } },
+    { "wave": "noise", "gain": -14, "at": 30, "attack": 10, "decay": 80, "curve": 2,
+      "filter": { "type": "bandpass", "cutoff": 2500, "q": 1.5 } }
+  ],
+  "master": { "drive": 3, "highpass": 300, "lowpass": 5000, "reverb": { "decay": 150, "mix": -22, "size": 0.5 } }
+}

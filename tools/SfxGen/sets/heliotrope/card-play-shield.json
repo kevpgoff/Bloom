@@ -1,0 +1,18 @@
+{
+  "id": "card-play-shield",
+  "family": "cards",
+  "description": "A card from a shield piece is played: a field snaps taut with a quick upward 'zwip', and a hollow ping answers.",
+  "level": -6,
+  "layers": [
+    { "wave": "square", "note": "G5", "attack": 12, "hold": 30, "decay": 200, "curve": 4,
+      "pitch": { "from": -5, "time": 60, "curve": 0 },
+      "unison": { "voices": 2, "detune": 12 },
+      "drift": { "cents": 8 },
+      "filter": { "type": "ladder", "cutoff": 500, "to": 3200, "time": 80, "curve": 0, "q": 5 } },
+    { "wave": "triangle", "note": "D6", "gain": -9, "at": 60, "attack": 2, "decay": 200, "drift": { "cents": 6 },
+      "lfo": { "rate": 7, "pitch": 10 } }
+  ],
+  "master": { "drive": 2, "highpass": 250, "lowpass": 7500,
+              "echo": { "time": 95, "feedback": 0.18, "mix": -21, "damp": 2400 },
+              "reverb": { "decay": 200, "mix": -20 } }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "ship-hit",
+  "family": "ship",
+  "description": "The hull takes damage: a dull 'bwump' that sags in pitch as the circuits dip under the blow, with a spit of static.",
+  "level": -4,
+  "variants": 3,
+  "vary": { "pitch": 0.4, "time": 0.1, "tone": 0.2 },
+  "layers": [
+    { "wave": "saw", "note": "D4", "decay": 260, "curve": 4,
+      "pitch": { "from": 7, "to": -1, "time": 130, "curve": 3 },
+      "unison": { "voices": 2, "detune": 16 },
+      "drift": { "cents": 12 },
+      "filter": { "type": "ladder", "cutoff": 3200, "to": 380, "time": 170, "q": 4 } },
+    { "wave": "square", "note": "A4", "gain": -6, "decay": 200, "curve": 4,
+      "pitch": { "from": 7, "to": -1, "time": 130, "curve": 3 },
+      "filter": { "type": "ladder", "cutoff": 2600, "to": 420, "time": 140, "q": 2 } },
+    { "wave": "noise", "gain": -6, "attack": 1, "decay": 80, "curve": 6,
+      "filter": { "type": "bandpass", "cutoff": 1800, "to": 700, "time": 70, "q": 0.8 } },
+    { "wave": "crackle", "gain": -10, "at": 60, "attack": 20, "decay": 280, "curve": 0,
+      "density": { "from": 120, "to": 20 },
+      "filter": { "type": "bandpass", "cutoff": 2400, "q": 1.2 } }
+  ],
+  "master": { "drive": 7, "highpass": 140, "lowpass": 6500,
+              "echo": { "time": 85, "feedback": 0.25, "mix": -19, "damp": 2000 },
+              "reverb": { "decay": 340, "mix": -17, "damp": 3000 } }
+}

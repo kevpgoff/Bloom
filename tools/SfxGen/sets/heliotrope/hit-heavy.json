@@ -1,0 +1,29 @@
+{
+  "id": "hit-heavy",
+  "family": "attack",
+  "description": "Your attack lands for 20 damage or more: a thick, overdriven blast of detuned saws that drops and tears, and the tape echo throws it back.",
+  "level": -2,
+  "variants": 2,
+  "vary": { "pitch": 0.4, "time": 0.1, "tone": 0.15 },
+  "layers": [
+    { "wave": "saw", "note": "D4", "decay": 340, "curve": 4,
+      "pitch": { "from": 12, "time": 60 },
+      "unison": { "voices": 3, "detune": 20 },
+      "drift": { "cents": 12 },
+      "filter": { "type": "ladder", "cutoff": 5500, "to": 350, "time": 220, "q": 5 } },
+    { "wave": "square", "note": "A4", "gain": -5, "decay": 280, "curve": 4,
+      "pitch": { "from": 12, "time": 60 },
+      "drift": { "cents": 10 },
+      "filter": { "type": "ladder", "cutoff": 4500, "to": 420, "time": 180, "q": 2 } },
+    { "wave": "noise", "gain": -5, "attack": 1, "decay": 120, "curve": 6,
+      "filter": { "type": "bandpass", "cutoff": 2000, "to": 600, "time": 90, "q": 0.8 } },
+    { "wave": "crackle", "gain": -8, "at": 20, "attack": 2, "decay": 380, "curve": 3,
+      "density": { "from": 3000, "to": 60 },
+      "filter": { "type": "highpass", "cutoff": 1500 } },
+    { "wave": "sine", "note": "D3", "gain": -12, "decay": 240, "curve": 4,
+      "pitch": { "from": 12, "time": 60 } }
+  ],
+  "master": { "drive": 11, "highpass": 130, "lowpass": 6500,
+              "echo": { "time": 90, "feedback": 0.3, "mix": -17, "damp": 2000 },
+              "reverb": { "decay": 420, "mix": -16, "damp": 3000 } }
+}

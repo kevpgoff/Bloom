@@ -1,0 +1,17 @@
+{
+  "id": "card-play-drone",
+  "family": "cards",
+  "description": "A card from a drone piece is played: a small oscillator spins up with a rising buzz, and blips as it locks on.",
+  "level": -6,
+  "layers": [
+    { "wave": "square", "note": "A5", "gain": -3, "attack": 60, "decay": 170, "curve": 0,
+      "pitch": { "from": -7, "time": 200, "curve": 0 },
+      "drift": { "cents": 10 },
+      "lfo": { "rate": 28, "to": 55, "amp": 0.9 },
+      "filter": { "type": "ladder", "cutoff": 1200, "to": 3000, "time": 200, "curve": 0, "q": 3 } },
+    { "wave": "square", "note": "A6", "at": 230, "attack": 1, "decay": 70, "drift": { "cents": 8 },
+      "filter": { "type": "ladder", "cutoff": 4000, "q": 2 } },
+    { "wave": "triangle", "note": "A5", "gain": -8, "at": 230, "attack": 2, "decay": 220, "drift": { "cents": 6 } }
+  ],
+  "master": { "drive": 2, "highpass": 300, "lowpass": 8000, "reverb": { "decay": 170, "mix": -20, "size": 0.6 } }
+}

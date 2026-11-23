@@ -485,6 +485,8 @@ public class ShippedContentTests
         var fitter = new ShipFitter(db);
 
         Assert.IsType<KeepEnergyRule>(def.Rule);
+        Assert.Equal("heliotrope", def.SoundSet);
+        Assert.Null(db.Ship("seedling").SoundSet); // the Seedling's set is the base set
         Assert.Equal(60, run.Hull);
         Assert.Equal(18, run.Ship.Grid.CellCount);
         Assert.Equal(0, run.Ship.Grid.Cells.Min(c => c.X));
