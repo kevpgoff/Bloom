@@ -20,6 +20,12 @@ namespace Bloom.Game.Autoload;
 /// <see cref="Launch"/> starts the run. <see cref="LeaveRun"/> ends a run, finished or not, and goes back to the hangar.
 /// </para>
 /// <para>
+/// A debug build also has test runs (<see cref="TestTools"/>). A test run is saved in a file of its own, so it
+/// never replaces the voyage. The map's Hangar button sets the voyage aside (<see cref="ParkVoyage"/>) without
+/// ending it; while it waits, the hangar launches only test runs (<see cref="LaunchTest"/>), and
+/// <see cref="ResumeVoyage"/> goes back to it. A launch of the game resumes a test run before the voyage.
+/// </para>
+/// <para>
 /// With <c>-- --fx-demo</c> in a debug build, the run is kept in memory with a fixed seed and an
 /// <see cref="FxDemo"/> plays it, so the saved run is never touched. With <c>--ship=&lt;id&gt;</c> as well, the
 /// demo plays that ship class.
@@ -33,19 +39,36 @@ public partial class GameRoot : Node
     public const string DemoShip = "seedling";
 
     private const string UnreadableSaveCopy = "user://run.unreadable.json";
+    private const string TestSave = "user://run.test.json";
     private const string ShipFlag = "--ship=";
 
     private const ulong DemoSeed = 7;
 
     private readonly GodotSaveStore _fileStore = new();
+    private readonly GodotSaveStore _testStore = new(TestSave);
     private ISaveStore _store = null!;
+
+    /// <summary>The voyage that waits while the hangar's test tools are in use, or null.</summary>
+    private RunSession? _parked;
 
     public static GameRoot Instance { get; private set; } = null!;
 
     public ContentDb? Content { get; private set; }
 
+    /// <summary>
+    /// Whether this build has the test tools: the hangar's Test tab and the map's Hangar button. Debug builds
+    /// only, and not while the FX demo plays.
+    /// </summary>
+    public static bool TestTools => OS.IsDebugBuild() && !FxDemo.IsRequested;
+
     /// <summary>The run in progress or just finished, or null while the hangar shows.</summary>
     public RunSession? Session { get; private set; }
+
+    /// <summary>Whether <see cref="Session"/> is a test run, which is saved apart from the voyage.</summary>
+    public bool IsTest { get; private set; }
+
+    /// <summary>Whether a voyage waits behind the hangar or a test run (<see cref="ParkVoyage"/>).</summary>
+    public bool VoyageParked => _parked is not null;
 
     /// <summary>One line for the status label, shown when no run could be started.</summary>
     public string Status { get; private set; } = "";
@@ -107,9 +130,32 @@ public partial class GameRoot : Node
             GD.PushWarning($"GameRoot: the saved run could not be read; a copy is at {UnreadableSaveCopy}. {e.Message}");
         }
 
+        if (TestTools && ResumeTest(Content) is { } test)
+        {
+            _parked = Session;
+            Session = test;
+            IsTest = true;
+        }
+
         GD.Print(Session is { } resumed
-            ? $"GameRoot: resumed the saved run ({resumed.State.ShipClassId}, loadout {resumed.State.LoadoutId}, seed {SeedOf(resumed.State)})."
+            ? $"GameRoot: resumed the saved {(IsTest ? "test run" : "run")} ({resumed.State.ShipClassId}, loadout {resumed.State.LoadoutId}, " +
+              $"seed {SeedOf(resumed.State)}){(VoyageParked ? "; a voyage waits behind it" : "")}."
             : "GameRoot: no saved run; the hangar is open.");
+    }
+
+    /// <summary>The saved test run, or null. One that cannot be read is deleted: it was only a test.</summary>
+    private RunSession? ResumeTest(ContentDb content)
+    {
+        try
+        {
+            return RunSession.TryResume(content, _testStore);
+        }
+        catch (SaveException e)
+        {
+            _testStore.Delete();
+            GD.PushWarning($"GameRoot: the saved test run could not be read and was deleted. {e.Message}");
+            return null;
+        }
     }
 
     /// <summary>A run's seed as the player reads it: its code or typed text, or the number for a run started without one.</summary>
@@ -125,7 +171,14 @@ public partial class GameRoot : Node
     public RunSession Launch(RunSetup setup)
     {
         var content = Content ?? throw new InvalidOperationException("Content is not loaded.");
+        if (VoyageParked)
+        {
+            // Saving a new voyage would replace the one that waits.
+            throw new InvalidOperationException("A voyage is waiting. Return to it and abandon it before launching another.");
+        }
+
         ShipOpen = false;
+        IsTest = false;
         Session = RunSession.StartNew(content, _store, setup);
         GD.Print($"GameRoot: launched a new run ({Session.State.ShipClassId}, loadout {Session.State.LoadoutId}, seed {SeedOf(Session.State)}).");
         Changed?.Invoke();
@@ -133,8 +186,30 @@ public partial class GameRoot : Node
     }
 
     /// <summary>
-    /// Ends the run, whether it is finished or abandoned on the way, and goes back to the hangar. The save is
-    /// deleted, so the next launch of the game opens on the hangar too.
+    /// Starts a test run and saves it apart from the voyage: at a node of the map (<see cref="TestStart"/>), or
+    /// before the first row when <paramref name="start"/> is null. Only with <see cref="TestTools"/>.
+    /// </summary>
+    public RunSession LaunchTest(RunSetup setup, TestStart? start)
+    {
+        var content = Content ?? throw new InvalidOperationException("Content is not loaded.");
+        if (!TestTools)
+        {
+            throw new InvalidOperationException("Test runs are for debug builds.");
+        }
+
+        var session = start is null ? RunSession.StartNew(content, _testStore, setup) : RunSession.StartTest(content, _testStore, setup, start);
+        ShipOpen = false;
+        IsTest = true;
+        Session = session;
+        GD.Print($"GameRoot: launched a test run ({session.State.ShipClassId}, loadout {session.State.LoadoutId}, seed {SeedOf(session.State)}), " +
+                 $"{(start is null ? "on the map" : $"at the first {start.Node} node{(start.EventId is { } ev ? $" with the event '{ev}'" : "")}")}: {session.State.Phase}.");
+        Changed?.Invoke();
+        return session;
+    }
+
+    /// <summary>
+    /// Ends the run, whether it is finished or abandoned on the way, and goes back to the hangar. Its save is
+    /// deleted, so the next launch of the game opens on the hangar too, unless a voyage waits behind a test run.
     /// </summary>
     public void LeaveRun()
     {
@@ -143,10 +218,43 @@ public partial class GameRoot : Node
             return;
         }
 
-        GD.Print($"GameRoot: left the run ({session.State.ShipClassId}, {session.State.Phase}); the hangar is open.");
-        _store.Delete();
+        GD.Print($"GameRoot: left the {(IsTest ? "test run" : "run")} ({session.State.ShipClassId}, {session.State.Phase}); the hangar is open.");
+        (IsTest ? _testStore : _store).Delete();
+        Session = null;
+        IsTest = false;
+        ShipOpen = false;
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Sets the voyage aside and opens the hangar for testing. The voyage and its save stay as they are until
+    /// <see cref="ResumeVoyage"/>. Only with <see cref="TestTools"/>, and only for a voyage that is not over.
+    /// </summary>
+    public void ParkVoyage()
+    {
+        if (!TestTools || IsTest || Session is not { State.Result: RunResult.InProgress } session)
+        {
+            return;
+        }
+
+        GD.Print($"GameRoot: the voyage ({session.State.ShipClassId}, seed {SeedOf(session.State)}) waits; the hangar is open for testing.");
+        _parked = session;
         Session = null;
         ShipOpen = false;
+        Changed?.Invoke();
+    }
+
+    /// <summary>Goes back from the hangar to the voyage that <see cref="ParkVoyage"/> set aside.</summary>
+    public void ResumeVoyage()
+    {
+        if (Session is not null || _parked is not { } voyage)
+        {
+            return;
+        }
+
+        GD.Print($"GameRoot: back to the voyage ({voyage.State.ShipClassId}, seed {SeedOf(voyage.State)}).");
+        _parked = null;
+        Session = voyage;
         Changed?.Invoke();
     }
 

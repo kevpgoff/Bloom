@@ -35,6 +35,27 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
 
+[node name="TestRow" type="HBoxContainer" parent="Layout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TestLabel" type="Label" parent="Layout/TestRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+text = "Test run"
+
+[node name="EndTestButton" type="Button" parent="Layout/TestRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 52)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 22
+text = "End test"
+
 [node name="ScreenHost" type="Control" parent="Layout"]
 layout_mode = 2
 size_flags_vertical = 3
