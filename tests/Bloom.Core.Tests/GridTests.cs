@@ -7,6 +7,18 @@ public class GridTests
     /// <summary>Rows separated by '|': "###|.#." is a T.</summary>
     private static Shape S(string rows) => Shape.Parse(rows.Split('|'));
 
+    [Fact]
+    public void AHeavyAttackOnALaneWithoutHullHitsTheNearestLaneWithHull()
+    {
+        var grid = new ShipGrid(S("###").CellsAt(new Cell(1, 3), Rotation.R0));
+        Assert.Equal(1, grid.LaneHit(0));
+        Assert.Equal(2, grid.LaneHit(2));
+        Assert.Equal(3, grid.LaneHit(5));
+
+        grid.Attach([new Cell(0, 3)]);
+        Assert.Equal(0, grid.LaneHit(0));
+    }
+
     [Theory]
     [InlineData("###|.#.")]
     [InlineData("#.|##")]

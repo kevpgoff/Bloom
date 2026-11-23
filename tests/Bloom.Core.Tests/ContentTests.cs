@@ -182,19 +182,23 @@ public class ShippedContentTests
         Assert.NotEmpty(new MapEngine(db).Reachable(run));
     }
 
+    /// <summary>
+    /// The seedling has no hull in lane 0. Some enemies of every fight pool but the boss aim there anyway: they
+    /// hit lane 1 until a section opens lane 0, then lane 0 (owner, 2026-11-23).
+    /// </summary>
     [Fact]
-    public void EveryHeavyAttackHitsALaneTheSeedlingCovers()
+    public void SomeHeavyAttacksAimAtTheLeftLaneTheSeedlingHasNotGrownInto()
     {
         var db = TestContent.LoadShipped();
         var run = RunFactory.NewRun(db, "seedling", seed: 1);
-        var lanes = run.Ship.Grid.Cells.Select(c => c.X).ToHashSet();
-        foreach (var enemy in db.Enemies)
-        {
-            foreach (var intent in enemy.Pattern.Where(i => i.Kind == IntentKind.HeavyAttack))
-            {
-                Assert.True(lanes.Contains(intent.Lane!.Value), $"{enemy.Id} attacks lane {intent.Lane}, which has no hull.");
-            }
-        }
+        Assert.DoesNotContain(run.Ship.Grid.Cells, c => c.X == 0);
+        Assert.Equal(1, run.Ship.Grid.LaneHit(0));
+        var pools = db.Enemies
+            .Where(e => e.Pattern.Any(i => i.Kind == IntentKind.HeavyAttack && i.Lane == 0))
+            .Select(e => e.Pool!.Value)
+            .Distinct()
+            .Order();
+        Assert.Equal([EnemyPool.Early, EnemyPool.Late, EnemyPool.Hard], pools);
     }
 
     [Fact]

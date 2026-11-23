@@ -45,6 +45,27 @@ public sealed class ShipGrid
 
     public bool Contains(Cell cell) => _cells.Contains(cell);
 
+    /// <summary>
+    /// The lane a heavy attack aimed at <paramref name="aimed"/> hits: that lane when the hull reaches it, otherwise
+    /// the nearest lane it does reach (the lower one on a tie). So an attack aimed at an edge lane the hull has not
+    /// grown into yet hits the hull's own edge lane (owner, 2026-11-23).
+    /// </summary>
+    public int LaneHit(int aimed)
+    {
+        int best = aimed;
+        int bestDistance = int.MaxValue;
+        foreach (int lane in _cells.Select(c => c.X).Distinct().Order())
+        {
+            int distance = Math.Abs(lane - aimed);
+            if (distance < bestDistance)
+            {
+                (best, bestDistance) = (lane, distance);
+            }
+        }
+
+        return best;
+    }
+
     /// <summary>A hull section must stay in bounds, must not overlap the hull and must share an edge with it.</summary>
     public AttachError CanAttach(IReadOnlyCollection<Cell> section)
     {

@@ -85,10 +85,15 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
     public FittedPiece? HeavyAttackTarget(RunState run)
     {
         var combat = RequireCombat(run);
-        return CurrentIntent(combat) is { Kind: IntentKind.HeavyAttack, Lane: int lane }
-            ? _fitter.FrontmostInLane(run.Ship, lane, combat.DisabledPieceIds)
-            : null;
+        return HeavyLane(run) is int lane ? _fitter.FrontmostInLane(run.Ship, lane, combat.DisabledPieceIds) : null;
     }
+
+    /// <summary>
+    /// The lane the enemy's next action hits if it is a heavy attack: the lane it aims at, or the nearest one the
+    /// hull reaches (<see cref="Grid.ShipGrid.LaneHit"/>). Null when the next action is not a heavy attack.
+    /// </summary>
+    public int? HeavyLane(RunState run) =>
+        CurrentIntent(RequireCombat(run)) is { Kind: IntentKind.HeavyAttack, Lane: int aimed } ? run.Ship.Grid.LaneHit(aimed) : null;
 
     public bool CanPlay(RunState run, int cardId) =>
         run.Combat is { } combat
@@ -319,8 +324,8 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
                 DamageShip(run, combat, intent.Amount, heavyLane: null);
                 break;
             case IntentKind.HeavyAttack:
-                int hullDamage = DamageShip(run, combat, intent.Amount, intent.Lane);
-                if (hullDamage > 0 && intent.Lane is int lane)
+                int lane = run.Ship.Grid.LaneHit(intent.Lane!.Value);
+                if (DamageShip(run, combat, intent.Amount, lane) > 0)
                 {
                     DisableFrontmost(run, combat, lane);
                 }
