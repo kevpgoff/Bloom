@@ -27,7 +27,8 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         Label EnergyLabel,
         Label PilesLabel,
         Label TurnLabel,
-        Control EndTurn);
+        Control EndTurn,
+        Func<int, PartPanel?> Part);
 
     /// <summary>
     /// What the screen does for this action: when each new card fades in, when the result overlay may show, and
@@ -75,7 +76,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             switch (e)
             {
                 case FightStarted:
-                    At(0.05f, ReticleLock);
+                    At(0.05f, () => ReticleLock(null));
                     beat.T = Tuning.OpeningDeal;
                     break;
                 case TurnStarted:
@@ -121,7 +122,13 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
                     Disabled(beat, disabled.PieceId, disabled.Lane);
                     break;
                 case EnemyBlocked block:
-                    OnEnemyBlocked(beat, block.Amount);
+                    OnEnemyBlocked(beat, block.Amount, block.Part);
+                    break;
+                case PartDisabled disabled:
+                    OnPartDisabled(beat, disabled.Part);
+                    break;
+                case TargetChanged changed:
+                    At(0f, () => ReticleLock(changed.Part));
                     break;
                 case FightEnded { Outcome: CombatOutcome.Won }:
                     Won(beat);
@@ -205,7 +212,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         At(launch, () =>
         {
             from = origin();
-            var to = EmblemCenter();
+            var to = hit.Part is int part ? PartCenter(part) : EmblemCenter();
             fx.Bolt(from, to, Palette.Attack, Tuning.BoltTravel, focused ? 7f : 4.5f, boosted ? Palette.Boosted : Colors.White, 0.06f);
             if (focused)
             {
@@ -214,19 +221,29 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         });
         At(impact, () => EnemyImpact(hit, from));
 
-        // The hull bar has already dropped; the lost part stays lit until the bolt lands.
-        if (beat.BarValue > hit.HullLeft)
+        // The hull bar has already dropped; the lost part stays lit until the bolt lands. A part's bar is its panel's.
+        if (hit.Part is null && beat.BarValue > hit.HullLeft)
         {
             fx.BarChunk(beat.Bar, (float)(beat.BarValue / beat.BarMax), (float)(hit.HullLeft / beat.BarMax), Palette.Attack, impact);
         }
 
-        beat.BarValue = hit.HullLeft;
+        if (hit.Part is null)
+        {
+            beat.BarValue = hit.HullLeft;
+        }
+
         beat.LastImpact = impact;
         beat.T = impact + Tuning.EffectGap;
     }
 
     private void EnemyImpact(EnemyHit hit, Vector2 from)
     {
+        if (hit.Part is int part)
+        {
+            PartImpact(hit, part, from);
+            return;
+        }
+
         var c = EmblemCenter();
         float r = EmblemRadius();
         var dir = (c - from).LengthSquared() > 1f ? (c - from).Normalized() : Vector2.Up;
@@ -257,6 +274,56 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
                 Haptics.Play(HapticKind.Light);
             }
         }
+    }
+
+    /// <summary>A hit on one of a boss's parts: smaller than on the body, on its panel, which flashes.</summary>
+    private void PartImpact(EnemyHit hit, int part, Vector2 from)
+    {
+        var c = PartCenter(part);
+        var rect = PartRectOrEmblem(part);
+        float r = Mathf.Min(rect.Size.X, rect.Size.Y) * 0.5f;
+        var dir = (c - from).LengthSquared() > 1f ? (c - from).Normalized() : Vector2.Up;
+        if (hit.HullDamage > 0)
+        {
+            int damage = hit.HullDamage;
+            fx.Burst(c, Palette.Attack, Math.Clamp(10 + damage, 10, 30), 220f + (damage * 6f), 0.45f, 2.4f, ParticleShape.Streak, dir.Angle(), 2.4f, drag: 4f);
+            fx.Ring(c, Palette.Attack, r * 0.3f, r * 1.1f, 0.3f);
+            w.Part(part)?.Flash(Colors.White);
+            fx.FloatText($"-{damage}", c + new Vector2(r * 0.6f, 0f), Palette.Attack.Lerp(Colors.White, 0.15f), Math.Clamp(40 + damage, 40, 64), 0.9f, 28f);
+            fx.Shake(damage >= 10 ? 0.25f : 0.12f);
+            Haptics.Play(damage >= 10 ? HapticKind.Medium : HapticKind.Light);
+        }
+
+        if (hit.Blocked > 0)
+        {
+            fx.RectRing(rect, Palette.Block, 6f, 0.3f, 3f);
+            fx.FloatText($"{hit.Blocked} BLOCKED", c - new Vector2(0f, r * 0.5f), Palette.Block, 22, 0.9f, 30f);
+            if (hit.HullDamage == 0)
+            {
+                Haptics.Play(HapticKind.Light);
+            }
+        }
+    }
+
+    /// <summary>A part goes dark: sparks fall from its panel, and the aim jumps back to the body.</summary>
+    private void OnPartDisabled(Beat beat, int part)
+    {
+        // Just after the killing hit's own numbers, and below them.
+        float at = Math.Max(beat.LastImpact, beat.T) + 0.12f;
+        At(at, () =>
+        {
+            var rect = PartRectOrEmblem(part);
+            var c = rect.GetCenter() + new Vector2(0f, rect.Size.Y * 0.2f);
+            fx.Flash([rect], Palette.Refused with { A = 0.45f }, 0.5f, flicker: true);
+            fx.Burst(c, Palette.Threat, 30, 300f, 0.7f, 2.4f, ParticleShape.Streak, -Mathf.Pi / 2f, 1.8f, gravity: 520f, drag: 1.5f);
+            fx.Burst(c, Colors.White, 12, 160f, 0.45f, 2.2f);
+            fx.FloatText("DISABLED", c, Palette.Refused, 26, 1.1f, 36f);
+            fx.Shake(0.3f);
+            Haptics.Play(HapticKind.Heavy);
+            fx.Schedule(0.09f, () => Haptics.Play(HapticKind.Medium));
+        });
+        At(at + 0.35f, () => ReticleLock(null));
+        beat.T = at + 0.1f;
     }
 
     private void OnBlockGained(Beat beat, int amount)
@@ -416,10 +483,17 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         var color = hit.HeavyLane is null ? Palette.Threat : Palette.Heavy;
         At(beat.T, () =>
         {
-            w.Emblem.Kick(Vector2.Down, 8f);
-            w.Emblem.Flash(color, 0.15f);
+            if (hit.Part is int part)
+            {
+                w.Part(part)?.Flash(color);
+            }
+            else
+            {
+                w.Emblem.Kick(Vector2.Down, 8f);
+                w.Emblem.Flash(color, 0.15f);
+            }
         });
-        At(launch, () => fx.Bolt(EmblemCenter(), ShipTarget(hit.HeavyLane), color, Tuning.EnemyBoltTravel, hit.HeavyLane is null ? 5f : 8f, Colors.White));
+        At(launch, () => fx.Bolt(hit.Part is int part ? PartCenter(part) : EmblemCenter(), ShipTarget(hit.HeavyLane), color, Tuning.EnemyBoltTravel, hit.HeavyLane is null ? 5f : 8f, Colors.White));
         At(impact, () => ShipImpact(hit));
         beat.LastImpact = impact;
         beat.T = impact + 0.08f;
@@ -476,9 +550,27 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         beat.T += 0.1f;
     }
 
-    private void OnEnemyBlocked(Beat beat, int amount)
+    private void OnEnemyBlocked(Beat beat, int amount, int? part)
     {
         float at = beat.T + Tuning.EnemyWindup;
+        if (part is int index)
+        {
+            // A part's block joins the enemy's one block: it streams from the part to the body.
+            At(at, () =>
+            {
+                var from = PartCenter(index);
+                var rect = PartRectOrEmblem(index);
+                w.Part(index)?.Flash(Palette.Block);
+                fx.RectRing(rect, Palette.Block, 10f, 0.4f, 2f);
+                fx.Stream(from, EmblemCenter(), Palette.Block, 8, 0.3f, 3f, ParticleShape.Hex, 40f);
+                fx.FloatText($"+{amount} BLOCK", from - new Vector2(0f, rect.Size.Y * 0.25f), Palette.Block, 24, 0.9f, 30f);
+                Haptics.Play(HapticKind.Tick);
+            });
+            beat.LastImpact = at + 0.3f;
+            beat.T = at + 0.3f;
+            return;
+        }
+
         At(at, () =>
         {
             var c = EmblemCenter();
@@ -493,8 +585,18 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         beat.T = at + 0.3f;
     }
 
-    private void ReticleLock()
+    /// <summary>The reticle locks onto what the player aims at: the body (null) or one of its parts.</summary>
+    private void ReticleLock(int? part)
     {
+        if (part is int index)
+        {
+            var rect = PartRectOrEmblem(index);
+            fx.RectRing(rect, Palette.Threat, 4f, 0.35f, 2.5f);
+            fx.RectRing(rect, Palette.Threat, 14f, 0.45f, 1.5f, delay: 0.06f);
+            Haptics.Play(HapticKind.Tick);
+            return;
+        }
+
         var c = EmblemCenter();
         float r = EmblemRadius();
         fx.Ring(c, Palette.Threat, r * 1.6f, r * 0.95f, 0.45f, 2.5f);
@@ -560,6 +662,11 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
     }
 
     private Vector2 EmblemCenter() => fx.FromGlobal(w.Emblem.GetGlobalRect().GetCenter());
+
+    /// <summary>A part's panel, or the emblem when the panel is gone (the screen was rebuilt).</summary>
+    private Rect2 PartRectOrEmblem(int part) => fx.FromGlobal(w.Part(part)?.GetGlobalRect() ?? w.Emblem.GetGlobalRect());
+
+    private Vector2 PartCenter(int part) => PartRectOrEmblem(part).GetCenter();
 
     /// <summary>The radius of the reticle's inner disc.</summary>
     private float EmblemRadius() => Mathf.Min(w.Emblem.Size.X, w.Emblem.Size.Y) * 0.4f;

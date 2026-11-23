@@ -6,7 +6,8 @@ namespace Bloom.Game.Screens;
 /// <summary>
 /// The enemy, drawn large inside a target-lock reticle: a glow, the enemy's icon, corner brackets, and two
 /// dashed rings that turn in opposite directions. The rings stand still in low-processor mode, and when
-/// <see cref="Active"/> is off (the fight is over).
+/// <see cref="Active"/> is off (the fight is over). While the player aims at one of a boss's parts instead
+/// (<see cref="Aimed"/> off), the lock and the brackets are gone and only the outer ring is left.
 /// </summary>
 /// <remarks>
 /// Combat feedback can <see cref="Kick"/> it (a recoil that springs back), <see cref="Flash"/> it, and hold
@@ -23,6 +24,7 @@ public partial class EnemyEmblem : Control
     private Texture2D? _icon;
     private Color _tint = Palette.Threat;
     private bool _active;
+    private bool _aimed = true;
     private float _elapsed;
 
     private Vector2 _kick;
@@ -64,6 +66,20 @@ public partial class EnemyEmblem : Control
             _active = value;
             UpdateProcessing();
             QueueRedraw();
+        }
+    }
+
+    /// <summary>Whether the player's attacks hit the body: true unless a boss's part is aimed at.</summary>
+    public bool Aimed
+    {
+        get => _aimed;
+        set
+        {
+            if (_aimed != value)
+            {
+                _aimed = value;
+                QueueRedraw();
+            }
         }
     }
 
@@ -198,7 +214,7 @@ public partial class EnemyEmblem : Control
         // The inner lock: two arcs that turn the other way.
         float inner = r * 0.86f;
         float spin = _elapsed * InnerTurnSpeed;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; _aimed && i < 2; i++)
         {
             float a = spin + (i * Mathf.Pi) + 0.35f;
             DrawArc(c, inner, a, a + 0.9f, 16, line with { A = 0.85f }, 2.5f, antialiased: true);
@@ -207,7 +223,7 @@ public partial class EnemyEmblem : Control
         // Corner brackets on the bounding square, like the ship grid's.
         float half = r * 0.98f;
         float arm = r * 0.22f;
-        foreach (var (sx, sy) in new[] { (-1f, -1f), (1f, -1f), (1f, 1f), (-1f, 1f) })
+        foreach (var (sx, sy) in _aimed ? new[] { (-1f, -1f), (1f, -1f), (1f, 1f), (-1f, 1f) } : [])
         {
             var corner = c + new Vector2(sx * half, sy * half);
             DrawPolyline(

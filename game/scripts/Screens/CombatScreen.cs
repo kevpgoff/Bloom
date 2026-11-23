@@ -20,6 +20,10 @@ namespace Bloom.Game.Screens;
 /// picking resumes as if the card had not been tapped.
 /// </para>
 /// <para>
+/// A boss's parts are shown in a row of <see cref="PartPanel"/>s under the enemy. Tapping a part aims at it and
+/// tapping the enemy aims at its body, each through <see cref="CombatEngine.SetTarget"/>, so the aim is saved.
+/// </para>
+/// <para>
 /// Feedback: the events of each action (<see cref="GameRoot.CombatEvents"/>) play on an <see cref="FxLayer"/>
 /// through <see cref="CombatFeedback"/>. The screen still redraws to the new state at once; new cards fade in
 /// when their deal reaches them, the result overlay waits for the last hit, and after a won fight
@@ -44,6 +48,7 @@ public partial class CombatScreen : Control
     private readonly List<int> _chosenTargets = [];
     private readonly Dictionary<int, Button> _cardButtons = [];
     private readonly HashSet<int> _waitingToDeal = [];
+    private readonly List<PartPanel> _parts = [];
     private int? _targetingCardId;
     private int _targetsNeeded;
     private bool _refreshQueued;
@@ -63,6 +68,7 @@ public partial class CombatScreen : Control
     private Label _enemyBlock = null!;
     private TextureRect _intentIcon = null!;
     private Label _intent = null!;
+    private HBoxContainer _partsRow = null!;
     private ShipGridView _grid = null!;
     private Label _ship = null!;
     private Label _energy = null!;
@@ -88,8 +94,11 @@ public partial class CombatScreen : Control
         _enemyBlock = GetNode<Label>("%EnemyBlockLabel");
         _intentIcon = GetNode<TextureRect>("%IntentIcon");
         _intent = GetNode<Label>("%IntentLabel");
+        _partsRow = GetNode<HBoxContainer>("%PartsRow");
 
-        BloomTheme.AttachPanelFrame(GetNode<Control>("Layout/EnemyPanel"));
+        var enemyPanel = GetNode<Control>("Layout/EnemyPanel");
+        BloomTheme.AttachPanelFrame(enemyPanel);
+        enemyPanel.GuiInput += OnEnemyPanelInput;
         BloomTheme.AttachPanelFrame(GetNode<Control>("ResultOverlay/Center/ResultPanel"), Palette.HoloBright with { A = 0.7f });
         _grid = GetNode<ShipGridView>("%ShipGrid");
         _ship = GetNode<Label>("%ShipLabel");
@@ -112,7 +121,7 @@ public partial class CombatScreen : Control
         _fx.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         _feedback = new CombatFeedback(
             _fx,
-            new CombatFeedback.Widgets(_enemyEmblem, _grid, _enemyHullBar, _ship, _energy, _piles, _turn, _endTurn),
+            new CombatFeedback.Widgets(_enemyEmblem, _grid, _enemyHullBar, _ship, _energy, _piles, _turn, _endTurn, PartAt),
             CardRect,
             () => _cardButtons.Values.Where(IsLive).Select(b => b.GetGlobalRect()).ToList());
 
@@ -201,7 +210,9 @@ public partial class CombatScreen : Control
         Act(s => s.Combat.EndTurn(s.State));
     }
 
-    private static bool IsLive(Button button) => IsInstanceValid(button) && button.IsInsideTree();
+    private static bool IsLive(Control control) => IsInstanceValid(control) && control.IsInsideTree();
+
+    private PartPanel? PartAt(int index) => index >= 0 && index < _parts.Count && IsLive(_parts[index]) ? _parts[index] : null;
 
     private Rect2? CardRect(int cardId) =>
         _cardButtons.TryGetValue(cardId, out var button) && IsLive(button) ? button.GetGlobalRect() : null;
@@ -279,6 +290,8 @@ public partial class CombatScreen : Control
             _enemyBlock.Text = "";
             _intentIcon.Texture = null;
             _intent.Text = "";
+            _enemyEmblem.Aimed = true;
+            _partsRow.Visible = false;
             return;
         }
 
@@ -293,20 +306,79 @@ public partial class CombatScreen : Control
         _enemyHull.Text = $"Hull {enemy.Hull} / {enemy.MaxHull}";
         _enemyBlock.Text = enemy.Block > 0 ? $"Block {enemy.Block}" : "";
 
-        var intent = session.Combat.CurrentIntent(combat);
-        var (text, color) = intent.Kind switch
+        var actions = session.Combat.NextActions(run);
+        var body = actions.First(a => a.Part is null);
+        var (text, color) = IntentLook(body.Intent);
+        if (body.Target is { } target)
         {
-            IntentKind.Attack => ($"Attack {intent.Amount}", Palette.Attack),
-            IntentKind.HeavyAttack => (session.Combat.HeavyAttackTarget(run) is { } target
-                ? $"Heavy attack {intent.Amount}  ·  {CardText.PieceName(session.Content.Piece(target.Piece.DefId), target.Piece)}"
-                : $"Heavy attack {intent.Amount}", Palette.Heavy),
-            IntentKind.Block => ($"Block {intent.Amount}", Palette.Block),
-            _ => (intent.Kind.ToString(), Colors.White),
-        };
-        _intentIcon.Texture = ArtLibrary.IntentIcon(intent.Kind);
+            text += $"  ·  {CardText.PieceName(session.Content.Piece(target.Piece.DefId), target.Piece)}";
+        }
+
+        _intentIcon.Texture = ArtLibrary.IntentIcon(body.Intent.Kind);
         _intentIcon.Modulate = color;
         _intent.Text = text;
         _intent.AddThemeColorOverride("font_color", color);
+        _enemyEmblem.Aimed = combat.Target is null;
+        ShowParts(session, combat, actions);
+    }
+
+    private static (string Text, Color Color) IntentLook(Intent intent) => intent.Kind switch
+    {
+        IntentKind.Attack => ($"Attack {intent.Amount}", Palette.Attack),
+        IntentKind.HeavyAttack => ($"Heavy attack {intent.Amount}", Palette.Heavy),
+        IntentKind.Block => ($"Block {intent.Amount}", Palette.Block),
+        _ => (intent.Kind.ToString(), Colors.White),
+    };
+
+    /// <summary>A panel for each of a boss's parts, in order; none for an enemy without parts.</summary>
+    private void ShowParts(RunSession session, CombatState combat, IReadOnlyList<EnemyAction> actions)
+    {
+        var parts = combat.Enemy.Parts;
+        _partsRow.Visible = parts.Count > 0;
+        if (_parts.Count != parts.Count)
+        {
+            foreach (var old in _parts)
+            {
+                _partsRow.RemoveChild(old);
+                old.QueueFree();
+            }
+
+            _parts.Clear();
+            for (int i = 0; i < parts.Count; i++)
+            {
+                int index = i;
+                var panel = new PartPanel { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+                panel.Tapped += () => OnPartTapped(index);
+                _partsRow.AddChild(panel);
+                _parts.Add(panel);
+            }
+        }
+
+        var defs = session.Content.Enemy(combat.Enemy.DefId).AllParts;
+        for (int i = 0; i < parts.Count; i++)
+        {
+            var intent = actions.FirstOrDefault(a => a.Part == i)?.Intent;
+            var (text, color) = intent is null ? ("", Palette.Muted) : IntentLook(intent);
+            _parts[i].SetPart(defs[i].Name, parts[i].Hull, parts[i].MaxHull, intent is null ? null : ArtLibrary.IntentIcon(intent.Kind), text, color, combat.Target == i);
+        }
+    }
+
+    /// <summary>A tap on the enemy's panel aims at the body, when the enemy has parts to aim at instead.</summary>
+    private void OnEnemyPanelInput(InputEvent @event)
+    {
+        if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }
+            && Session?.State.Combat is { Target: not null })
+        {
+            Act(s => s.Combat.SetTarget(s.State, null));
+        }
+    }
+
+    private static void OnPartTapped(int index)
+    {
+        if (Session is { } session && session.State.Combat is { } combat && combat.Target != index && session.Combat.CanTarget(session.State, index))
+        {
+            Act(s => s.Combat.SetTarget(s.State, index));
+        }
     }
 
     private void ShowStatus(RunState run, CombatState? combat)

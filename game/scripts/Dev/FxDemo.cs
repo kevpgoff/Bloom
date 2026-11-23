@@ -15,7 +15,8 @@ namespace Bloom.Game.Dev;
 /// </summary>
 /// <remarks>
 /// Run a debug build with <c>godot --path game -- --fx-demo</c>, or <c>-- --fx-demo=lose</c> to only end turns
-/// until the ship is lost. <see cref="GameRoot"/> keeps the demo's run in memory, so the saved run is untouched.
+/// until the ship is lost, or <c>-- --fx-demo=boss</c> to fight the boss instead and aim at each of its parts in
+/// turn until they are disabled. <see cref="GameRoot"/> keeps the demo's run in memory, so the saved run is untouched.
 /// Each action and its events are printed, and so is each haptic pulse.
 /// </remarks>
 public partial class FxDemo : Node
@@ -39,10 +40,12 @@ public partial class FxDemo : Node
 
     private static bool LoseMode => OS.GetCmdlineUserArgs().Contains(Flag + "=lose");
 
+    private static bool BossMode => OS.GetCmdlineUserArgs().Contains(Flag + "=boss");
+
     public override void _Ready()
     {
         Haptics.LogPulses = true;
-        GD.Print($"FxDemo: playing the first fight{(LoseMode ? " by only ending turns" : "")}.");
+        GD.Print($"FxDemo: playing {(BossMode ? "the boss" : "the first fight")}{(LoseMode ? " by only ending turns" : "")}.");
     }
 
     public override void _Process(double delta)
@@ -65,6 +68,11 @@ public partial class FxDemo : Node
         var run = session.State;
         switch (run.Phase)
         {
+            case RunPhase.Map when run.Path.Count == 0 && BossMode:
+                // A shortcut no player has: the boss's node is out of reach, so the demo commits to its fight directly.
+                string boss = session.Content.Enemies.First(e => e.Pool == EnemyPool.Boss).Id;
+                Act("go straight to the boss", s => s.State.Encounter = new Encounter(boss));
+                return 1.0;
             case RunPhase.Map when run.Path.Count == 0:
                 int first = session.Map.Reachable(run)[0].Id;
                 Act("choose the first node", s => s.Map.Choose(s.State, first));
@@ -90,6 +98,13 @@ public partial class FxDemo : Node
     private double Fight(RunSession session, RunState run)
     {
         var combat = run.Combat!;
+        if (BossMode && combat.Target is null && combat.Enemy.Parts.FindIndex(p => !p.Disabled) is var part and >= 0)
+        {
+            string name = session.Content.Enemy(combat.Enemy.DefId).AllParts[part].Name;
+            Act($"aim at the {name}", s => s.Combat.SetTarget(s.State, part));
+            return 1.0;
+        }
+
         if (!LoseMode)
         {
             bool holdKills = combat.Turn < LastHeldTurn && !(_sawEnemyBlock && CardEffects.All(_shown.Contains));
@@ -119,7 +134,7 @@ public partial class FxDemo : Node
     }
 
     private static bool Kills(CardPreview preview, CombatState combat) =>
-        preview.Effects.OfType<DamageEffect>().Sum(e => e.Amount) >= combat.Enemy.Hull + combat.Enemy.Block;
+        combat.Target is null && preview.Effects.OfType<DamageEffect>().Sum(e => e.Amount) >= combat.Enemy.Hull + combat.Enemy.Block;
 
     private void Act(string what, Action<RunSession> action)
     {

@@ -165,7 +165,7 @@ public partial class FittingBoard : Control
     private void DrawShip(RunSession session, RunState run, GridLayout g)
     {
         var heavyLanes = session.Refit.NextEnemy(run) is { } enemy
-            ? enemy.Pattern.Where(i => i.Kind == IntentKind.HeavyAttack).Select(i => run.Ship.Grid.LaneHit(i.Lane!.Value)).Distinct().ToList()
+            ? enemy.AllIntents.Where(i => i.Kind == IntentKind.HeavyAttack).Select(i => run.Ship.Grid.LaneHit(i.Lane!.Value)).Distinct().ToList()
             : [];
         GridPainter.DrawLanes(this, g, heavyLanes);
         GridPainter.DrawHull(this, g, run.Ship.Grid.Cells);
