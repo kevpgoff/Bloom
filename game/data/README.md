@@ -9,7 +9,7 @@ All numbers are placeholders for testing, as the design spec says. Entries marke
 | `pieces.json` | Equipment and crew: shape, tags, the cards they add, an optional adjacency bonus |
 | `cards.json` | Cards: cost, effects and an `upgrade` |
 | `enemies.json` | Enemies: hull points, a repeating pattern of intents, a `pool` and a `sector`, and for a boss its `parts`. The pool says which fights of the sector map draw the enemy (see below). |
-| `ships.json` | Ship classes: starting hull, hull points, starting pieces, an optional special `rule` and an optional `soundSet` |
+| `ships.json` | Ship classes: starting hull, hull points, one or more `loadouts` of starting pieces, an optional special `rule`, an optional `soundSet`, and the `commune` and `grownFrom` text that the hangar shows |
 | `sections.json` | Hull sections that shipyards offer: a name and a shape |
 | `events.json` | Events: a story, 2 to 4 choices, and what each choice can come to |
 
@@ -19,6 +19,8 @@ All numbers are placeholders for testing, as the design spec says. Entries marke
 - **Positions** are absolute grid cells `{ "x": column, "y": row }` in the 6×8 grid. Row 0 is the front, which faces the enemy. A position is the top-left corner of the rotated shape.
 - **Lanes** are grid columns, counted from 0 on the left (the game shows them as L1 to L6). A heavy attack aimed at a lane the hull doesn't reach hits the nearest lane it does reach, so on the seedling an attack on lane 0 hits lane 1 until a hull section grows into lane 0.
 - **Effects** are objects whose first property must be `"type"` (a .NET 8 rule): `{ "type": "damage", "amount": 5 }`. Card effects are `damage`, `block`, `gainEnergy`, `draw`, `repair`, `focus` and `grow`. Bonus-only effects are `damageBonus` and `startGrown`.
+- **Loadouts** (`"loadouts"` on a ship class in `ships.json`) are the sets of starting pieces that the player chooses from in the hangar. Each has an `"id"` (lowercase words joined by hyphens, unique within its ship, and saved with a run), a `"name"` and its `"startingPieces"`. A ship needs at least one, and the first is the one a run uses when none is named. A loadout changes only the pieces: the hull, the hull points and the rule belong to the ship class. Every loadout must fit on the hull and hold exactly one bridge; the validator starts a run with each to check.
+- **Hangar text** on a ship class: `"commune"` is the commune's id as on pieces (`tide_orchard`), shown as "Tide Orchard", and `"grownFrom"` is one line on what the ship is grown from. The rules read neither.
 - **Ship rules** (`"rule"` on a ship class in `ships.json`) are optional objects whose first property must be `"type"`, as for effects and event outcomes. The only rule built so far is `{ "type": "keepEnergy" }`, which keeps unspent energy for the next turn. Leaving `"rule"` out gives the default rules.
 - **Sound sets** (`"soundSet"` on a ship class in `ships.json`) are optional. The value is the name of a folder in `tools/SfxGen/sets/` and in `game/audio/sfx/`, in lowercase words joined by hyphens, that holds the ship's own version of some sound effects. The rules never read it. A ship class without one plays the base set, which is the Seedling's. `dotnet test` fails when a ship names a set that has no folder. See "Ships' sets" in `tools/SfxGen/README.md`.
 - **Upgrades.** A card's `"upgrade"` is what it becomes when its piece is upgraded: `{ "cost": 0 }`, `{ "effects": [...] }` or both. Upgraded effects replace the card's own list, so write all of them. Every shipped card has an upgrade, and a test checks it. An upgraded card is named with "+" after it.
@@ -53,6 +55,23 @@ The owner chose on 2026-11-21 to fit all of the spec's pieces, so that focus, gr
 ```
 
 The hull covers x 1–5 and y 1–5. That is 25 cells, 3 of them free. The starting deck has 2 + 1 + 1 + 2 + 2 + 1 + 1 + 4 = 14 cards. The first enemy's heavy attack hits lane 2, so it disables the Hull Plating first, then the Lance, then the Moss Reactor.
+
+That layout is the Seedling's first loadout, `a` ("Sprout"). Its second, `b` ("Orchard"), is a placeholder added with the hangar on 2026-11-23 so that a ship with two loadouts exists. It leans on Garden and Shield, the main tags the spec gives the Seedling, and is built only from existing pieces. It has no Sun Sail, no Focus and no repair, but more block, and both crew start the Moss Reactor's cards grown, so they start grown twice. A Light Lance and an Arc Cutter give it the damage to win a fight. Its balance has not been measured.
+
+```
+        x: 0 1 2 3 4 5
+   y0      . . . . . .
+   y1      . P P P R R     P  Hull Plating
+   y2      . A A R R .     R  Reed Screen
+   y3      . K L L L .     A  Arc Cutter
+   y4      . M M Y B B     K  Orchard Keeper: Moss cards start grown once
+   y5      . M M Y Y .     L  Light Lance
+   y6      . . . . . .     M  Moss Reactor
+   y7      . . . . . .     Y  Spore Singer: Moss cards start grown once more
+                           B  Bridge
+```
+
+It uses 22 of the 25 cells, and its deck has 2 + 3 + 2 + 1 + 2 + 2 + 1 + 4 = 17 cards.
 
 ## The placeholder second ship (`heliotrope`)
 
