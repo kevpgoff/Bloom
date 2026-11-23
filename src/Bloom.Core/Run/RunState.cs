@@ -26,6 +26,9 @@ public enum RunPhase
     /// <summary>A fight was won and the player picks a piece from <see cref="RunState.Reward"/> or skips it.</summary>
     Reward,
 
+    /// <summary>At a dock (<see cref="RunState.Dock"/>): buying, selling and repairing until the player leaves. The player may refit.</summary>
+    Dock,
+
     /// <summary>At a grove (<see cref="RunState.Grove"/>), choosing what it does for the ship.</summary>
     Grove,
     Won,
@@ -38,7 +41,7 @@ public enum RunPhase
 /// </summary>
 public sealed class RunState
 {
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 6;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -78,6 +81,9 @@ public sealed class RunState
     /// <summary>The fight the player has committed to, from choosing its node until the fight ends.</summary>
     public Encounter? Encounter { get; set; }
 
+    /// <summary>Set while the ship is at a dock, until the player leaves it.</summary>
+    public DockVisit? Dock { get; set; }
+
     /// <summary>Set while the ship is at a grove and the player has not yet chosen what it does.</summary>
     public GroveVisit? Grove { get; set; }
 
@@ -104,6 +110,7 @@ public sealed class RunState
         _ when Combat is not null => RunPhase.Fight,
         _ when Reward is not null => RunPhase.Reward,
         _ when Encounter is not null => RunPhase.Prepare,
+        _ when Dock is not null => RunPhase.Dock,
         _ when Grove is not null => RunPhase.Grove,
         _ => RunPhase.Map,
     };

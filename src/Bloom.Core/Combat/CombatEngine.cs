@@ -7,6 +7,7 @@ using Bloom.Core.Run;
 namespace Bloom.Core.Combat;
 
 /// <summary>What a card would do if it were played now, with every bonus applied. The UI shows this.</summary>
+/// <param name="Def">The card as it plays: upgraded when its piece is (see <see cref="ContentDb.Card(CardInstance)"/>).</param>
 /// <param name="Effects">
 /// The card's effects with final numbers: damage includes adjacency bonuses and pending focus, and
 /// block includes growth. Compare with <see cref="CardDef.Effects"/> to see what was boosted.
@@ -48,6 +49,8 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
                 throw new InvalidOperationException("Take or skip the reward first.");
             case RunPhase.Grove:
                 throw new InvalidOperationException("Finish at the grove first.");
+            case RunPhase.Dock:
+                throw new InvalidOperationException("Leave the dock first.");
             case RunPhase.Won or RunPhase.Lost:
                 throw new InvalidOperationException("The run is over.");
         }
@@ -88,7 +91,7 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
     public bool CanPlay(RunState run, int cardId) =>
         run.Combat is { } combat
         && combat.Hand.Find(c => c.Id == cardId) is { } card
-        && CanPlay(combat, content.Card(card.CardId));
+        && CanPlay(combat, content.Card(card));
 
     /// <summary>How many disabled pieces the player must pick to play this card from the hand.</summary>
     public int RepairTargetsNeeded(RunState run, int cardId)
@@ -96,13 +99,13 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         var combat = RequireCombat(run);
         var card = combat.Hand.Find(c => c.Id == cardId)
                    ?? throw new InvalidOperationException($"Card {cardId} is not in the hand.");
-        return RepairTargetsNeeded(combat, content.Card(card.CardId));
+        return RepairTargetsNeeded(combat, content.Card(card));
     }
 
     public CardPreview Preview(RunState run, CardInstance card)
     {
         var combat = RequireCombat(run);
-        var def = content.Card(card.CardId);
+        var def = content.Card(card);
         bool playable = combat.Hand.Exists(c => c.Id == card.Id) && CanPlay(combat, def);
         return new CardPreview(card, def, ResolveEffects(run, combat, card, def), playable, RepairTargetsNeeded(combat, def));
     }
@@ -121,7 +124,7 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         }
 
         var card = combat.Hand[index];
-        var def = content.Card(card.CardId);
+        var def = content.Card(card);
         if (def.Cost > combat.Energy)
         {
             throw new InvalidOperationException($"'{def.Id}' costs {def.Cost} energy but only {combat.Energy} is left.");
@@ -139,7 +142,7 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         var effects = ResolveEffects(run, combat, card, def);
         combat.Energy -= def.Cost;
         combat.Hand.RemoveAt(index);
-        Emit(new CardPlayed(card.Id, def.Id, card.SourcePieceId));
+        Emit(new CardPlayed(card.Id, def.Id, card.SourcePieceId, card.Upgraded));
         if (IsAttack(def))
         {
             // The resolved damage already includes the focus, so it is used up even if block absorbs it all.

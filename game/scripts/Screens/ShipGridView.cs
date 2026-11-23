@@ -77,12 +77,13 @@ public partial class ShipGridView : Control
         {
             int id = fitted.Piece.Id;
             var def = _session.Content.Piece(fitted.Piece.DefId);
+            string name = CardText.PieceName(def, fitted.Piece);
             var cells = _session.Fitter.CellsOf(fitted);
             bool off = disabled.Contains(id);
             var color = Palette.ForPiece(def);
             GridPainter.DrawPiece(this, g, cells, color, offline: off);
-            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), off ? Palette.Refused with { A = 0.5f } : Palette.Glyph(color), GridPainter.NameLines(g, cells, def.Name));
-            GridPainter.DrawLabel(this, g, cells, def.Name, off ? Palette.Label(Palette.Refused) : Palette.Label(color));
+            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), off ? Palette.Refused with { A = 0.5f } : Palette.Glyph(color), GridPainter.NameLines(g, cells, name));
+            GridPainter.DrawLabel(this, g, cells, name, off ? Palette.Label(Palette.Refused) : Palette.Label(color));
             if (off)
             {
                 GridPainter.DrawOffTag(this, g, cells);

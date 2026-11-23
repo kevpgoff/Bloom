@@ -60,9 +60,31 @@ internal static class CardText
     public static string Card(CardDef card) =>
         $"{card.Name} ({card.Cost} energy): {string.Join(". ", card.Effects.Select(e => Describe(e)))}.";
 
-    /// <summary>The cards a piece adds, one line each: "2× Lance (2 energy): Deal 12 damage."</summary>
-    public static string Cards(PieceDef piece, ContentDb content) =>
-        string.Join("\n", piece.Cards.Select(g => $"{g.Count}× {Card(content.Card(g.Card))}"));
+    /// <summary>
+    /// "Lance+ (1 energy): Deal 12 damage." for an upgraded card, with what the upgrade changed from
+    /// <paramref name="before"/> in green.
+    /// </summary>
+    public static string UpgradedCard(CardDef before, CardDef after)
+    {
+        string Green(string text) => $"[color=#{Palette.Boosted.ToHtml(false)}]{text}[/color]";
+        string cost = $"{after.Cost} energy";
+        var effects = after.Effects.Select((e, i) => i < before.Effects.Count && before.Effects[i] == e ? Describe(e) : Green(Describe(e)));
+        return $"{after.Name} ({(after.Cost == before.Cost ? cost : Green(cost))}): {string.Join(". ", effects)}.";
+    }
+
+    /// <summary>
+    /// The cards a piece adds, one line each: "2× Lance (2 energy): Deal 12 damage." For an upgraded piece the
+    /// cards are upgraded, with what changed in green.
+    /// </summary>
+    public static string Cards(PieceDef piece, ContentDb content, bool upgraded = false) =>
+        string.Join("\n", piece.Cards.Select(g => upgraded
+            ? $"{g.Count}× {UpgradedCard(content.Card(g.Card), content.Card(g.Card, upgraded: true))}"
+            : $"{g.Count}× {Card(content.Card(g.Card))}"));
+
+    /// <summary>A piece's name, with "+" after it once it is upgraded.</summary>
+    public static string PieceName(PieceDef piece, bool upgraded) => upgraded ? piece.Name + "+" : piece.Name;
+
+    public static string PieceName(PieceDef piece, PieceInstance instance) => PieceName(piece, instance.Upgraded);
 
     /// <summary>"Equipment · Weapon · Common", or "Crew · Rare".</summary>
     public static string Kind(PieceDef piece) =>
@@ -86,10 +108,10 @@ internal static class CardText
         _ => "bonus",
     };
 
-    /// <summary>Name, kind, cards and bonus of a piece, for an info panel.</summary>
-    public static string PieceDetails(PieceDef piece, ContentDb content)
+    /// <summary>Name, kind, cards and bonus of a piece, for an info panel. An upgraded piece shows its upgraded cards.</summary>
+    public static string PieceDetails(PieceDef piece, ContentDb content, bool upgraded = false)
     {
-        string text = $"[b]{piece.Name}[/b]   [color=#{Palette.Muted.ToHtml(false)}]{Kind(piece)}[/color]\n{Cards(piece, content)}";
+        string text = $"[b]{PieceName(piece, upgraded)}[/b]   [color=#{Palette.Muted.ToHtml(false)}]{Kind(piece)}[/color]\n{Cards(piece, content, upgraded)}";
         return piece.Bonus is { } bonus ? $"{text}\n{Bonus(bonus)}" : text;
     }
 }

@@ -180,12 +180,13 @@ public partial class FittingBoard : Control
         {
             int id = fitted.Piece.Id;
             var def = session.Content.Piece(fitted.Piece.DefId);
+            string name = CardText.PieceName(def, fitted.Piece);
             var cells = session.Fitter.CellsOf(fitted);
             bool lifted = _drag?.PieceId == id;
             var color = Palette.ForPiece(def);
             GridPainter.DrawPiece(this, g, cells, lifted ? color with { A = 0.25f } : color);
-            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Glyph(color), GridPainter.NameLines(g, cells, def.Name));
-            GridPainter.DrawLabel(this, g, cells, def.Name, lifted ? Palette.Muted with { A = 0.5f } : Palette.Label(color));
+            GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Glyph(color), GridPainter.NameLines(g, cells, name));
+            GridPainter.DrawLabel(this, g, cells, name, lifted ? Palette.Muted with { A = 0.5f } : Palette.Label(color));
             if (!lifted && receivers.Contains(id))
             {
                 GridPainter.DrawBonusBadge(this, g, cells, Palette.Badge);
@@ -266,7 +267,7 @@ public partial class FittingBoard : Control
             var color = Palette.ForPiece(def);
             GridPainter.DrawPiece(this, layout, shape.Cells, lifted ? color with { A = 0.25f } : color);
             GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Glyph(color), labelLines: 0);
-            DrawString(BloomTheme.Hud, new Vector2(slot.Position.X + 4, slot.End.Y - 10), def.Name.ToUpperInvariant(), HorizontalAlignment.Center, slot.Size.X - 8, 19,
+            DrawString(BloomTheme.Hud, new Vector2(slot.Position.X + 4, slot.End.Y - 10), CardText.PieceName(def, piece).ToUpperInvariant(), HorizontalAlignment.Center, slot.Size.X - 8, 19,
                 lifted ? Palette.Muted with { A = 0.5f } : Palette.Label(color));
             if (!lifted && piece.Id == SelectedPieceId)
             {

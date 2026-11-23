@@ -154,6 +154,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         beat.Source = source;
         beat.CardCenter = card?.GetCenter();
         beat.CardDefId = played.CardDefId;
+        beat.CardUpgraded = played.Upgraded;
         beat.Focused = false;
 
         if (card is { } rect)
@@ -191,7 +192,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
 
     private void OnEnemyHit(RunSession session, Beat beat, EnemyHit hit)
     {
-        var def = beat.CardDefId is { } id ? session.Content.Card(id) : null;
+        var def = beat.CardDefId is { } id ? session.Content.Card(id, beat.CardUpgraded) : null;
         int baseDamage = def?.Effects.OfType<DamageEffect>().FirstOrDefault()?.Amount ?? hit.Amount;
         bool boosted = hit.Amount > baseDamage;
         bool focused = beat.Focused;
@@ -642,6 +643,8 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         public Vector2? CardCenter { get; set; }
 
         public string? CardDefId { get; set; }
+
+        public bool CardUpgraded { get; set; }
 
         public bool Focused { get; set; }
 

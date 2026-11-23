@@ -157,11 +157,39 @@ Taken as defaults, not raised by the owner (all numbers are in `Rules` and are p
 - A run starts with 0 salvage. A skirmish pays 20 to 30, a hard fight 40 to 55, and a boss before the last sector 60 to 80. Composting pays 10. Undo takes back composting's salvage with the piece. The salvage is paid when the fight is won, even if the piece is skipped.
 - After a hard fight or a boss, the first of the 3 offered pieces is always rare.
 - Refitting is allowed on the map (the Ship button) and after choosing a fight. Undo is cleared when a node is entered. The cargo limit blocks only the start of a fight.
-- Groves come with the first pull request, with only the repair option (30% of the maximum hull, rounded up, never past the maximum), so a sector of about 7 fights has some healing. The upgrade option joins it with upgrades.
+- Groves come with the first pull request, with only the repair option (30% of the maximum hull, rounded up, never past the maximum), so a sector of about 7 fights has some healing. The upgrade option joins it with upgrades. It did, in the second pull request (below).
 - A boss before the last sector gives a reward with a rare piece, then the next sector's map. A free hull section joins that reward with shipyards. With one sector, beating the boss wins the run.
 - Whether the Fitting screen is open over the map is not saved: a resumed run opens on the map.
 - Enemy icons for the 8 new enemies and the node icons are new art in the Holo Grove style.
 - A simple bot that fights with the starting ship and never takes a piece wins 399 of 400 runs, losing on average 0.4 hull per early fight, 2.4 per late fight and 8 per hard fight. The placeholder enemies are too weak, and need a balance pass once docks and upgrades exist.
+
+## Docks, groves and upgrades decided on 2026-11-22
+
+The second of the sector map's 5 pull requests. The owner had already decided that upgrades are written for each card (see above). The owner merged the first pull request and asked to go ahead with this one.
+
+Taken as defaults, not raised by the owner (all numbers are in `Rules` or `cards.json` and are placeholders):
+- **Upgrades.** As the spec says, each piece can be upgraded once, and the upgrade improves every card the piece adds. A card's upgrade in `cards.json` gives a new cost, a new list of effects that replaces the card's own, or both. Every shipped card has one: an attack or block card gets about 40% more, Patch, Rewire and Sunstrike cost 1 less, Unfurl also draws 1, Chorus and Glide draw 1 more. A piece can be upgraded if at least one of its cards has an upgrade. Fitted and held pieces can both be upgraded.
+- **How upgrades show.** An upgraded piece has "+" after its name everywhere: on the grid, in the cargo hold and in its cards' names ("Lance+"). Where an upgrade is offered, the numbers it changes are green. Bonuses, focus and growth add to the upgraded numbers.
+- **Groves.** Repair (30% of the maximum hull) or upgrade one piece. Each upgradable piece has its own card showing its cards as they would be. Repair starts selected unless the hull is already whole.
+- **Docks.** 3 pieces for sale, rolled by the reward rules (rarity odds, then the ship's tags) when the node is chosen, with no rare guaranteed. Prices are the spec's: 40, 70 or 120 by rarity. The dock buys any piece but the bridge, fitted or held, for half its price, rounded down; an upgraded piece sells for the same. A repair restores 10 hull for 20 salvage. A bought piece goes to the cargo hold, even past its capacity, as a taken reward does. The player leaves when done. At first a dock sold as many repairs as the player could pay for; the owner limited them the next day (below).
+- **Refitting at a dock.** Allowed: the Ship button opens the Fitting screen, whose main button goes back to the dock. There, the selected piece's button sells it instead of composting it. Each trade clears Undo, since undoing a refit step from before a trade would take back the trade's salvage or pieces.
+- **Docks on the map.** Docks now have their weight (10) on the rolled rows, and every map has at least one.
+- **Save.** The save schema goes to 5 (a card in a fight remembers that it is upgraded, and a run remembers the dock it is at), so a run saved by the first pull request is set aside and a new run starts. The limit on repairs (below) takes it to 6.
+- **Balance.** The bot from the first pull request, which now repairs at docks and groves and upgrades a piece when its hull is above 70%, still won 399 of 400 runs, which led to the difficulty pass below.
+
+## Difficulty decided on 2026-11-23
+
+The owner asked to make the game harder: "only allow a variable amount of repairs at docks, and make enemies more difficult and anything else you recommend".
+
+| Topic | Decision |
+| --- | --- |
+| Dock repairs | Each dock has 1 to 3 repairs (`Rules.DockRepairs`), rolled with its pieces when the node is chosen. The dock shows how many are left. Each still restores 10 hull for 20 salvage. |
+| Enemies | Every enemy hits harder: attacks and heavy attacks went up by about half (early enemies by 3 to 6, late by 5 to 6, hard by 5, the boss by 4). Hull went down a little for early, late and hard enemies, and from 140 to 120 for the boss, so fights stay about as long while costing hull. The numbers are in `game/data/README.md`. |
+
+Taken as defaults, not raised by the owner:
+- **Target.** About half of the runs won by a bot that plays sensibly. The game was tuned with two bots that play every card by fixed priorities (repair, free cards, a killing blow, draw, block when hit, focus, damage). The plain bot never takes a piece; it repairs at groves and docks when hurt and otherwise upgrades. The smart bot also takes, buys and fits every piece that fits, and picks hard fights while its hull is above 75%. Over 400 runs each: the plain bot wins 55% and the smart one 44%. A skirmish costs about 2 hull early and 11 later, a hard fight 22. About two thirds of the losses are to the boss, the rest on the way. Before, both bots won 399 of 400 runs.
+- **What is left alone.** The grove's repair (30%), the starting hull (60), salvage and prices. Shipyards, events and the boss's parts will each change the balance, so another pass will follow them.
+- **Why the smart bot wins less.** Hard fights cost about 22 hull, and their rare piece usually has no room on the starting ship, which has 3 free cells. Hard fights should become worth their risk once shipyards add hull to fit pieces on; if not, their reward needs a look.
 
 ## Proposed in the spec, not yet confirmed
 

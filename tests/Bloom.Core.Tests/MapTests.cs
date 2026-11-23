@@ -101,6 +101,17 @@ public class MapGeneratorTests
     }
 
     [Fact]
+    public void EveryMapHasTheRequiredTypesThatHaveAWeight()
+    {
+        var required = Rules.MapRequiredTypes.Where(t => Rules.MapNodeWeights.Any(w => w.Type == t && w.Weight > 0)).ToList();
+        Assert.Contains(NodeType.Dock, required);
+        foreach (var map in ManyMaps())
+        {
+            Assert.All(required, type => Assert.Contains(map.Nodes, n => n.Type == type));
+        }
+    }
+
+    [Fact]
     public void NoRepeatTypesNeverFollowThemselves()
     {
         foreach (var map in ManyMaps())
@@ -126,7 +137,7 @@ public class MapEngineTests
     private readonly MapEngine _map = new(Db);
     private readonly CombatEngine _combat = new(Db);
     private readonly RewardEngine _rewards = new(Db);
-    private readonly GroveEngine _grove = new();
+    private readonly GroveEngine _grove = new(Db);
 
     private static string Json(RunState run) => SaveSerializer.Serialize(run);
 
@@ -167,6 +178,18 @@ public class MapEngineTests
     [InlineData(NodeType.Grove, 3, null)]
     public void EachNodeDrawsFromItsPool(NodeType type, int row, EnemyPool? pool) =>
         Assert.Equal(pool, MapEngine.PoolFor(new MapNode(0, type, row, 0)));
+
+    [Fact]
+    public void EveryTypeTheMapPlacesCanBeEntered()
+    {
+        foreach (var (type, _) in Rules.MapNodeWeights.Where(w => w.Weight > 0))
+        {
+            var run = UseTinyMap(NewRun(), middle: type);
+            run.Path.Add(0);
+            _map.Choose(run, 1);
+            Assert.NotEqual(RunPhase.Map, run.Phase);
+        }
+    }
 
     [Fact]
     public void AnEnemyRepeatsOnlyOnceItsPoolRunsOut()

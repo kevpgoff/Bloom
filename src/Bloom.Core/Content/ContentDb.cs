@@ -22,6 +22,7 @@ public sealed class ContentDb
 {
     private readonly Dictionary<string, PieceDef> _pieces = [];
     private readonly Dictionary<string, CardDef> _cards = [];
+    private readonly Dictionary<string, CardDef> _upgradedCards = [];
     private readonly Dictionary<string, EnemyDef> _enemies = [];
     private readonly Dictionary<string, ShipClassDef> _ships = [];
 
@@ -40,7 +41,10 @@ public sealed class ContentDb
 
         foreach (var c in cards.Where(c => c?.Id is not null))
         {
-            _cards.TryAdd(c.Id, c);
+            if (_cards.TryAdd(c.Id, c))
+            {
+                _upgradedCards.Add(c.Id, c.Upgraded());
+            }
         }
 
         foreach (var e in enemies.Where(e => e?.Id is not null))
@@ -82,6 +86,12 @@ public sealed class ContentDb
     public PieceDef Piece(string id) => _pieces.TryGetValue(id, out var def) ? def : throw Unknown("piece", id);
 
     public CardDef Card(string id) => _cards.TryGetValue(id, out var def) ? def : throw Unknown("card", id);
+
+    /// <summary>A card as it plays: its upgrade applied when <paramref name="upgraded"/> (see <see cref="CardDef.Upgraded"/>).</summary>
+    public CardDef Card(string id, bool upgraded) =>
+        upgraded ? _upgradedCards.TryGetValue(id, out var def) ? def : throw Unknown("card", id) : Card(id);
+
+    public CardDef Card(CardInstance card) => Card(card.CardId, card.Upgraded);
 
     public EnemyDef Enemy(string id) => _enemies.TryGetValue(id, out var def) ? def : throw Unknown("enemy", id);
 

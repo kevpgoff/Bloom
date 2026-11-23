@@ -68,13 +68,15 @@ A run is one sector: a branching map of about 20 nodes in 7 rows, ending in a bo
 | Card effects `repair`, `focus` and `grow`, and adjacency bonuses (`damageBonus`, `startGrown`) in combat | Done, tested; rulings in `docs/decisions.md` |
 | Rewards (1 of 3 pieces) and refitting (move, turn, fit, unfit, compost, undo) between fights | Done, tested; rulings in `docs/decisions.md` |
 | Sector map: generation, choosing nodes, skirmishes, hard fights, the boss, groves (repair), salvage from fights and composting | Done, tested; rulings in `docs/decisions.md`. One sector per run (`Rules.SectorsPerRun`) |
-| Docks and piece upgrades, then shipyards, events and the boss's parts | Next, one pull request each, in that order |
+| Docks (buy, sell, repair) and piece upgrades at groves, with an upgrade written for every card | Done, tested; rulings in `docs/decisions.md` |
+| Shipyards, events and the boss's parts | Next, one pull request each, in that order |
 | Renown, unlocks, logbook | Not started |
 | Art | Option A, "Holo Grove" (see `docs/decisions.md` and `game/art/README.md`). Done: palette, Saira font, ship drawing, icons, card, panel and button frames, backdrop, and the enemy shown large in a target-lock reticle |
 | Combat screen | Done: enemy and intent, ship grid, hand, End Turn, defeat or voyage complete and New Run |
 | Reward screen | Done: 3 offered pieces with their shapes and cards, Take and Skip |
-| Fitting screen | Done: drag and drop with the piece floating above the finger, fit and bonus preview, tap to select and tap again to turn, cargo hold, Compost (for salvage), Undo. Opened from the map it goes back to the map; after choosing a fight it names the enemy, marks its heavy lanes and starts the fight |
+| Fitting screen | Done: drag and drop with the piece floating above the finger, fit and bonus preview, tap to select and tap again to turn, cargo hold, Compost (for salvage), Undo. Opened from the map or a dock it goes back there; after choosing a fight it names the enemy, marks its heavy lanes and starts the fight. Upgraded pieces have "+" after their names |
 | Combat feedback | Done: particles, screen shake and haptics for every card effect, enemy action and the end of a fight (`game/scripts/Feedback/`). Shake strength and haptics are set in `user://settings.cfg`; there is no settings screen yet. Timings are placeholders in `CombatFeedback.Tuning` |
 | Map screen | Done: the whole sector, with the path taken lit and the reachable nodes pulsing; tap a reachable node, then Set course (which names it) to go there, and Ship to refit. Node icons are in `art/icons/nodes/` |
-| Grove screen | Done: repair the hull (upgrades come later) |
+| Grove screen | Done: repair the hull, or upgrade one piece, with its cards shown as they would be |
+| Dock screen | Done: 3 pieces for sale, hull repair, and the cargo hold's pieces to sell. Ship opens the Fitting screen, where the selected piece can be sold too |
 | Mobile export presets | Android: a debug preset (arm64, `VIBRATE` only, `data/*.json` included) and `tools/android-debug.sh`; see [Android debug build](#android-debug-build). Tested on a Pixel phone with Android 16 on 2026-11-22: the game runs at 60 fps, saves and resumes, haptics work, and the back gesture quits with the run saved. The layout keeps clear of the camera cutout and the rounded corners (`Platform/ScreenInsets.cs`). The C# is compiled ahead of time: a cold start reaches the fight in about 0.8 s, down from 1.25 s with Mono. The app icon is a placeholder (`art/app_icon/`). iOS is not set up. |

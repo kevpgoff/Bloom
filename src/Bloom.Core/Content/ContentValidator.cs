@@ -170,10 +170,38 @@ internal static class ContentValidator
         if (card.Effects is null || card.Effects.Count == 0)
         {
             errors.Add($"{where}: needs at least one effect.");
-            return;
+        }
+        else
+        {
+            ValidateCardEffects(where, card.Effects, errors);
         }
 
-        foreach (var effect in card.Effects)
+        if (card.Upgrade is { } upgrade)
+        {
+            if (upgrade.Cost is null && upgrade.Effects is null)
+            {
+                errors.Add($"{where}: the upgrade must give a cost, effects or both.");
+            }
+
+            if (upgrade.Cost < 0)
+            {
+                errors.Add($"{where}: the upgraded cost cannot be negative.");
+            }
+
+            if (upgrade.Effects is { Count: 0 })
+            {
+                errors.Add($"{where}: the upgrade's effects cannot be empty; leave them out to keep the card's own.");
+            }
+            else if (upgrade.Effects is { } effects)
+            {
+                ValidateCardEffects($"{where} (upgraded)", effects, errors);
+            }
+        }
+    }
+
+    private static void ValidateCardEffects(string where, IReadOnlyList<Effect> effects, List<string> errors)
+    {
+        foreach (var effect in effects)
         {
             if (effect is null)
             {

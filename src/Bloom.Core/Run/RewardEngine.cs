@@ -31,11 +31,6 @@ public sealed class RewardEngine(ContentDb content)
     /// </summary>
     public RewardOffer Roll(RunState run, EnemyPool pool = EnemyPool.Early)
     {
-        var shipTags = run.Ship.Fitted
-            .SelectMany(f => content.Piece(f.Piece.DefId).Tags)
-            .ToHashSet();
-        int Weight(PieceDef def) => Affinity(def).Any(shipTags.Contains) ? Rules.RewardTagWeight : 1;
-
         var (min, max) = pool switch
         {
             EnemyPool.Hard => Rules.HardFightSalvage,
@@ -44,10 +39,23 @@ public sealed class RewardEngine(ContentDb content)
         };
         int salvage = run.Rng.Next(min, max + 1);
         bool rareFirst = pool is EnemyPool.Hard or EnemyPool.Boss;
+        return new RewardOffer(RollPieces(run, Rules.RewardChoices, rareFirst), salvage);
+    }
+
+    /// <summary>
+    /// Rolls up to <paramref name="count"/> different pieces by the reward rules (rarity odds, then the
+    /// ship's tags), as def ids. Docks roll their wares with it too.
+    /// </summary>
+    public List<string> RollPieces(RunState run, int count, bool rareFirst = false)
+    {
+        var shipTags = run.Ship.Fitted
+            .SelectMany(f => content.Piece(f.Piece.DefId).Tags)
+            .ToHashSet();
+        int Weight(PieceDef def) => Affinity(def).Any(shipTags.Contains) ? Rules.RewardTagWeight : 1;
 
         var remaining = content.Pieces.Where(p => !p.IsBridge).ToList();
         var offered = new List<string>();
-        while (offered.Count < Rules.RewardChoices && remaining.Count > 0)
+        while (offered.Count < count && remaining.Count > 0)
         {
             var rarity = rareFirst && offered.Count == 0 ? Rarity.Rare : RollRarity(run);
             var candidates = remaining.Where(p => p.Rarity == rarity).ToList();
@@ -61,7 +69,7 @@ public sealed class RewardEngine(ContentDb content)
             remaining.Remove(pick);
         }
 
-        return new RewardOffer(offered, salvage);
+        return offered;
     }
 
     /// <summary>Takes the offered piece at <paramref name="index"/> into the cargo hold.</summary>

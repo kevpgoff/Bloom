@@ -8,7 +8,7 @@ namespace Bloom.Game.Screens;
 
 /// <summary>
 /// The shell that hosts one screen at a time: the one for the run's phase, or the Fitting screen when the
-/// player opens the ship from the map (<see cref="GameRoot.ShipOpen"/>). Screens only draw state and
+/// player opens the ship from the map or a dock (<see cref="GameRoot.ShipOpen"/>). Screens only draw state and
 /// forward input; game rules belong in Bloom.Core. After a won fight the combat screen stays up a moment
 /// (<see cref="CombatScreen.TakeExitHold"/>), so the last hit can play before the Reward screen.
 /// </summary>
@@ -19,6 +19,7 @@ public partial class MainScreen : Control
     private const string FittingScene = "res://scenes/Fitting.tscn";
     private const string MapScene = "res://scenes/Map.tscn";
     private const string GroveScene = "res://scenes/Grove.tscn";
+    private const string DockScene = "res://scenes/Dock.tscn";
 
     /// <summary>The layout's margin from the edges of a desktop window, as in Main.tscn.</summary>
     private const float EdgeMargin = 16f;
@@ -75,6 +76,7 @@ public partial class MainScreen : Control
         RunPhase.Prepare => FittingScene,
         RunPhase.Reward => RewardScene,
         RunPhase.Grove => GroveScene,
+        RunPhase.Dock => GameRoot.Instance.ShipOpen ? FittingScene : DockScene,
         _ => CombatScene, // the fight, and its end: defeat or the voyage complete
     };
 
