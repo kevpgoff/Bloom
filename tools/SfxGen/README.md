@@ -1,6 +1,6 @@
 # SfxGen: the game's sound effects
 
-Every sound effect in the game is made here, from a recipe. A recipe is a small JSON file in `recipes/` that describes a sound as a few synth layers. This tool renders each recipe to a WAV file in `game/audio/sfx/`, which the game plays. The recipes and the rendered files are both kept in the repo, because both are ours.
+Every sound effect in the game is made here, from a recipe. A recipe is a small JSON file in `recipes/` that describes a sound as a few synth layers. This tool renders each recipe to a WAV file in `game/audio/sfx/`, which the game plays. The recipes and the rendered files are both kept in the repo, because both are ours. A ship class can have its own version of some sounds; those recipes are in `sets/` (see [Ships' sets](#ships-sets)).
 
 Nobody tuning a recipe has to hear it to know that it is safe to ship: the tool measures each sound and checks it. Whether a sound is *good* is decided by ear, on the sound board.
 
@@ -13,11 +13,11 @@ tools/sfx.sh render             # write every sound into game/audio/sfx and prin
 tools/sfx.sh render card-play   # only the named sounds
 tools/sfx.sh stats [id...]      # print the numbers without writing anything; --spectra also draws build/sfx/spectra/<name>.png
 tools/sfx.sh play card-play     # render one sound into build/sfx/preview and play it; --ab plays the saved file first, --times 3 repeats
-tools/sfx.sh check              # every check on every recipe and take, and on the files in game/audio/sfx
-tools/sfx.sh board              # write build/sfx/board.html, one page with every sound and take to listen to
+tools/sfx.sh check              # every check on every recipe, set and take, and on the files in game/audio/sfx
+tools/sfx.sh board              # write build/sfx/board.html, one page with every sound, set and take to listen to
 ```
 
-`stats` and `play` also take the sounds of a take (see [Takes](#takes)): `tools/sfx.sh stats heliotrope/card-play`, or `heliotrope/` for all of them. `render` refuses them, because a take never goes into the game.
+With no name, `render` and `stats` cover the base sounds and every ship's set. A sound of a set is named `set/id`: `tools/sfx.sh render heliotrope/card-play`, or `heliotrope/` for the whole set. `stats` and `play` take the sounds of a take in the same way (see [Takes](#takes)): `tools/sfx.sh stats fairy-ring/card-play`. `render` refuses a take, because a take never goes into the game.
 
 After `render` adds a new file, let Godot import it once: `godot --headless --path game --import`. That writes the `.wav.import` file that is committed beside the sound. `dotnet test` runs the same checks as `check`, so CI fails when a recipe breaks a rule or a rendered file no longer matches its recipe.
 
@@ -208,34 +208,53 @@ The owner listens and says what is wrong in plain words. This table turns the us
 
 A take is a trial version of some sounds in one character, for the owner to compare with the game's own sounds before anything changes. Each take is a folder in `takes/` that holds an `about.json` (`{ "title", "description" }`) and recipes named like the game's. A take may also hold sounds that the game does not have yet.
 
-Takes never go into the game and have no rendered files, but they must pass the same checks as the recipes (`dotnet test` runs them). When the owner chooses a take, or a sound from one, move its recipe into `recipes/`, render it, and delete what was not chosen.
+Takes never go into the game and have no rendered files, but they must pass the same checks as the recipes (`dotnet test` runs them). When the owner chooses a take, or a sound from one, move its recipe into `recipes/` or into a ship's set, render it, and delete what was not chosen.
 
 ## Ships' sets
 
-Each ship class is to get a set of sounds in the character of what it is grown from. The recipes in `recipes/` are the Seedling's set, in the character called Wood and water, and they are also the base set: a ship uses them for every sound that is not its own. Only a ship's own sounds change with the ship:
+Each ship class gets a set of sounds in the character of what it is grown from. The recipes in `recipes/` are the Seedling's set, in the character called Wood and water, and they are also the base set: a ship uses them for every sound that is not its own.
+
+Another ship's set is a folder in `sets/`, built like a take: an `about.json` (`{ "title", "description" }`) and recipes named like the base ones. `render` writes its sounds into a folder of the same name in `game/audio/sfx/`. A ship class plays a set when its `soundSet` in `game/data/ships.json` names it:
+
+```json
+{ "id": "heliotrope", "soundSet": "heliotrope" }
+```
+
+In the game, a sound comes from the ship's set if the set has it, and from the base set otherwise. So a set can be built a few sounds at a time, and a ship class with no `soundSet` plays the base set alone.
+
+Only a ship's own sounds change with the ship, so only these may be in a set:
 
 - the card plays (`card-play` and one per piece tag) and `card-draw`;
 - its hits on the enemy (`hit-light`, `hit-medium`, `hit-heavy`, `hit-blocked`, `focus-spend`);
 - what it gains (`block-gain`, `energy-gain`, `focus-gain`, `grow`, `repair`);
 - the hits it takes (`ship-hit`, `ship-hit-heavy`, `ship-blocked`, `piece-offline`).
 
-The turns, the enemy's sounds, the end of a fight and every other screen stay shared. A ship's version of a sound keeps the base version's `family`, `level` and rough length, so that a fight reads the same on any ship.
+The turns, the enemy's sounds, the end of a fight and every other screen stay shared. The list is `SoundSets.ShipSounds` in `Sets.cs`.
 
-The other ships' sets start as takes: `takes/heliotrope/` (warm circuits) and `takes/fairy-ring/` (the living ship). The game cannot play them yet; that waits until a second ship class is in `game/data/ships.json`.
+A set's sound must keep the base sound's `family` and `level`, so that a fight reads the same on any ship; the check fails otherwise. It should also keep the base sound's rough length: the check warns when a sound is under half or over one and a half times as long. The check also warns about a set that lacks some of the sounds above, and fails when a ship class names a set that has no folder here.
+
+The sets so far:
+
+| Set | Ship class | Character | Sounds |
+| --- | --- | --- | --- |
+| `recipes/` (the base set) | Seedling | Wood and water: things grown and made by hand | All 31 |
+| `sets/heliotrope/` | Heliotrope | Warm circuits: an old analog synthesizer in a greenhouse, with resonant filters and a tape echo | All 22 of a ship's own |
+
+The Fairy Ring's set starts as a take, `takes/fairy-ring/` (the living ship). The Comb has none yet. `takes/heliotrope-fight-won/` is the Heliotrope's version of the end of a won fight, left from its first eight sounds; it stays a take while every ship shares the end of a fight.
 
 ## The sound board
 
-`tools/sfx.sh board` writes `build/sfx/board.html`: one page that holds every sound, with a play button for each, a button that plays it five times as the game would vary it, an OK mark and a note. When there are takes, each sound lists the game's version ("Now") and each take's version, and the top of the page lists the takes, each with a button that plays a short fight in that take and a note on the whole take. "Copy notes" collects the marks as text. The page is `board.template.html` with the sounds filled in, and it follows the rules for a Claude artifact, so it can be published as a private page and opened on the phone. Only our own sounds go on it, never the music.
+`tools/sfx.sh board` writes `build/sfx/board.html`: one page that holds every sound, with a play button for each, a button that plays it five times as the game would vary it, an OK mark and a note. Each sound lists the base version, each other set's version and each take's version. The top of the page lists the sets and the takes, and says which are in the game. Each has a note on the whole of it and a button that plays a short fight in it; for a ship's set, that fight takes the shared sounds from the base set, as the game does. "Copy notes" collects the marks as text. The page is `board.template.html` with the sounds filled in, and it follows the rules for a Claude artifact, so it can be published as a private page and opened on the phone. Only our own sounds go on it, never the music.
 
 ## Adding a sound
 
-1. Write `recipes/<id>.json`, then run `tools/sfx.sh render <id>` and read its line.
+1. Write `recipes/<id>.json`, then run `tools/sfx.sh render <id>` and read its line. For a ship's version of a sound that exists, write `sets/<set>/<id>.json` and run `tools/sfx.sh render <set>/<id>`; steps 3 to 5 are then already done.
 2. Run `godot --headless --path game --import`, then `tools/sfx.sh check`.
 3. Add a member to `SfxCue` in `game/scripts/Audio/SfxCue.cs`. `CardPlayWeapon` is the cue for `card-play-weapon`.
 4. Call `Sfx.Play(SfxCue.…)` where the sound should start, beside the visual effect of the same moment.
 5. If the cue needs its own volume or pitch range, give it a line in `SfxPlayer.Tuning`.
 
-At startup the game logs how many cues it loaded and which cues have no file. `godot --path game -- --fx-demo` plays a fight by itself and logs every cue as it is triggered.
+At startup the game logs how many cues it loaded, which cues have no file, and how many cues each set has. `godot --path game -- --fx-demo` plays a fight by itself and logs every cue as it is triggered. Add `--ship=heliotrope` to play it with that ship: a cue that comes from the ship's set is then logged with the set's name, as `heliotrope/card-play`.
 
 ## How it works
 
@@ -244,6 +263,7 @@ At startup the game logs how many cues it loaded and which cues have no file. `g
 - `Sources.cs`: the voices (plain oscillators, band-limited with polyBLEP; struck objects, as one decaying sine per mode; the plucked string), the materials' modes, the ladder filter, the resonators of a body, the vowel filter and the random drift.
 - `Dsp.cs`: the envelope curve, the filter (a state-variable filter that stays stable while its cutoff sweeps), the echo, the reverb (eight delay lines feeding each other, whose lengths wobble slightly so the tail does not ring) and the rate halving.
 - `Takes.cs`: the takes.
+- `Sets.cs`: the ships' sets, and the list of the sounds that may change with the ship.
 - `RenderCache.cs`: renders each variant of a recipe once per run, so the checks, the check of the saved files and the board share one render.
 - `Analysis.cs`: the loudness measure and the numbers in the table above.
 - `Checks.cs`: the rules, with their limits.

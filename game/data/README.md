@@ -9,7 +9,7 @@ All numbers are placeholders for testing, as the design spec says. Entries marke
 | `pieces.json` | Equipment and crew: shape, tags, the cards they add, an optional adjacency bonus |
 | `cards.json` | Cards: cost, effects and an `upgrade` |
 | `enemies.json` | Enemies: hull points, a repeating pattern of intents, a `pool` and a `sector`, and for a boss its `parts`. The pool says which fights of the sector map draw the enemy (see below). |
-| `ships.json` | Ship classes: starting hull, hull points, starting pieces |
+| `ships.json` | Ship classes: starting hull, hull points, starting pieces, an optional special `rule` and an optional `soundSet` |
 | `sections.json` | Hull sections that shipyards offer: a name and a shape |
 | `events.json` | Events: a story, 2 to 4 choices, and what each choice can come to |
 
@@ -19,6 +19,8 @@ All numbers are placeholders for testing, as the design spec says. Entries marke
 - **Positions** are absolute grid cells `{ "x": column, "y": row }` in the 6×8 grid. Row 0 is the front, which faces the enemy. A position is the top-left corner of the rotated shape.
 - **Lanes** are grid columns, counted from 0 on the left (the game shows them as L1 to L6). A heavy attack aimed at a lane the hull doesn't reach hits the nearest lane it does reach, so on the seedling an attack on lane 0 hits lane 1 until a hull section grows into lane 0.
 - **Effects** are objects whose first property must be `"type"` (a .NET 8 rule): `{ "type": "damage", "amount": 5 }`. Card effects are `damage`, `block`, `gainEnergy`, `draw`, `repair`, `focus` and `grow`. Bonus-only effects are `damageBonus` and `startGrown`.
+- **Ship rules** (`"rule"` on a ship class in `ships.json`) are optional objects whose first property must be `"type"`, as for effects and event outcomes. The only rule built so far is `{ "type": "keepEnergy" }`, which keeps unspent energy for the next turn. Leaving `"rule"` out gives the default rules.
+- **Sound sets** (`"soundSet"` on a ship class in `ships.json`) are optional. The value is the name of a folder in `tools/SfxGen/sets/` and in `game/audio/sfx/`, in lowercase words joined by hyphens, that holds the ship's own version of some sound effects. The rules never read it. A ship class without one plays the base set, which is the Seedling's. `dotnet test` fails when a ship names a set that has no folder. See "Ships' sets" in `tools/SfxGen/README.md`.
 - **Upgrades.** A card's `"upgrade"` is what it becomes when its piece is upgraded: `{ "cost": 0 }`, `{ "effects": [...] }` or both. Upgraded effects replace the card's own list, so write all of them. Every shipped card has an upgrade, and a test checks it. An upgraded card is named with "+" after it.
 - **Hull sections** cover 3 to 5 cells joined by edges, and there must be at least 3 of them, since a shipyard offers 3 (hard fights and bosses offer 3 more after their reward). A section adds cells to the hull, not hull points. It turns like a piece when attached.
 - **Events.** An event has an `id`, a `name`, its `text` and 2 to 4 `choices`. A choice has a `label`, an optional `cost` in salvage and an optional `needsTag` (one of the tags), and 1 or more `results`. One result is picked by `weight` (default 1), so a single result is certain. A result has its `text` and a list of `outcomes`, each an object whose first property is `"type"`:
@@ -52,6 +54,24 @@ The owner chose on 2026-11-21 to fit all of the spec's pieces, so that focus, gr
 
 The hull covers x 1–5 and y 1–5. That is 25 cells, 3 of them free. The starting deck has 2 + 1 + 1 + 2 + 2 + 1 + 1 + 4 = 14 cards. The first enemy's heavy attack hits lane 2, so it disables the Hull Plating first, then the Lance, then the Moss Reactor.
 
+## The placeholder second ship (`heliotrope`)
+
+The Sunwrights ship class: a wide, shallow 6×3 hull (`hullOrigin` `{ "x": 0, "y": 2 }`, leaving 2 rows free in front and 3 behind) with `{ "type": "keepEnergy" }` so unspent energy stays for the next turn. Its `soundSet` is `heliotrope`. Its two placeholder pieces (`sun_shutter` and `burning_glass`) keep its non-Core tags strictly `Solar` and `Weapon`; splitting its heavy attack across two `Burning Glass` pieces in opposite lanes lets the ship keep fighting after losing any one piece while leaving all three front pieces exposed.
+
+```
+        x: 0 1 2 3 4 5
+   y0      . . . . . .
+   y1      . . . . . .
+   y2      W S S S V V     W  Burning Glass #1 (R90, front row, lane 0)
+   y3      W G S . B B     S  Sun Sail (front row, lanes 1–3)
+   y4      . G H H H H     V  Burning Glass #2 (front row, lanes 4–5)
+   y5      . . . . . .     G  Lens Grinder (R90): +2 damage to Burning Glass #1
+   y6      . . . . . .     B  Bridge
+   y7      . . . . . .     H  Sun Shutter (placeholder Solar piece, 4 wide)
+```
+
+The hull covers x 0–5 and y 2–4: 18 cells, 16 used and 2 free. The starting deck has 1 + 1 + 1 + 1 + 4 + 3 = 11 cards. Every lane is covered, so heavy attacks aimed at lane 0 hit lane 0 directly (`Burning Glass #1`); `Sun Sail` sits frontmost in lanes 1–3 and `Burning Glass #2` in lanes 4–5.
+
 ## Placeholder upgrades
 
 Added with docks and groves on 2026-11-22. All of them are placeholders.
@@ -75,6 +95,8 @@ Added with docks and groves on 2026-11-22. All of them are placeholders.
 | Tend | 1: block 3, grows +2 | block 5, grows +3 |
 | Rewire | 1: repair 1, draw 1 | costs 0 |
 | Hymn | 1: next attack +6 | next attack +9 |
+| Shutter | 1: block 7 | block 10 |
+| Sear | 3: deal 14 | deal 20 |
 
 ## Placeholder hull sections
 
@@ -107,6 +129,8 @@ The owner approved these on 2026-11-21 so that rewards and refitting can be trie
 | Orchard Keeper | Crew, Common | `#` | 1 Tend (1: block 3, grows +2) | adjacent Garden pieces start grown once |
 | Drone Wrangler | Crew, Uncommon | `##` | 1 Rewire (1: repair 1, draw 1) | adjacent Drone pieces deal 2 more damage |
 | Choir Elder | Crew, Rare | `###` | 1 Hymn (1: next attack +6) | adjacent Weapon pieces deal 3 more damage |
+| Sun Shutter | Equipment, Solar, Common | `####` | 3 Shutter (1: block 7) | none |
+| Burning Glass | Equipment, Weapon, Common | `##` | 1 Sear (3: deal 14) | none |
 
 The enemies of sector 1, by pool. Lanes are 0-based; the seedling's hull covers lanes 1–5, so an attack on lane 0 hits lane 1 until a section opens lane 0. The three attacks on lane 0 aimed at lane 1 until the owner asked, on 2026-11-23, for the leftmost lane to be attacked once it exists. The first four were the old placeholder run of four fights; the rest were added with the sector map on 2026-11-22. On 2026-11-23 the owner asked for a harder game, and every enemy now hits about half again as hard (see `docs/decisions.md`, "Difficulty"). The boss got its parts on 2026-11-23; each part is listed under it.
 
