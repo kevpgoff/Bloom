@@ -82,6 +82,26 @@ Taken as defaults, not raised by the owner:
 - The shake moves the screen's content, not the backdrop. Strength 1 moves it at most 14 px.
 - All timings and strengths are placeholders, in `CombatFeedback.Tuning` and the code next to it.
 
+## Android debug build decided on 2026-11-22
+
+The owner decided these while setting up the first Android build, a debug build installed on their phone over USB.
+
+| Topic | Decision |
+| --- | --- |
+| Merged branches | The branches of merged pull requests are deleted, and GitHub now deletes a pull request's branch when it is merged. |
+| .NET SDK | The repo moves to the .NET 10 SDK, which is supported until November 2028. Godot 4.7 exports C# to Android only with .NET 9 or later, and .NET 8 and 9 went out of support on 2026-11-10. `Bloom.Core` and the game still target .NET 8, Godot's minimum. The tests target .NET 10. Android builds of the game target .NET 9, as Godot's own project template does. |
+| SDK install | On the owner's machine, the .NET 10 SDK comes from Ubuntu's apt package, beside SDK 8, so the terminal and the Godot editor find it without changes to PATH. |
+| JDK | The installed OpenJDK 25, rather than the JDK 17 that Godot recommends. It works because the build doesn't use Gradle. |
+
+Taken as defaults, not raised by the owner:
+- The package id is `com.kevpgoff.bloom` and the app name is Bloom. Changing the id later makes a new app on the phone, which loses its save.
+- arm64 only, and no Gradle build, so nothing in `game/android/` is committed.
+- Debug builds are signed with the Godot editor's debug keystore, which stays outside the repo.
+- The only permission is `VIBRATE`. There is no `INTERNET` permission, since the game plays offline.
+- The game runs full screen (Godot's immersive mode). Min SDK 24 and target SDK 36 are the template's defaults.
+- `rendering/textures/vram_compression/import_etc2_astc` is on, because Godot won't export to Android without it. Every texture is imported lossless, so nothing looks different.
+- The preset is named `Android`, and the APK goes to `build/android/bloom-debug.apk`, which is ignored.
+
 ## Proposed in the spec, not yet confirmed
 
 - Three sectors for each run, about 8 nodes and 25 minutes for each sector.
