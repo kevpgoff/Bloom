@@ -42,7 +42,6 @@ public partial class RewardScreen : Control
 
         if (offer.Pieces.Count == 0)
         {
-            GetNode<Label>("%Prompt").Text = "There are no pieces to offer this time.";
             GetNode<Button>("%SkipButton").Text = "Continue";
         }
 

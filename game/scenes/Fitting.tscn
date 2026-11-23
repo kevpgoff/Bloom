@@ -89,15 +89,6 @@ size_flags_vertical = 4
 theme_override_font_sizes/font_size = 26
 text = "Compost"
 
-[node name="FightHint" type="Label" parent="Layout"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.718, 0.302, 1)
-theme_override_font_sizes/font_size = 22
-horizontal_alignment = 1
-autowrap_mode = 3
-
 [node name="Buttons" type="HBoxContainer" parent="Layout"]
 layout_mode = 2
 theme_override_constants/separation = 12

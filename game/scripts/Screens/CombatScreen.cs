@@ -296,12 +296,11 @@ public partial class CombatScreen : Control
         var intent = session.Combat.CurrentIntent(combat);
         var (text, color) = intent.Kind switch
         {
-            IntentKind.Attack => ($"Next: attack for {intent.Amount}", Palette.Attack),
-            IntentKind.HeavyAttack => ($"Next: heavy attack for {intent.Amount} on the marked lane. " +
-                                       (session.Combat.HeavyAttackTarget(run) is { } target
-                                           ? $"Disables {session.Content.Piece(target.Piece.DefId).Name} if any damage gets past block."
-                                           : "The lane is empty."), Palette.Heavy),
-            IntentKind.Block => ($"Next: block {intent.Amount}", Palette.Block),
+            IntentKind.Attack => ($"Attack {intent.Amount}", Palette.Attack),
+            IntentKind.HeavyAttack => (session.Combat.HeavyAttackTarget(run) is { } target
+                ? $"Heavy attack {intent.Amount}  ·  {session.Content.Piece(target.Piece.DefId).Name}"
+                : $"Heavy attack {intent.Amount}", Palette.Heavy),
+            IntentKind.Block => ($"Block {intent.Amount}", Palette.Block),
             _ => (intent.Kind.ToString(), Colors.White),
         };
         _intentIcon.Texture = ArtLibrary.IntentIcon(intent.Kind);
@@ -328,7 +327,7 @@ public partial class CombatScreen : Control
 
         if (combat.PendingFocus > 0)
         {
-            parts.Add($"Focus +{combat.PendingFocus} on next attack");
+            parts.Add($"Focus +{combat.PendingFocus}");
         }
 
         _piles.Text = string.Join("  ·  ", parts);
@@ -700,7 +699,7 @@ public partial class CombatScreen : Control
         if (targeting)
         {
             int left = _targetsNeeded - _chosenTargets.Count;
-            _targetLabel.Text = left == 1 ? "Tap a disabled piece to repair it." : $"Tap {left} more disabled pieces to repair.";
+            _targetLabel.Text = left == 1 ? "Repair 1 piece" : $"Repair {left} pieces";
         }
 
         _grid.SetState(Session!, targeting ? combat!.DisabledPieceIds.ToList() : [], _chosenTargets.ToList());

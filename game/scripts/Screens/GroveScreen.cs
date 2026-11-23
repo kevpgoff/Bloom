@@ -1,4 +1,3 @@
-using Bloom.Core;
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
 using Bloom.Game.Visuals;
@@ -36,10 +35,8 @@ public partial class GroveScreen : Control
 
         int repair = GroveEngine.RepairAmount(run);
         AddOption(
-            "Repair the hull",
-            repair > 0
-                ? $"Mend {repair} hull ({Rules.GroveRepairPercent}% of the maximum): {run.Hull} → {run.Hull + repair}."
-                : "The hull is already whole, so this changes nothing.",
+            "Repair hull",
+            repair > 0 ? $"+{repair} hull  ·  {run.Hull} → {run.Hull + repair}" : "The hull is already whole.",
             s => s.Grove.Repair(s.State));
 
         _selected = 0;

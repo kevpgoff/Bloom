@@ -240,9 +240,7 @@ public partial class FittingBoard : Control
         }
 
         var pieces = run.Cargo.Pieces;
-        string header = run.Cargo.Excess > 0
-            ? $"Cargo hold {pieces.Count} / {Rules.CargoCapacity}: fit or compost {run.Cargo.Excess}"
-            : $"Cargo hold {pieces.Count} / {Rules.CargoCapacity}";
+        string header = $"Cargo hold {pieces.Count} / {Rules.CargoCapacity}";
         DrawString(font, area.Position + new Vector2(10, 26), header, HorizontalAlignment.Left, area.Size.X - 20, 22,
             run.Cargo.Excess > 0 ? Palette.Heavy : Palette.Muted);
 

@@ -22,7 +22,6 @@ public partial class FittingScreen : Control
     private FittingBoard _board = null!;
     private RichTextLabel _info = null!;
     private Button _compost = null!;
-    private Label _fightHint = null!;
     private Button _undo = null!;
     private Button _fight = null!;
 
@@ -35,7 +34,6 @@ public partial class FittingScreen : Control
         _board = GetNode<FittingBoard>("%Board");
         _info = GetNode<RichTextLabel>("%InfoText");
         _compost = GetNode<Button>("%CompostButton");
-        _fightHint = GetNode<Label>("%FightHint");
         _undo = GetNode<Button>("%UndoButton");
         _fight = GetNode<Button>("%FightButton");
         BloomTheme.AttachPanelFrame(GetNode<Control>("Layout/InfoPanel"));
@@ -69,27 +67,21 @@ public partial class FittingScreen : Control
         _status.Text = $"Hull {run.Hull} / {run.MaxHull}  ·  Salvage {run.Salvage}  ·  Deck {deck}";
 
         var enemy = session.Refit.NextEnemy(run);
-        _next.Text = enemy is null
-            ? "Refit the ship here, then choose the next node on the map."
-            : $"Next: {enemy.Name}{PoolNote(enemy.Pool)}, hull {enemy.Hull}. Its heavy attacks hit the marked lanes.";
+        _next.Visible = enemy is not null;
+        _next.Text = enemy is null ? "" : $"Next: {enemy.Name}{PoolNote(enemy.Pool)}  ·  Hull {enemy.Hull}";
 
         _undo.Disabled = !session.Refit.CanUndo(run);
         bool prepare = run.Phase == RunPhase.Prepare;
         _fight.Text = prepare ? "Start fight" : "Back to map";
         _fight.Disabled = prepare && !session.Refit.CanStartFight(run);
-        int excess = session.Refit.CargoExcess(run);
-        _fightHint.Visible = excess > 0;
-        _fightHint.Text = excess == 1
-            ? $"The cargo hold holds {Rules.CargoCapacity}. Fit or compost 1 piece before the next fight."
-            : $"The cargo hold holds {Rules.CargoCapacity}. Fit or compost {excess} pieces before the next fight.";
 
         ShowInfo(session, run);
     }
 
     private static string PoolNote(EnemyPool? pool) => pool switch
     {
-        EnemyPool.Hard => " (hard fight)",
-        EnemyPool.Boss => " (the sector's boss)",
+        EnemyPool.Hard => "  ·  Hard fight",
+        EnemyPool.Boss => "  ·  Boss",
         _ => "",
     };
 
@@ -117,17 +109,9 @@ public partial class FittingScreen : Control
             return;
         }
 
-        if (selected is int id && PieceDef(session, run, id) is { } def)
-        {
-            string hint = held
-                ? "Drag it onto the ship to fit it. Tap it again to turn it."
-                : "Drag it to move it, or onto the cargo hold to unfit it. Tap it again to turn it.";
-            _info.Text = $"{CardText.PieceDetails(def, session.Content)}\n[color=#{Palette.Muted.ToHtml(false)}]{hint}[/color]";
-            return;
-        }
-
-        _info.Text = "Tap a piece to see its cards. Drag a piece to move it; the ship's pieces are its deck.\n" +
-                     $"[color=#{Palette.Muted.ToHtml(false)}]Lanes are columns: a heavy attack disables the frontmost piece in its lane.[/color]";
+        _info.Text = selected is int id && PieceDef(session, run, id) is { } def
+            ? CardText.PieceDetails(def, session.Content)
+            : "";
     }
 
     private static string DragText(RunSession session, RunState run, DragInfo drag)
@@ -135,14 +119,9 @@ public partial class FittingScreen : Control
         var def = PieceDef(session, run, drag.PieceId)!;
         if (drag.OverCargo)
         {
-            if (drag.FromCargo)
-            {
-                return $"[b]{def.Name}[/b]\nDrop it on the ship to fit it.";
-            }
-
-            return session.Fitter.CanRemove(run.Ship, drag.PieceId)
-                ? $"[b]{def.Name}[/b]\nDrop it here to move it to the cargo hold. Its cards leave the deck."
-                : $"[b]{def.Name}[/b]\nThe bridge can be moved but never removed.";
+            return drag.FromCargo || session.Fitter.CanRemove(run.Ship, drag.PieceId)
+                ? $"[b]{def.Name}[/b]"
+                : $"[b]{def.Name}[/b]\n[color=#{Palette.Refused.ToHtml(false)}]The bridge stays on the ship.[/color]";
         }
 
         if (drag.Preview is not { } preview)
@@ -154,22 +133,22 @@ public partial class FittingScreen : Control
         {
             string why = preview.Error switch
             {
-                FitError.OutOfBounds => "it would stick out of the grid",
-                FitError.OffHull => "part of it would be off the hull",
-                FitError.Overlaps => "it would overlap another piece",
+                FitError.OutOfBounds => "off the grid",
+                FitError.OffHull => "off the hull",
+                FitError.Overlaps => "overlaps a piece",
                 _ => preview.Error.ToString(),
             };
-            return $"[b]{def.Name}[/b]\n[color=#{Palette.Refused.ToHtml(false)}]Doesn't fit here: {why}.[/color]";
+            return $"[b]{def.Name}[/b]\n[color=#{Palette.Refused.ToHtml(false)}]Doesn't fit: {why}.[/color]";
         }
 
         if (preview.Bonuses.Count == 0)
         {
-            return $"[b]{def.Name}[/b]\n[color=#{Palette.Boosted.ToHtml(false)}]Fits here.[/color]";
+            return $"[b]{def.Name}[/b]";
         }
 
         string NameOf(int pieceId) => PieceDef(session, run, pieceId)?.Name ?? "?";
         var bonuses = preview.Bonuses.Select(b => $"{NameOf(b.GiverId)} → {NameOf(b.ReceiverId)} ({CardText.BonusShort(b.Bonus.Effect)})");
-        return $"[b]{def.Name}[/b]\n[color=#{Palette.Boosted.ToHtml(false)}]Fits here and turns on: {string.Join("; ", bonuses)}.[/color]";
+        return $"[b]{def.Name}[/b]\n[color=#{Palette.Boosted.ToHtml(false)}]{string.Join("; ", bonuses)}[/color]";
     }
 
     private static PieceDef? PieceDef(RunSession session, RunState run, int pieceId)

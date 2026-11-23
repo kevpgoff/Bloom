@@ -147,6 +147,7 @@ The owner decided these in a round of questions about adding progression to a ru
 | Upgrades | Written for each card in `cards.json`: an upgraded cost, effects or both. Placeholders are written for every card. |
 | Shipyard | Free: pick 1 of 3 hull section shapes and attach it, one per visit. The spec's economy table priced sections at 100 salvage; the node table, which made them free, wins. |
 | Content | 8 normal enemies, 3 hard ones, 1 boss and 6 events, all placeholders. Pieces stay at 16 for now. |
+| Text on screens | No instruction text: screens show information (names, numbers, card and piece text, whether a piece fits and which bonuses it turns on) and short flavor lines, never how to play them. The owner asked for this after seeing the map's hint panel: "the gameplay should be obvious and not need explainers at every screen". The map lost its info panel, and the Set course button now names the chosen node. The Fitting, Reward, Grove and Combat screens lost their hints. |
 | Pull request #4 | Merged into `main` before this work, which branches from it. It held the phone fixes and #5's NativeAOT build, which had been merged into #4's branch, not into `main`. |
 
 Taken as defaults, not raised by the owner (all numbers are in `Rules` and are placeholders):

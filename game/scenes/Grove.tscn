@@ -35,15 +35,6 @@ theme_override_font_sizes/font_size = 26
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="Prompt" type="Label" parent="Layout"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.627, 0.659, 0.678, 1)
-theme_override_font_sizes/font_size = 24
-text = "Choose what the gardeners do."
-horizontal_alignment = 1
-autowrap_mode = 3
-
 [node name="OptionScroll" type="ScrollContainer" parent="Layout"]
 layout_mode = 2
 size_flags_vertical = 3
