@@ -57,7 +57,7 @@ docs/decisions.md             decisions made so far
 
 ## Status
 
-A run is one sector: a branching map of about 20 nodes in 7 rows, ending in a boss. A new run opens on the Map screen. The player picks a node in the next row. Choosing a fight commits to it and shows its enemy on the Fitting screen, so the ship can be refitted against its heavy lanes before the fight starts. A won fight pays salvage and offers 1 of 3 pieces, and a hard fight's offer always includes a rare piece. A grove repairs 30% of the hull or upgrades a piece, a dock trades pieces and sells repairs, and a shipyard attaches one of 3 hull sections wherever the player puts it. Beating the boss wins the run. The ship can be refitted from the map at any time. The game saves after every action and resumes at the same point. Saves are written to `user://run.json` (on Linux, `~/.local/share/godot/app_userdata/Bloom/run.json`); a save from an older schema is copied to `user://run.unreadable.json` and a new run starts.
+A run is one sector: a branching map of about 20 nodes in 7 rows, ending in a boss. A new run opens on the Map screen. The player picks a node in the next row. Choosing a fight commits to it and shows its enemy on the Fitting screen, so the ship can be refitted against its heavy lanes before the fight starts. A won fight pays salvage and offers 1 of 3 pieces, and a hard fight's offer always includes a rare piece and is followed by a free hull section. A grove repairs 30% of the hull or upgrades a piece, a dock trades pieces and sells repairs, and a shipyard attaches one of 3 hull sections wherever the player puts it. Beating the boss wins the run. The ship can be refitted from the map at any time. The game saves after every action and resumes at the same point. Saves are written to `user://run.json` (on Linux, `~/.local/share/godot/app_userdata/Bloom/run.json`); a save from an older schema is copied to `user://run.unreadable.json` and a new run starts.
 
 | Area | State |
 | --- | --- |
@@ -69,7 +69,7 @@ A run is one sector: a branching map of about 20 nodes in 7 rows, ending in a bo
 | Rewards (1 of 3 pieces) and refitting (move, turn, fit, unfit, compost, undo) between fights | Done, tested; rulings in `docs/decisions.md` |
 | Sector map: generation, choosing nodes, skirmishes, hard fights, the boss, groves (repair), salvage from fights and composting | Done, tested; rulings in `docs/decisions.md`. One sector per run (`Rules.SectorsPerRun`) |
 | Docks (buy, sell, repair) and piece upgrades at groves, with an upgrade written for every card | Done, tested; rulings in `docs/decisions.md` |
-| Shipyards: 1 of 3 hull sections, attached where the player chooses, and a boss's free section before the next sector | Done, tested; rulings in `docs/decisions.md` |
+| Shipyards: 1 of 3 hull sections, attached where the player chooses. Hard fights and bosses give a free section after their reward. Heavy attacks aimed past the hull's edge hit its edge lane | Done, tested; rulings in `docs/decisions.md` |
 | Events and the boss's parts | Next, one pull request each, in that order |
 | Renown, unlocks, logbook | Not started |
 | Art | Option A, "Holo Grove" (see `docs/decisions.md` and `game/art/README.md`). Done: palette, Saira font, ship drawing, icons, card, panel and button frames, backdrop, and the enemy shown large in a target-lock reticle |
