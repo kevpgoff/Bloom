@@ -1,6 +1,7 @@
 using Bloom.Core.Cards;
 using Bloom.Core.Combat;
 using Bloom.Core.Run;
+using Bloom.Game.Audio;
 using Bloom.Game.Autoload;
 using Bloom.Game.Feedback;
 using Godot;
@@ -17,7 +18,7 @@ namespace Bloom.Game.Dev;
 /// Run a debug build with <c>godot --path game -- --fx-demo</c>, or <c>-- --fx-demo=lose</c> to only end turns
 /// until the ship is lost, or <c>-- --fx-demo=boss</c> to fight the boss instead and aim at each of its parts in
 /// turn until they are disabled. <see cref="GameRoot"/> keeps the demo's run in memory, so the saved run is untouched.
-/// Each action and its events are printed, and so is each haptic pulse.
+/// Each action and its events are printed, and so are each haptic pulse and each sound effect.
 /// </remarks>
 public partial class FxDemo : Node
 {
@@ -45,6 +46,7 @@ public partial class FxDemo : Node
     public override void _Ready()
     {
         Haptics.LogPulses = true;
+        Sfx.LogCues = true;
         GD.Print($"FxDemo: playing {(BossMode ? "the boss" : "the first fight")}{(LoseMode ? " by only ending turns" : "")}.");
     }
 

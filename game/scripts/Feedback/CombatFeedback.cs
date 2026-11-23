@@ -1,13 +1,15 @@
 using Bloom.Core.Cards;
 using Bloom.Core.Combat;
+using Bloom.Core.Pieces;
 using Bloom.Core.Run;
+using Bloom.Game.Audio;
 using Bloom.Game.Screens;
 using Godot;
 
 namespace Bloom.Game.Feedback;
 
 /// <summary>
-/// Turns the <see cref="CombatEvent"/>s of one action into a timeline of effects, shake and haptics on the
+/// Turns the <see cref="CombatEvent"/>s of one action into a timeline of effects, shake, haptics and sound on the
 /// combat screen's <see cref="FxLayer"/>. The screen has already redrawn to the new state; the timeline only
 /// shows how it got there: a card lights its piece, a bolt flies to the enemy, the enemy hits back, and the new
 /// hand deals in after the hit. Nothing here blocks input or changes the run.
@@ -58,6 +60,12 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         public const float WinHold = 1.0f;
         public const float AfterShatter = 0.7f;
         public const float ResultAfterImpact = 0.9f;
+
+        /// <summary>The draw sound is a swish that ends in a tick; it starts this long before the card lands, so the tick lands with it.</summary>
+        public const float DrawSoundLead = 0.04f;
+
+        /// <summary>Each card of one deal sounds this much higher than the card before it.</summary>
+        public const float DrawPitchStep = 0.03f;
     }
 
     /// <summary>Plays the events of one action and returns what the screen must time to match.</summary>
@@ -149,6 +157,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         fx.Flash([r], Palette.HoloLine with { A = 0.14f }, 0.25f);
         fx.RectRing(r, Palette.HoloBright, 8f, 0.3f, 2f);
         Haptics.Play(HapticKind.Tick);
+        Sfx.Play(SfxCue.EndTurn);
     }
 
     // The player's cards
@@ -156,7 +165,8 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
     private void OnCardPlayed(RunSession session, Beat beat, CardPlayed played)
     {
         int source = played.SourcePieceId;
-        var color = session.State.Ship.Find(source) is { } fitted ? Palette.ForPiece(session.Content.Piece(fitted.Piece.DefId)) : Palette.HoloLine;
+        var piece = session.State.Ship.Find(source) is { } fitted ? session.Content.Piece(fitted.Piece.DefId) : null;
+        var color = piece is null ? Palette.HoloLine : Palette.ForPiece(piece);
         var card = cardRect(played.CardId) is { } global ? fx.FromGlobal(global) : (Rect2?)null;
         beat.Source = source;
         beat.CardCenter = card?.GetCenter();
@@ -170,6 +180,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         }
 
         Haptics.Play(HapticKind.Tick);
+        Sfx.Play(CardVoice(piece));
         var from = beat.CardCenter;
         At(Tuning.StreakDelay, () =>
         {
@@ -192,7 +203,11 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
     private void OnFocusSpent(Beat beat)
     {
         var origin = OriginOf(beat);
-        At(beat.T, () => fx.Implode(origin(), Palette.Focus, 12, CellSize() * 1.2f, 0.3f, 2.4f));
+        At(beat.T, () =>
+        {
+            fx.Implode(origin(), Palette.Focus, 12, CellSize() * 1.2f, 0.3f, 2.4f);
+            Sfx.Play(SfxCue.FocusSpend);
+        });
         beat.Focused = true;
         beat.T += 0.12f;
     }
@@ -261,6 +276,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.FloatText($"-{damage}", c + new Vector2(r * 0.45f, r * 0.45f), Palette.Attack.Lerp(Colors.White, 0.15f), Math.Clamp(46 + damage, 46, 76), 0.95f, 32f);
             fx.Shake(damage >= 20 ? 0.5f : damage >= 10 ? 0.35f : 0.15f);
             Haptics.Play(damage >= 20 ? HapticKind.Heavy : damage >= 10 ? HapticKind.Medium : HapticKind.Light);
+            Sfx.Play(HitSound(damage));
         }
 
         if (hit.Blocked > 0)
@@ -272,6 +288,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             {
                 w.Emblem.Kick(dir, 3f);
                 Haptics.Play(HapticKind.Light);
+                Sfx.Play(SfxCue.HitBlocked);
             }
         }
     }
@@ -292,6 +309,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.FloatText($"-{damage}", c + new Vector2(r * 0.6f, 0f), Palette.Attack.Lerp(Colors.White, 0.15f), Math.Clamp(40 + damage, 40, 64), 0.9f, 28f);
             fx.Shake(damage >= 10 ? 0.25f : 0.12f);
             Haptics.Play(damage >= 10 ? HapticKind.Medium : HapticKind.Light);
+            Sfx.Play(HitSound(damage));
         }
 
         if (hit.Blocked > 0)
@@ -301,6 +319,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             if (hit.HullDamage == 0)
             {
                 Haptics.Play(HapticKind.Light);
+                Sfx.Play(SfxCue.HitBlocked);
             }
         }
     }
@@ -320,6 +339,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.FloatText("DISABLED", c, Palette.Refused, 26, 1.1f, 36f);
             fx.Shake(0.3f);
             Haptics.Play(HapticKind.Heavy);
+            Sfx.Play(SfxCue.PartDisabled);
             fx.Schedule(0.09f, () => Haptics.Play(HapticKind.Medium));
         });
         At(at + 0.35f, () => ReticleLock(null));
@@ -339,6 +359,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Stream(origin(), hull, Palette.Block, 8, Tuning.StreamTime, 3f, ParticleShape.Hex, 50f);
             fx.FloatText($"+{amount} BLOCK", hull + new Vector2(0, -34), Palette.Block, 30, 0.9f, 40f, Tuning.StreamTime * 0.8f);
             Haptics.Play(HapticKind.Light);
+            Sfx.Play(SfxCue.BlockGain);
         });
         beat.T += Tuning.EffectGap;
     }
@@ -354,6 +375,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Flash([LabelRect(w.EnergyLabel)], Palette.Energy with { A = 0.15f }, 0.4f);
             fx.FloatText($"+{amount}", to + new Vector2(0, -36), Palette.Energy, 34);
             Haptics.Play(HapticKind.Tick);
+            Sfx.Play(SfxCue.EnergyGain);
         });
         beat.T += Tuning.EffectGap;
     }
@@ -370,6 +392,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Pulse(c, Palette.Focus, cell * 0.8f, 0.4f, 0.25f);
             fx.FloatText($"+{amount} FOCUS", c + new Vector2(0, -cell * 0.55f), Palette.Focus, 26, 0.9f, 40f);
             Haptics.Play(HapticKind.Tick);
+            Sfx.Play(SfxCue.FocusGain);
         });
         beat.T += Tuning.EffectGap;
     }
@@ -393,6 +416,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Burst(c, Palette.Repair, 16, 120f, 0.7f, 2.2f, ParticleShape.Dot, -Mathf.Pi / 2f, 1.6f, gravity: -80f);
             fx.FloatText("ONLINE", c, Palette.Repair, 26, 1.0f, 46f);
             Haptics.Play(HapticKind.Medium);
+            Sfx.Play(SfxCue.Repair);
         });
         beat.T += Tuning.RepairBeam + 0.12f;
     }
@@ -406,6 +430,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Burst(c, Palette.GardenGlow, 14, 110f, 0.85f, 2.6f, ParticleShape.Leaf, -Mathf.Pi / 2f, 1.3f, gravity: -40f, drag: 2f);
             fx.FloatText($"GROWN ×{growth}", c + new Vector2(0, -CellSize() * 0.5f), Palette.GardenGlow, 22, 0.9f, 50f, 0.05f);
             Haptics.Play(HapticKind.Tick);
+            Sfx.Play(SfxCue.Grow);
         });
         beat.T += Tuning.EffectGap;
     }
@@ -421,6 +446,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Flash([LabelRect(w.EnergyLabel)], Palette.Energy with { A = 0.18f }, 0.45f);
             fx.Flash([LabelRect(w.TurnLabel)], Palette.HoloBright with { A = 0.25f }, 0.4f);
             Haptics.Play(HapticKind.Tick);
+            Sfx.Play(SfxCue.TurnStart);
         });
         beat.T = start;
         beat.TurnDeal = true;
@@ -444,6 +470,10 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             At(at + Tuning.DealFlight, () => Haptics.Play(HapticKind.Tick));
         }
 
+        // Every card is heard as it lands, each a little higher than the one before.
+        float pitch = 1f + (beat.Deals.Count * Tuning.DrawPitchStep);
+        At(at + Tuning.DealFlight - Tuning.DrawSoundLead, () => Sfx.Play(SfxCue.CardDraw, pitch));
+
         beat.Deals.Add((cardId, at + (Tuning.DealFlight * 0.7f)));
         beat.T = at + Tuning.DealStagger;
     }
@@ -456,6 +486,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Stream(PileAnchor(discard: true), to, Palette.HoloLine, Math.Clamp(count, 4, 12), Tuning.ShuffleTime, 2.2f, ParticleShape.Streak, 26f);
             fx.Ring(to, Palette.HoloLine, 6f, 26f, 0.3f, 2f, delay: Tuning.ShuffleTime * 0.7f);
             Haptics.Play(HapticKind.Tick);
+            Sfx.Play(SfxCue.Shuffle);
         });
         beat.T += Tuning.ShuffleTime;
     }
@@ -469,6 +500,11 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             var rect = beat.OldHand[i];
             float hold = beat.T + (i * 0.025f);
             fx.GhostCard(rect, Palette.Muted, hold + Tuning.DiscardFlight, Around(to, rect.Size * 0.3f), hold);
+        }
+
+        if (beat.OldHand.Count > 0)
+        {
+            At(beat.T, () => Sfx.Play(SfxCue.HandDiscard));
         }
 
         beat.T += 0.05f;
@@ -515,6 +551,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         if (hit.HullDamage <= 0)
         {
             Haptics.Play(HapticKind.Light);
+            Sfx.Play(SfxCue.ShipBlocked);
             return;
         }
 
@@ -532,6 +569,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         fx.FloatText($"-{damage}", box.GetCenter(), Palette.Refused.Lerp(Colors.White, 0.1f), Math.Clamp(54 + damage, 54, 84), 1.0f, 60f);
         fx.Shake(Mathf.Min(0.7f, 0.3f + (0.025f * damage)));
         Haptics.Play(damage >= 12 || heavy ? HapticKind.Heavy : HapticKind.Medium);
+        Sfx.Play(damage >= 12 || heavy ? SfxCue.ShipHitHeavy : SfxCue.ShipHit);
     }
 
     private void Disabled(Beat beat, int pieceId, int lane)
@@ -545,6 +583,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.FloatText("OFFLINE", c, Palette.Refused, 26, 1.1f, 40f);
             fx.Shake(0.25f);
             Haptics.Play(HapticKind.Heavy);
+            Sfx.Play(SfxCue.PieceOffline);
             fx.Schedule(0.09f, () => Haptics.Play(HapticKind.Medium));
         });
         beat.T += 0.1f;
@@ -565,6 +604,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
                 fx.Stream(from, EmblemCenter(), Palette.Block, 8, 0.3f, 3f, ParticleShape.Hex, 40f);
                 fx.FloatText($"+{amount} BLOCK", from - new Vector2(0f, rect.Size.Y * 0.25f), Palette.Block, 24, 0.9f, 30f);
                 Haptics.Play(HapticKind.Tick);
+                Sfx.Play(SfxCue.EnemyBlock);
             });
             beat.LastImpact = at + 0.3f;
             beat.T = at + 0.3f;
@@ -580,6 +620,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Pulse(c, Palette.Block, r * 1.2f, 0.4f);
             fx.FloatText($"+{amount} BLOCK", c + new Vector2(0, r * 0.7f), Palette.Block, 28, 0.9f, 30f);
             Haptics.Play(HapticKind.Tick);
+            Sfx.Play(SfxCue.EnemyBlock);
         });
         beat.LastImpact = at + 0.3f;
         beat.T = at + 0.3f;
@@ -588,6 +629,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
     /// <summary>The reticle locks onto what the player aims at: the body (null) or one of its parts.</summary>
     private void ReticleLock(int? part)
     {
+        Sfx.Play(SfxCue.TargetLock);
         if (part is int index)
         {
             var rect = PartRectOrEmblem(index);
@@ -627,6 +669,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Pulse(c, Colors.White, r * 2f, 0.35f);
             w.Emblem.Flash(Colors.White, 0.35f);
             fx.Shake(0.4f);
+            Sfx.Play(SfxCue.FightWon);
             Haptics.Play(HapticKind.Light);
             fx.Schedule(0.1f, () => Haptics.Play(HapticKind.Light));
             fx.Schedule(0.2f, () => Haptics.Play(HapticKind.Heavy));
@@ -645,9 +688,29 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Flash([HullBox()], Palette.Refused with { A = 0.25f }, 0.7f, flicker: true);
             fx.Shake(0.9f);
             Haptics.Play(280, 1f);
+            Sfx.Play(SfxCue.FightLost);
         });
         beat.ResultAt = at + Tuning.ResultAfterImpact;
     }
+
+    // Which sound
+
+    /// <summary>A card sounds like the piece it comes from: the voice of the piece's first tag, the same tag that colors it.</summary>
+    private static SfxCue CardVoice(PieceDef? piece) => piece is { Tags.Count: > 0 }
+        ? piece.Tags[0] switch
+        {
+            Tag.Core => SfxCue.CardPlayCore,
+            Tag.Weapon => SfxCue.CardPlayWeapon,
+            Tag.Shield => SfxCue.CardPlayShield,
+            Tag.Solar => SfxCue.CardPlaySolar,
+            Tag.Garden => SfxCue.CardPlayGarden,
+            Tag.Drone => SfxCue.CardPlayDrone,
+            _ => SfxCue.CardPlay,
+        }
+        : SfxCue.CardPlay;
+
+    /// <summary>A hit on the enemy sounds bigger at the same damage where its haptic pulse gets stronger.</summary>
+    private static SfxCue HitSound(int damage) => damage >= 20 ? SfxCue.HitHeavy : damage >= 10 ? SfxCue.HitMedium : SfxCue.HitLight;
 
     // Where things are, in the effect layer's coordinates
 

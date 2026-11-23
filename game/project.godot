@@ -17,6 +17,7 @@ config/icon="res://art/app_icon/icon.svg"
 
 GameRoot="*res://scripts/Autoload/GameRoot.cs"
 MusicDirector="*res://scripts/Audio/MusicDirector.cs"
+SfxPlayer="*res://scripts/Audio/SfxPlayer.cs"
 
 [display]
 
