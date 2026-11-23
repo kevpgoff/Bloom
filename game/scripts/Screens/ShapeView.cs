@@ -34,6 +34,6 @@ public partial class ShapeView : Control
         var layout = new GridLayout(cell, origin, 0, shape.Height);
         var color = Palette.ForPiece(piece);
         GridPainter.DrawPiece(this, layout, shape.Cells, color);
-        GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(piece), Palette.Glyph(color), reserveLabelSpace: false);
+        GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(piece), Palette.Glyph(color), labelLines: 0);
     }
 }

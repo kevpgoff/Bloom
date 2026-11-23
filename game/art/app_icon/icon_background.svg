@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 432 432" width="432" height="432">
+  <!-- Bloom's app icon, background layer: the Holo Grove night, with a faint HUD ring -->
+  <defs>
+    <radialGradient id="sky" cx="216" cy="190" r="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0d3a3c"/>
+      <stop offset="0.55" stop-color="#06191b"/>
+      <stop offset="1" stop-color="#020a0a"/>
+    </radialGradient>
+  </defs>
+  <rect width="432" height="432" fill="url(#sky)"/>
+  <circle cx="216" cy="222" r="168" fill="none" stroke="#5fe8e0" stroke-width="3" stroke-opacity="0.14" stroke-dasharray="6 10"/>
+  <circle cx="216" cy="222" r="196" fill="none" stroke="#5fe8e0" stroke-width="2" stroke-opacity="0.07"/>
+</svg>

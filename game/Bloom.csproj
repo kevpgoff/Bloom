@@ -8,9 +8,34 @@
     <TargetFramework>net8.0</TargetFramework>
     <!-- Android exports need net9.0 to match the .NET jars in Godot's export template. Godot's own project template has this line. -->
     <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net9.0</TargetFramework>
+    <!-- A NativeAOT build (below) uses none of those jars, so it takes .NET 10, which is still supported. -->
+    <TargetFramework Condition=" $(RuntimeIdentifier.StartsWith('linux-bionic')) ">net10.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <RootNamespace>Bloom.Game</RootNamespace>
   </PropertyGroup>
+
+  <!--
+    Android with NativeAOT. With dotnet/android_use_linux_bionic in the export preset, Godot publishes for
+    linux-bionic-arm64, and these settings compile the game ahead of time into one native library, so the phone
+    starts no .NET runtime and compiles no code. The NDK's clang links it; tools/android-debug.sh sets ANDROID_NDK_ROOT.
+  -->
+  <PropertyGroup Condition=" $(RuntimeIdentifier.StartsWith('linux-bionic')) ">
+    <PublishAot>true</PublishAot>
+    <!-- Godot's Android.props turns the Mono runtime on before this project's PublishAot is seen. -->
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <DisableUnsupportedError>true</DisableUnsupportedError>
+    <PublishAotUsingRuntimePack>true</PublishAotUsingRuntimePack>
+    <NdkTools>$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64/bin</NdkTools>
+    <CppCompilerAndLinker>$(NdkTools)/clang</CppCompilerAndLinker>
+    <!-- The host's objcopy can't read an ARM64 library, so symbol stripping uses the NDK's. -->
+    <ObjCopyName>$(NdkTools)/llvm-objcopy</ObjCopyName>
+  </PropertyGroup>
+
+  <!-- Godot looks up the game's script classes at runtime, so trimming keeps GodotSharp and the game whole, as Godot's own iOS setup does. -->
+  <ItemGroup Condition=" $(RuntimeIdentifier.StartsWith('linux-bionic')) ">
+    <TrimmerRootAssembly Include="GodotSharp" />
+    <TrimmerRootAssembly Include="$(TargetName)" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../src/Bloom.Core/Bloom.Core.csproj" />

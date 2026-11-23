@@ -1,5 +1,6 @@
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Platform;
 using Bloom.Game.Visuals;
 using Godot;
 
@@ -16,23 +17,54 @@ public partial class MainScreen : Control
     private const string RewardScene = "res://scenes/Reward.tscn";
     private const string FittingScene = "res://scenes/Fitting.tscn";
 
+    /// <summary>The layout's margin from the edges of a desktop window, as in Main.tscn.</summary>
+    private const float EdgeMargin = 16f;
+
+    private Control _layout = null!;
     private Control _host = null!;
     private Label _status = null!;
     private string? _shownScene;
     private bool _swapQueued;
     private bool _holding;
+    private Insets _loggedInsets;
 
     public override void _Ready()
     {
         Theme = BloomTheme.Build();
+        _layout = GetNode<Control>("Layout");
         _host = GetNode<Control>("Layout/ScreenHost");
         _status = GetNode<Label>("Layout/Status");
         _status.Text = GameRoot.Instance.Status;
         GameRoot.Instance.Changed += QueueSwap;
+        GetViewport().SizeChanged += FitToScreen;
+        FitToScreen();
         ShowScreenForPhase();
     }
 
-    public override void _ExitTree() => GameRoot.Instance.Changed -= QueueSwap;
+    public override void _ExitTree()
+    {
+        GameRoot.Instance.Changed -= QueueSwap;
+        GetViewport().SizeChanged -= FitToScreen;
+    }
+
+    /// <summary>
+    /// Keeps every screen clear of a phone's camera cutout and rounded corners (<see cref="ScreenInsets"/>).
+    /// The backdrop still fills the whole screen.
+    /// </summary>
+    private void FitToScreen()
+    {
+        var insets = ScreenInsets.For(GetViewport());
+        _layout.OffsetLeft = Mathf.Max(EdgeMargin, insets.Left);
+        _layout.OffsetTop = Mathf.Max(EdgeMargin, insets.Top);
+        _layout.OffsetRight = -Mathf.Max(EdgeMargin, insets.Right);
+        _layout.OffsetBottom = -Mathf.Max(EdgeMargin, insets.Bottom);
+
+        if (insets != _loggedInsets)
+        {
+            _loggedInsets = insets;
+            GD.Print($"MainScreen: screen insets left {insets.Left:0}, top {insets.Top:0}, right {insets.Right:0}, bottom {insets.Bottom:0} (viewport {GetViewport().GetVisibleRect().Size}).");
+        }
+    }
 
     private static string SceneFor(RunPhase phase) => phase switch
     {

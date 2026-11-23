@@ -505,7 +505,11 @@ public partial class CombatScreen : Control
         float symbolSize = Mathf.Min(single ? 76f : 50f, columnWidth);
         int numberFontSize = Math.Max(13, Mathf.RoundToInt(symbolSize * 0.43f));
         string word = CardText.EffectWord(current).ToUpperInvariant();
-        int captionFontSize = FitFontSize(word, columnWidth, single ? 15 : 13, 10, BloomTheme.Hud);
+
+        // A lone caption is tracked like the card's name. Two side by side drop the tracking, so a word like
+        // ENERGY stays near 17 px in half a card's width.
+        var captionFont = single ? BloomTheme.Hud : BloomTheme.Display;
+        int captionFontSize = FitFontSize(word, columnWidth, single ? 20 : 19, 12, captionFont);
         var tint = Palette.ForEffect(current);
         var (valueText, boosted) = CardText.EffectNumber(current, original);
 
@@ -547,7 +551,7 @@ public partial class CombatScreen : Control
         column.AddChild(symbol);
 
         var caption = MakeLabel(word, captionFontSize, tint.Lightened(0.28f));
-        caption.AddThemeFontOverride("font", BloomTheme.Hud);
+        caption.AddThemeFontOverride("font", captionFont);
         caption.HorizontalAlignment = HorizontalAlignment.Center;
         caption.AutowrapMode = TextServer.AutowrapMode.Off;
         column.AddChild(caption);

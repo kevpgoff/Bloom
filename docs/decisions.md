@@ -102,6 +102,36 @@ Taken as defaults, not raised by the owner:
 - `rendering/textures/vram_compression/import_etc2_astc` is on, because Godot won't export to Android without it. Every texture is imported lossless, so nothing looks different.
 - The preset is named `Android`, and the APK goes to `build/android/bloom-debug.apk`, which is ignored.
 
+## Phone fixes decided on 2026-11-22
+
+The owner decided these after the first test on their phone, a Pixel with Android 16.
+
+| Topic | Decision |
+| --- | --- |
+| Screen edges | The game stays full screen, and the layout keeps clear of the camera cutout and the rounded corners. The backdrop still fills the screen. The other option was to keep Android's status and navigation bars on screen. |
+| Follow-ups from the phone test | Fixed now: small text, the missing app icon and the cold start. The back gesture was tested by the owner: it quits the game, and reopening it resumes the fight. |
+
+Taken as defaults, not raised by the owner:
+- Android reports the camera cutout as the safe area. Godot can't read the rounded corners, so on a phone the layout also keeps 28 dp clear at the top and the bottom. With the 16 px side margin, that clears a corner of up to about 55 dp radius. Desktop windows keep the 16 px margin on every side.
+- After a swipe from the edge, the 3-button navigation bar still shows over the bottom of the screen for a few seconds.
+- Text is at least 19 px on the 720 px wide layout: about 11 sp on the owner's phone, which is 411 dp wide. Where a word can't fit, it shrinks: piece names to 16 px on one line, or up to 18 px on two lines; card names in a hand of 6 or more cards; and captions on cards with two effects, which share half a card's width each (14 to 19 px).
+- The app icon is a placeholder: a hologram hex cell with a sprout growing in it, in the Holo Grove colors. It has Android's adaptive layers and a monochrome layer for themed icons.
+- The engine's boot splash shows no image, only the backdrop's darkest color. Android's own launch splash shows the icon on the phone's dark system color, because Godot sets that color only in a Gradle build.
+- The cold start was about 1.3 s from the tap to the fight on the owner's phone. About 0.5 s of it was .NET starting up, and 0.37 s the game's own startup, mostly code being compiled on first use. The owner then chose ahead-of-time compilation (next section).
+
+## Ahead-of-time compilation decided on 2026-11-22
+
+| Topic | Decision |
+| --- | --- |
+| C# on Android | Compiled ahead of time with Godot's experimental NativeAOT option for Android (`dotnet/android_use_linux_bionic`), to cut the cold start. |
+
+Taken as defaults, not raised by the owner:
+- The Android NDK r29 (`29.0.14206865`), the version Godot 4.7.2 pins, installed in the SDK folder.
+- The NativeAOT build targets .NET 10, which is supported until November 2028. It uses none of the .NET 9 jars in Godot's export template. A Mono build (the option off) still targets .NET 9.
+- Debug builds leave out debug symbols (`dotnet/include_debug_symbols`), which would add 31 MB to the APK.
+- On the owner's phone, a cold start now reaches the fight in about 0.8 s instead of 1.25 s, and the APK is 60 MB instead of 105 MB. The FX demo plays the same fight, event for event, as with Mono, at 56 to 61 fps.
+- Godot logs a `libmonosgen-2.0.so` error at every start, because it tries Mono first. GodotSharp produces trim and AOT warnings at export, as it does for iOS. The game's own code produces none.
+
 ## Proposed in the spec, not yet confirmed
 
 - Three sectors for each run, about 8 nodes and 25 minutes for each sector.

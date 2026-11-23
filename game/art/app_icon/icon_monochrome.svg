@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 432 432" width="432" height="432">
+  <!-- Bloom's app icon for Android's themed icons: the foreground's lines in white; Android tints them -->
+  <polygon points="320.0,224.0 268.0,314.1 164.0,314.1 112.0,224.0 164.0,133.9 268.0,133.9" fill="#020a0a" fill-opacity="0" stroke="#ffffff" stroke-width="12" stroke-linejoin="round"/>
+  <circle cx="112" cy="224" r="10" fill="#ffffff"/>
+  <circle cx="320" cy="224" r="10" fill="#ffffff"/>
+  <polyline points="216,280 190,280 178,292" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
+  <polyline points="216,280 242,280 254,292" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85"/>
+  <circle cx="177" cy="293" r="6.5" fill="#ffffff"/>
+  <circle cx="255" cy="293" r="6.5" fill="#ffffff"/>
+  <circle cx="216" cy="300" r="6.5" fill="#ffffff"/>
+  <line x1="216" y1="296" x2="216" y2="200" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <path d="M 216 212 C 210 182 190 164 162 162 C 160 192 184 216 216 212 Z" fill="#ffffff" fill-opacity="0" stroke="#ffffff" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M 216 212 C 248 216 272 192 270 162 C 242 164 222 182 216 212 Z" fill="#ffffff" fill-opacity="0" stroke="#ffffff" stroke-width="9" stroke-linejoin="round"/>
+  <circle cx="216" cy="194" r="9.5" fill="#ffffff"/>
+</svg>
