@@ -44,6 +44,8 @@ internal static class ContentValidator
             ValidateShip(db, ship, errors);
         }
 
+        CheckUnlocks(db, errors);
+
         foreach (var section in db.Sections.Where(s => s is not null))
         {
             ValidateSection(section, errors);
@@ -411,6 +413,62 @@ internal static class ContentValidator
             {
                 ValidateLoadout(db, loadout, $"{where}, loadout '{loadout.Id}'", errors);
             }
+        }
+    }
+
+    /// <summary>
+    /// Every locked ship class must be reachable: at least one class is open from the start, and each lock names
+    /// another class that can itself be opened.
+    /// </summary>
+    private static void CheckUnlocks(ContentDb db, List<string> errors)
+    {
+        var ships = db.Ships.Where(s => s?.Id is not null).ToList();
+        if (ships.Count == 0)
+        {
+            return;
+        }
+
+        var ids = ships.Select(s => s.Id).ToHashSet();
+        bool valid = true;
+        foreach (var ship in ships)
+        {
+            string? error = ship.Unlock switch
+            {
+                null => null,
+                WinWithUnlock { Ship: null or "" } => "unlock 'winWith' needs a ship.",
+                WinWithUnlock win when win.Ship == ship.Id => "unlock 'winWith' names the ship class itself.",
+                WinWithUnlock win when !ids.Contains(win.Ship) => $"unlock 'winWith' names the unknown ship class '{win.Ship}'.",
+                WinWithUnlock => null,
+                _ => $"unlock rule {ship.Unlock.GetType().Name} has no check.",
+            };
+            if (error is not null)
+            {
+                errors.Add($"ship class '{ship.Id}': {error}");
+                valid = false;
+            }
+        }
+
+        if (!valid)
+        {
+            return;
+        }
+
+        var open = ships.Where(s => s.Unlock is null).Select(s => s.Id).ToHashSet();
+        if (open.Count == 0)
+        {
+            errors.Add("No ship class is open from the start: every one has an unlock.");
+            return;
+        }
+
+        // A class opens once the class that its lock names is open, so repeat until nothing more opens.
+        while (ships.Where(s => !open.Contains(s.Id) && s.Unlock is WinWithUnlock win && open.Contains(win.Ship)).ToList() is { Count: > 0 } next)
+        {
+            open.UnionWith(next.Select(s => s.Id));
+        }
+
+        foreach (var ship in ships.Where(s => !open.Contains(s.Id)))
+        {
+            errors.Add($"ship class '{ship.Id}': it can never be unlocked, because its unlock leads back to itself.");
         }
     }
 

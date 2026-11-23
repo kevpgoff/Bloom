@@ -14,6 +14,18 @@ public abstract record ShipRule;
 /// <summary>Unspent energy stays for the next turn instead of resetting to <see cref="Rules.EnergyPerTurn"/>.</summary>
 public sealed record KeepEnergyRule : ShipRule;
 
+/// <summary>
+/// What opens a ship class that is locked at first, declared in ships.json like a <see cref="ShipRule"/>
+/// (e.g. <c>{ "type": "winWith", "ship": "seedling" }</c>). Whether it is met is worked out from the profile
+/// (<see cref="Profile.ProfileEngine.IsUnlocked"/>).
+/// </summary>
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(WinWithUnlock), "winWith")]
+public abstract record UnlockRule;
+
+/// <summary>Open once a recorded voyage was won with the ship class <see cref="Ship"/>, with any of its loadouts.</summary>
+public sealed record WinWithUnlock(string Ship) : UnlockRule;
+
 /// <summary>A piece the ship class starts with, at an absolute grid position.</summary>
 public sealed record StartingPiece(string Piece, Cell Origin, Rotation Rotation = Rotation.R0);
 
@@ -35,6 +47,7 @@ public sealed record ShipLoadout(string Id, string Name, IReadOnlyList<StartingP
 /// </param>
 /// <param name="Commune">The commune that grows the ship, written as on pieces (e.g. <c>sunwrights</c>). The rules never read it.</param>
 /// <param name="GrownFrom">One line on what the ship is grown from, for the hangar. The rules never read it.</param>
+/// <param name="Unlock">What opens the ship class, or null for one that is open from the start.</param>
 public sealed record ShipClassDef(
     string Id,
     string Name,
@@ -46,6 +59,7 @@ public sealed record ShipClassDef(
     string? SoundSet = null,
     string? Commune = null,
     string? GrownFrom = null,
+    UnlockRule? Unlock = null,
     bool Placeholder = false)
 {
     /// <summary>The loadout with this id, or the first one when <paramref name="id"/> is null.</summary>

@@ -17,16 +17,28 @@ namespace Bloom.Game.Screens;
 /// <see cref="GameRoot.Launch"/> starts a run.
 /// </summary>
 /// <remarks>
+/// <para>
+/// A ship class that the profile has not opened yet (<see cref="GameRoot.IsLocked"/>) shows dimmed, with what
+/// opens it, and cannot be launched. The Voyage tab shows the profile's record for the chosen ship and loadout.
+/// A voyage from a seed that the player typed is practice, which the profile does not record; the main button
+/// then reads "Practice".
+/// </para>
+/// <para>
 /// A debug build (<see cref="GameRoot.TestTools"/>) has a fourth tab, Test, which chooses where a test run starts:
 /// on the map, at a node of one type, or at one event. While a start is chosen there, the main button launches
 /// a test run (<see cref="GameRoot.LaunchTest"/>) and says so; "Off" returns it to a voyage. While a voyage waits
 /// behind the hangar (<see cref="GameRoot.VoyageParked"/>), there is no "Off", and a button at the top goes back
-/// to that voyage.
+/// to that voyage. A debug build also has the "Locks off" switch beside the title (<see cref="GameRoot.LocksOff"/>),
+/// which lets a locked ship be launched.
+/// </para>
 /// </remarks>
 public partial class HangarScreen : Control
 {
     private const float RailHeight = 112;
     private const float RailShape = 56;
+
+    /// <summary>How much of a locked ship shows, in the rail and in the hologram.</summary>
+    private const float LockedAlpha = 0.4f;
 
     /// <summary>The node types a test run can start at, in the order of the Test tab.</summary>
     private static readonly NodeType[] TestNodes =
@@ -66,7 +78,12 @@ public partial class HangarScreen : Control
     private Control _testPage = null!;
     private Control _testEvents = null!;
     private LineEdit _seed = null!;
+    private RichTextLabel _records = null!;
+    private Button _locksOff = null!;
     private Button _launch = null!;
+
+    /// <summary>The seed code that the hangar offered last. Any other text in the seed field was typed by the player.</summary>
+    private string _offeredSeed = "";
 
     private ShipClassDef? _ship;
     private ShipLoadout? _loadout;
@@ -90,6 +107,10 @@ public partial class HangarScreen : Control
         _testPage = GetNode<Control>("%TestPage");
         _testEvents = GetNode<Control>("%TestEvents");
         _seed = GetNode<LineEdit>("%SeedEdit");
+        _records = GetNode<RichTextLabel>("%Records");
+        _locksOff = GetNode<Button>("%LocksButton");
+        _locksOff.Visible = GameRoot.TestTools;
+        _locksOff.Pressed += () => GameRoot.Instance.SetLocksOff(!GameRoot.Instance.LocksOff);
         _launch = GetNode<Button>("%LaunchButton");
         _commune.AddThemeColorOverride("font_color", Palette.Muted);
         GetNode<Label>("%SeedLabel").AddThemeColorOverride("font_color", Palette.Muted);
@@ -107,10 +128,15 @@ public partial class HangarScreen : Control
         _preview.PieceSelected += OnPieceSelected;
         _launch.Pressed += Launch;
         _seed.MaxLength = RunSeed.MaxLength;
-        _seed.Text = GameRoot.NewSeedCode();
+        OfferSeed();
+        _seed.TextChanged += _ => ShowVoyage();
         _seed.TextSubmitted += _ => TidySeed();
         _seed.FocusExited += TidySeed;
-        GetNode<Button>("%NewSeedButton").Pressed += () => _seed.Text = GameRoot.NewSeedCode();
+        GetNode<Button>("%NewSeedButton").Pressed += () =>
+        {
+            OfferSeed();
+            ShowVoyage();
+        };
 
         if (Content is not { Ships.Count: > 0 } content)
         {
@@ -140,7 +166,19 @@ public partial class HangarScreen : Control
         // The hangar opens on the ship and loadout chosen last, or on the first of each.
         var remembered = content.Ships.FirstOrDefault(s => s.Id == UserSettings.HangarShip) ?? content.Ships[0];
         ChooseShip(remembered, UserSettings.HangarLoadout);
+        GameRoot.Instance.Changed += OnLocksChanged;
         GD.Print($"HangarScreen: {content.Ships.Count} ship classes; showing {_ship?.Id} (loadout {_loadout?.Id}), seed {_seed.Text}.");
+    }
+
+    public override void _ExitTree() => GameRoot.Instance.Changed -= OnLocksChanged;
+
+    /// <summary>The "Locks off" switch changed which ships can be launched, so show the chosen one again.</summary>
+    private void OnLocksChanged()
+    {
+        if (GameRoot.Instance.Session is null && _ship is { } ship)
+        {
+            ChooseShip(ship, _loadout?.Id);
+        }
     }
 
     /// <summary>Shows a ship class with the named loadout, or with its first one.</summary>
@@ -150,6 +188,7 @@ public partial class HangarScreen : Control
         foreach (var (other, card) in _rail)
         {
             card.SetSelected(other == ship);
+            card.Button.Modulate = GameRoot.Instance.CanLaunch(other) ? Colors.White : new Color(1, 1, 1, LockedAlpha);
         }
 
         foreach (var (_, button) in _loadoutButtons)
@@ -195,12 +234,20 @@ public partial class HangarScreen : Control
         _start = RunFactory.NewRun(content, new RunSetup(ship.Id, Seed: 0, LoadoutId: loadout.Id));
         _selectedPiece = null;
         _preview.SetShip(content, _start);
+        _preview.Modulate = GameRoot.Instance.CanLaunch(ship) ? Colors.White : new Color(1, 1, 1, LockedAlpha);
+        MarkChosen(_locksOff, GameRoot.Instance.LocksOff);
 
         var fitter = new ShipFitter(content);
         int cells = _start.Ship.Grid.CellCount;
         int free = cells - _start.Ship.Fitted.Sum(f => fitter.CellsOf(f).Count);
         int cards = DeckBuilder.Build(_start.Ship, content).Count;
         var lines = new List<string> { $"Hull {_start.MaxHull}  ·  {cells} cells, {free} free  ·  {cards} cards" };
+        if (GameRoot.Instance.IsLocked(ship))
+        {
+            string off = GameRoot.Instance.LocksOff ? $"[color=#{Palette.Muted.ToHtml(false)}]  ·  locks off[/color]" : "";
+            lines.Add($"[color=#{Palette.Heavy.ToHtml(false)}]Locked  ·  {ShipText.Unlock(ship.Unlock, content)}[/color]{off}");
+        }
+
         if (ShipText.Rule(ship.Rule) is { Length: > 0 } rule)
         {
             lines.Add($"[color=#{Palette.HoloBright.ToHtml(false)}]{rule}[/color]");
@@ -216,6 +263,7 @@ public partial class HangarScreen : Control
         _info.Text = string.Join("\n", lines);
         ShowTab(_tab);
         ShowTest();
+        ShowVoyage();
     }
 
     private void OnPieceSelected(FittedPiece? piece)
@@ -309,12 +357,64 @@ public partial class HangarScreen : Control
             MarkChosen(button, _testEvents.Visible && id == _test?.EventId);
         }
 
-        if (_ship is { } ship)
+        ShowLaunch();
+    }
+
+    /// <summary>Whether the seed in the field is one that the player typed, which makes the voyage practice.</summary>
+    private bool SeedTyped => RunSeed.Normalize(_seed.Text) is { Length: > 0 } seed && seed != _offeredSeed;
+
+    private void OfferSeed()
+    {
+        _offeredSeed = GameRoot.NewSeedCode();
+        _seed.Text = _offeredSeed;
+    }
+
+    /// <summary>Names on the main button what it does: a test, a practice voyage or a recorded one, or nothing for a locked ship.</summary>
+    private void ShowLaunch()
+    {
+        if (_ship is not { } ship)
         {
-            _launch.Text = _test is { } test
-                ? $"Test · {ship.Name} · {(test.Node is { } node ? MapScreen.NodeName(node) : "Map")}"
-                : $"Launch · {ship.Name}";
+            return;
         }
+
+        bool open = GameRoot.Instance.CanLaunch(ship);
+        _launch.Disabled = !open;
+        _launch.Text = !open ? "Locked"
+            : _test is { } test ? $"Test · {ship.Name} · {(test.Node is { } node ? MapScreen.NodeName(node) : "Map")}"
+            : SeedTyped ? $"Practice · {ship.Name}"
+            : $"Launch · {ship.Name}";
+    }
+
+    /// <summary>Fills the Voyage tab under the seed with the profile's record for the chosen ship and loadout.</summary>
+    private void ShowVoyage()
+    {
+        ShowLaunch();
+        if (_ship is not { } ship || _loadout is not { } loadout)
+        {
+            return;
+        }
+
+        string muted = Palette.Muted.ToHtml(false);
+        var lines = new List<string>();
+        if (GameRoot.Instance.Profile.Record(ship.Id, loadout.Id) is { Launched: > 0 } record)
+        {
+            lines.Add($"Voyages {record.Launched}  ·  Won {record.Won}  ·  Lost {record.Lost}  ·  Abandoned {record.Abandoned}");
+            if (record is { Won: 0, Furthest: { } furthest })
+            {
+                lines.Add($"Furthest  ·  {ShipText.Progress(furthest)}");
+            }
+        }
+        else
+        {
+            lines.Add($"[color=#{muted}]No voyages recorded[/color]");
+        }
+
+        if (SeedTyped)
+        {
+            lines.Add($"[color=#{muted}]Typed seed  ·  practice, not recorded[/color]");
+        }
+
+        _records.Text = string.Join("\n", lines);
     }
 
     /// <summary>The starting pieces, one line for each kind: "2× Burning Glass   Equipment · Weapon · Common".</summary>
@@ -338,16 +438,21 @@ public partial class HangarScreen : Control
             .Select(group => $"{group.Count()}× {CardText.Card(content.Card(group.Key))}"));
 
     /// <summary>Shows the seed as it will be stored: in capitals, without spaces around it.</summary>
-    private void TidySeed() => _seed.Text = RunSeed.Normalize(_seed.Text);
+    private void TidySeed()
+    {
+        _seed.Text = RunSeed.Normalize(_seed.Text);
+        ShowVoyage();
+    }
 
     private void Launch()
     {
-        if (_ship is not { } ship || _loadout is not { } loadout)
+        if (_ship is not { } ship || _loadout is not { } loadout || !GameRoot.Instance.CanLaunch(ship))
         {
             return;
         }
 
         // An emptied seed field means any voyage will do.
+        bool practice = SeedTyped;
         string seed = RunSeed.Normalize(_seed.Text) is { Length: > 0 } typed ? typed : GameRoot.NewSeedCode();
         UserSettings.RememberHangar(ship.Id, loadout.Id);
         var setup = RunSetup.FromSeedText(ship.Id, seed, loadout.Id);
@@ -357,7 +462,7 @@ public partial class HangarScreen : Control
         }
         else
         {
-            GameRoot.Instance.Launch(setup);
+            GameRoot.Instance.Launch(setup, recorded: !practice);
         }
     }
 

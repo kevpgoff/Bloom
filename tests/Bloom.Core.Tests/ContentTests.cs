@@ -345,6 +345,55 @@ public class ContentTests
         var e = Assert.Throws<ContentException>(() => ContentDb.FromJson(OneBridge, OneCard, FourEnemies, ships, TestContent.SectionsJson, TestContent.PlainEventsJson));
         Assert.Contains("soundSet", Assert.Single(e.Errors), StringComparison.Ordinal);
     }
+
+    /// <summary>Ship classes "a", "b" and so on, each with the unlock written for it, or none for an empty text.</summary>
+    private static string ShipsWithUnlocks(params string[] unlocks) =>
+        "[" + string.Join(",", unlocks.Select((unlock, i) =>
+            $$"""{ "id": "{{(char)('a' + i)}}", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, {{(unlock.Length > 0 ? $"\"unlock\": {unlock}," : "")}} "loadouts": [{ "id": "a", "name": "A", "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }] }""")) + "]";
+
+    private static ContentDb WithUnlocks(params string[] unlocks) =>
+        ContentDb.FromJson(OneBridge, OneCard, FourEnemies, ShipsWithUnlocks(unlocks), TestContent.SectionsJson, TestContent.PlainEventsJson);
+
+    [Fact]
+    public void AShipUnlockIsReadFromJsonAndIsOptional()
+    {
+        var db = WithUnlocks("", """{ "type": "winWith", "ship": "a" }""", """{ "type": "winWith", "ship": "b" }""");
+        Assert.Null(db.Ship("a").Unlock);
+        Assert.Equal(new WinWithUnlock("a"), db.Ship("b").Unlock);
+        Assert.Equal(new WinWithUnlock("b"), db.Ship("c").Unlock);
+    }
+
+    [Theory]
+    [InlineData("""{ "type": "winWith", "ship": "b" }""", "names the ship class itself")]
+    [InlineData("""{ "type": "winWith", "ship": "nope" }""", "unknown ship class 'nope'")]
+    [InlineData("""{ "type": "winWith" }""", "needs a ship")]
+    public void AShipUnlockMustNameAnotherKnownShip(string unlock, string expected)
+    {
+        var e = Assert.Throws<ContentException>(() => WithUnlocks("", unlock));
+        Assert.Contains(expected, Assert.Single(e.Errors), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OneShipMustBeOpenFromTheStart()
+    {
+        var e = Assert.Throws<ContentException>(() => WithUnlocks("""{ "type": "winWith", "ship": "b" }""", """{ "type": "winWith", "ship": "a" }"""));
+        Assert.Contains("No ship class is open from the start", Assert.Single(e.Errors), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void UnlocksThatLeadBackToEachOtherAreReported()
+    {
+        var e = Assert.Throws<ContentException>(() => WithUnlocks("", """{ "type": "winWith", "ship": "c" }""", """{ "type": "winWith", "ship": "b" }"""));
+        Assert.Equal(2, e.Errors.Count);
+        Assert.All(e.Errors, error => Assert.Contains("can never be unlocked", error, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void AnUnknownUnlockIsReported()
+    {
+        var e = Assert.Throws<ContentException>(() => WithUnlocks("", """{ "type": "nope" }"""));
+        Assert.StartsWith("ships.json:", Assert.Single(e.Errors));
+    }
 }
 
 public class ShippedContentTests
