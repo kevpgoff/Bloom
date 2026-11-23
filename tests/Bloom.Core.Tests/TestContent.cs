@@ -19,6 +19,10 @@ namespace Bloom.Core.Tests;
 /// have none, so "plating" (deflect) and "singer" (brace) cannot be upgraded.
 /// Hull sections: "rib" (line of 3), "pod" (square of 4), "crook" (L of 4) and "keel" (line of 5). The test hull
 /// leaves column 5 and rows 5 to 7 free for them.
+/// Events (all sector 1; choice 0 first): "cache" (+20 salvage; 30 salvage for the spear; leave), "storm" (−100 hull;
+/// +15 hull; leave), "graft" (+6 max hull; −10 max hull; leave), "gift" (the uncommon piece, so the drone; a random
+/// crew; an upgrade; leave), "sprout" (a hull section; leave), "gamble" (3 in 4 +50 salvage, 1 in 4 a fight with the
+/// brute; a fight with the dummy; leave) and "signal" (+10 salvage, needs a Drone piece; leave).
 /// A new run gets a generated map; <see cref="UseTinyMap"/> swaps in a short fixed one.
 /// </summary>
 internal static class TestContent
@@ -99,7 +103,57 @@ internal static class TestContent
         ]
         """;
 
-    public static ContentDb Db { get; } = ContentDb.FromJson(Pieces, Cards, Enemies, Ships, SectionsJson);
+    /// <summary>Events as JSON, for tests that build their own content from the test pieces and enemies.</summary>
+    public const string EventsJson = """
+        [
+          { "id": "cache", "name": "Cache", "text": "A cache.", "choices": [
+            { "label": "Open it", "results": [{ "text": "Scrap.", "outcomes": [{ "type": "salvage", "amount": 20 }] }] },
+            { "label": "Buy the spear", "cost": 30, "results": [{ "text": "A spear.", "outcomes": [{ "type": "piece", "id": "spear" }] }] },
+            { "label": "Leave", "results": [{ "text": "Gone." }] } ] },
+          { "id": "storm", "name": "Storm", "text": "A storm.", "choices": [
+            { "label": "Ride it", "results": [{ "text": "Ouch.", "outcomes": [{ "type": "hull", "amount": -100 }] }] },
+            { "label": "Shelter", "results": [{ "text": "Rest.", "outcomes": [{ "type": "hull", "amount": 15 }] }] },
+            { "label": "Leave", "results": [{ "text": "Gone." }] } ] },
+          { "id": "graft", "name": "Graft", "text": "A graft.", "choices": [
+            { "label": "Graft", "results": [{ "text": "Bigger.", "outcomes": [{ "type": "maxHull", "amount": 6 }] }] },
+            { "label": "Prune", "results": [{ "text": "Smaller.", "outcomes": [{ "type": "maxHull", "amount": -10 }] }] },
+            { "label": "Leave", "results": [{ "text": "Gone." }] } ] },
+          { "id": "gift", "name": "Gift", "text": "A gift.", "choices": [
+            { "label": "Uncommon", "results": [{ "text": "Rare-ish.", "outcomes": [{ "type": "piece", "rarity": "Uncommon" }] }] },
+            { "label": "Crew", "results": [{ "text": "Hello.", "outcomes": [{ "type": "piece", "kind": "Crew" }] }] },
+            { "label": "Upgrade", "results": [{ "text": "Better.", "outcomes": [{ "type": "upgrade" }] }] },
+            { "label": "Leave", "results": [{ "text": "Gone." }] } ] },
+          { "id": "sprout", "name": "Sprout", "text": "A sprout.", "choices": [
+            { "label": "Grow", "results": [{ "text": "Hull.", "outcomes": [{ "type": "section" }] }] },
+            { "label": "Leave", "results": [{ "text": "Gone." }] } ] },
+          { "id": "gamble", "name": "Gamble", "text": "A gamble.", "choices": [
+            { "label": "Gamble", "results": [
+              { "weight": 3, "text": "Won.", "outcomes": [{ "type": "salvage", "amount": 50 }] },
+              { "weight": 1, "text": "Lost.", "outcomes": [{ "type": "fight", "enemy": "brute" }] } ] },
+            { "label": "Fight", "results": [{ "text": "Fight.", "outcomes": [{ "type": "fight", "enemy": "dummy" }] }] },
+            { "label": "Leave", "results": [{ "text": "Gone." }] } ] },
+          { "id": "signal", "name": "Signal", "text": "A signal.", "choices": [
+            { "label": "Answer", "needsTag": "Drone", "results": [{ "text": "Beep.", "outcomes": [{ "type": "salvage", "amount": 10 }] }] },
+            { "label": "Leave", "results": [{ "text": "Gone." }] } ] }
+        ]
+        """;
+
+    /// <summary>One event that only gives salvage, so it is valid with any pieces and enemies, for content tests.</summary>
+    public const string PlainEventsJson = """
+        [
+          { "id": "plain", "name": "Plain", "text": "Plain.", "choices": [
+            { "label": "Take", "results": [{ "text": "Taken.", "outcomes": [{ "type": "salvage", "amount": 5 }] }] },
+            { "label": "Leave", "results": [{ "text": "Gone." }] } ] }
+        ]
+        """;
+
+    public static ContentDb Db { get; } = ContentDb.FromJson(Pieces, Cards, Enemies, Ships, SectionsJson, EventsJson);
+
+    /// <summary>The event of <see cref="PlainEventsJson"/>.</summary>
+    public static IReadOnlyList<EventDef> PlainEvents { get; } =
+        [new EventDef("plain", "Plain", "Plain.", [
+            new EventChoice("Take", [new EventResult("Taken.", [new SalvageOutcome(5)])]),
+            new EventChoice("Leave", [new EventResult("Gone.")])])];
 
     public static RunState NewRun(ulong seed = 1) => RunFactory.NewRun(Db, "test", seed);
 
@@ -184,6 +238,6 @@ internal static class TestContent
     public static ContentDb LoadShipped()
     {
         string Read(string name) => File.ReadAllText(Path.Combine(ShippedDataDir, name));
-        return ContentDb.FromJson(Read("pieces.json"), Read("cards.json"), Read("enemies.json"), Read("ships.json"), Read("sections.json"));
+        return ContentDb.FromJson(Read("pieces.json"), Read("cards.json"), Read("enemies.json"), Read("ships.json"), Read("sections.json"), Read("events.json"));
     }
 }

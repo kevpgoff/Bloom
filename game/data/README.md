@@ -11,6 +11,7 @@ All numbers are placeholders for testing, as the design spec says. Entries marke
 | `enemies.json` | Enemies: hull points, a repeating pattern of intents, a `pool` and a `sector`. The pool says which fights of the sector map draw the enemy (see below). |
 | `ships.json` | Ship classes: starting hull, hull points, starting pieces |
 | `sections.json` | Hull sections that shipyards offer: a name and a shape |
+| `events.json` | Events: a story, 2 to 4 choices, and what each choice can come to |
 
 ## Conventions
 
@@ -20,6 +21,14 @@ All numbers are placeholders for testing, as the design spec says. Entries marke
 - **Effects** are objects whose first property must be `"type"` (a .NET 8 rule): `{ "type": "damage", "amount": 5 }`. Card effects are `damage`, `block`, `gainEnergy`, `draw`, `repair`, `focus` and `grow`. Bonus-only effects are `damageBonus` and `startGrown`.
 - **Upgrades.** A card's `"upgrade"` is what it becomes when its piece is upgraded: `{ "cost": 0 }`, `{ "effects": [...] }` or both. Upgraded effects replace the card's own list, so write all of them. Every shipped card has an upgrade, and a test checks it. An upgraded card is named with "+" after it.
 - **Hull sections** cover 3 to 5 cells joined by edges, and there must be at least 3 of them, since a shipyard offers 3 (hard fights and bosses offer 3 more after their reward). A section adds cells to the hull, not hull points. It turns like a piece when attached.
+- **Events.** An event has an `id`, a `name`, its `text` and 2 to 4 `choices`. A choice has a `label`, an optional `cost` in salvage and an optional `needsTag` (one of the tags), and 1 or more `results`. One result is picked by `weight` (default 1), so a single result is certain. A result has its `text` and a list of `outcomes`, each an object whose first property is `"type"`:
+  - `salvage`, `hull` and `maxHull` take an `amount`, which can be negative. Salvage never drops below 0, and hull never drops below 1 from an event.
+  - `piece` takes an `id`, or a `rarity` and/or a `kind` to pick at random (never the bridge). The piece goes to the cargo hold.
+  - `upgrade` upgrades a random piece that can still be upgraded.
+  - `section` offers a free hull section after the event.
+  - `fight` takes an `enemy` (not a boss) and starts that fight after the event, with that enemy's normal reward.
+
+  The game shows only a choice's label, its cost and its tag, never its outcomes, so the text must carry the hints (the owner, 2026-11-23: "reading matters"). A choice whose tag no fitted piece carries is not shown. Every event needs one choice with no cost and no tag, so the player can always go on. The validator checks all of this, and every sector needs at least one event.
 - **Enums** are written as in code: `"Equipment"`, `"Weapon"`, `"HeavyAttack"`.
 - **Enemy pools** are `"Early"` (skirmishes on the map's first 3 rows), `"Late"` (skirmishes on later rows), `"Hard"` (hard fights) and `"Boss"`. Every enemy needs one. `"sector"` defaults to 1. Each sector needs at least one enemy in every pool, and the validator checks it. When a fight node is chosen, its enemy is drawn from the pool, and an enemy repeats in a run only after the rest of its pool has been met.
 
@@ -114,3 +123,30 @@ The enemies of sector 1, by pool. Lanes are 0-based; the seedling's hull covers 
 | Hard | Aurora Knot | 64 | Attack 13, attack 13, heavy 21 on lane 5, block 10 |
 | Hard | Salvage Hound | 68 | Attack 17, block 8, heavy 20 on lane 2 |
 | Boss | Grand Combine | 120 | Attack 14, heavy 20 on lane 2, block 14, attack 16, heavy 20 on lane 4 |
+
+## Placeholder events
+
+The first 10 were sketched with the owner on 2026-11-23. The other 10 were written by another agent from the owner's writer prompt the same day, then revised so their stories hint at outcomes instead of listing them. All of them are placeholders. A choice marked with a tag appears only when a fitted piece carries that tag. The text of each is in `events.json`.
+
+| Event | Choices and what they come to |
+| --- | --- |
+| Vault Sprout | Let it grow: a hull section. Prune it back: +25 salvage |
+| Toll Beacon | Pay in scrap (25 salvage): an uncommon piece. Send a drone (Drone): an uncommon piece. Refuse to pay: fight the Toll Beacon. Slip past: even odds of nothing or −8 hull |
+| Drifting Orchard | Harvest the fruit: +12 hull. Offer the keeper a berth: Orchard Keeper. Strip the glass: +30 salvage |
+| Humming Wreck | Listen a while: an upgrade. Invite the choir aboard: Choir Elder and −6 max hull. Scrape the hull: +35 salvage, and even odds of −6 hull |
+| Mirror Field | Realign the array (Solar): Mirror Kite. Bask in its focus: +10 hull. Pry loose a mirror: +30 salvage |
+| Stalled Harvester | Broadcast the shutdown code: 3 in 5 +45 salvage, else fight the Feral Harvester. Calm it by force: fight it. Back away: −5 hull |
+| Lost Swarm | Lend them your drone's call sign (Drone): Drone Wrangler. Let them tinker: +12 hull. Shoo them off: nothing |
+| Comet's Wake | Gather the singing ice: +6 max hull. Chase the comet: fight the Singing Comet. Sail on: nothing |
+| Extraction Rig | Shut it down: fight the Strip Miner (a hard fight's reward). Siphon its reactor: an upgrade and −8 hull. Leave it be: nothing |
+| Drift Market | Buy a sealed crate (40 salvage): a common piece (6 in 10), uncommon (3 in 10) or rare (1 in 10). Trade stories: +15 salvage. Moor for a meal: +8 hull |
+| Kiln Buoy | Hold a fitting in the glare: an upgrade and −8 hull. Shade the jammed shutters (Shield): +30 salvage. Give the buoy wide berth: nothing |
+| Lace Coral | Graft a sprig aboard: a hull section and −6 max hull. Scrape resin off the marker: 2 in 3 +30 salvage, else +20 salvage and −4 max hull. Leave the coral untouched: nothing |
+| Sleeping Miner | Slip a drone inside (Drone): an uncommon equipment piece. Grapple the loose coils: 1 in 3 +45 salvage, else fight the Strip Miner. Wake and calm the giant: fight the Strip Miner. Drift past in silence: nothing |
+| Marooned Choir | Rig her cradle aboard (40 salvage): Choir Elder. Tow the pod into sunlight: 2 in 3 +10 hull, else +8 hull and Spore Singer. Chime farewell and sail on: nothing |
+| Tinker Barge | Trade for a seed drone (30 salvage): Seed Drone. Let the new bots tinker: 2 in 3 an upgrade, else −9 hull. Share your drone flight charts (Drone): +30 salvage and +8 hull. Wave and keep course: nothing |
+| Tangled Nursery | Hack the main knot loose: Orchard Keeper, then fight the Bramble Drift. Snip the outer runners (Weapon): +10 hull. Leave the raft behind: nothing |
+| Sun Well | Bask deep in the warm ring: 3 in 5 +6 max hull, else fight the Pollen Squall. Skim the rim on solar sails (Solar): +10 hull. Steer clear of the clouds: nothing |
+| Lantern Tiller | Answer with living vines (Garden): +4 max hull. Snatch the crate between turns: even odds of a common equipment piece and +15 salvage, or a fight with the Rogue Tiller. Calm the tiller head-on: fight it. Leave it to its furrow: nothing |
+| Moth Lighthouse | Coast in dark to fetch him: 3 in 5 Lens Grinder, else fight the Static Moths. Pluck the loose prism shards: +25 salvage and −6 hull. Log the drift and sail on: nothing |
+| Hound's Cache | Toss bait and open one (35 salvage): even odds of Sunspear or a fight with the Salvage Hound. Pry a crate straight away: +20 salvage, then fight the Salvage Hound. Slip away from the shadow: nothing |

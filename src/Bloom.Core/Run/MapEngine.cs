@@ -36,7 +36,7 @@ public sealed class MapEngine(ContentDb content)
     /// <summary>
     /// Moves the ship to a reachable node and starts what happens there: a fight node commits to a fight
     /// against an enemy rolled from its pool, a dock rolls the pieces it sells, a shipyard the hull sections
-    /// it offers, and a grove waits for the player's choice. Refit steps can no longer be undone after this.
+    /// it offers, an event node which event it is, and a grove waits for the player's choice. Refit steps can no longer be undone after this.
     /// </summary>
     public void Choose(RunState run, int nodeId)
     {
@@ -58,9 +58,14 @@ public sealed class MapEngine(ContentDb content)
             throw new InvalidOperationException($"Sector {run.Sector} has no enemy in the {pool} pool.");
         }
 
-        if (pool is null && node.Type is not (NodeType.Grove or NodeType.Dock or NodeType.Shipyard))
+        if (pool is null && node.Type is not (NodeType.Grove or NodeType.Dock or NodeType.Shipyard or NodeType.Event))
         {
             throw new InvalidOperationException($"{node.Type} nodes are not built yet.");
+        }
+
+        if (node.Type == NodeType.Event && !content.Events.Any(e => e.Sector == run.Sector))
+        {
+            throw new InvalidOperationException($"Sector {run.Sector} has no event.");
         }
 
         run.Path.Add(node.Id);
@@ -82,6 +87,10 @@ public sealed class MapEngine(ContentDb content)
         else if (node.Type == NodeType.Shipyard)
         {
             run.Shipyard = new ShipyardVisit(ShipyardEngine.RollSections(content, run));
+        }
+        else if (node.Type == NodeType.Event)
+        {
+            run.Event = EventEngine.Roll(content, run);
         }
         else
         {

@@ -215,6 +215,31 @@ After seeing that, the owner decided:
 - **The reward screen** says "+ Hull section" under the salvage when a section follows. The section's screen is titled "Hull section" there, as after a boss.
 - **Balance after them.** A third bot now picks hard fights when healthy and takes only rare pieces, fitting them once the section is attached. Over 400 runs: plain 62%, rare-only 59%, smart 44%. A hard fight now comes out about even with a skirmish for the rare-only bot instead of clearly behind. It still costs about 23 hull against 11 for a late skirmish. The smart bot loses more because it takes every piece that fits, which waters down its deck (it reaches the boss with the same hull and loses there). The bots spend almost no salvage, so the higher salvage does not show in these numbers; for a player it buys pieces and repairs at docks.
 
+## Events decided on 2026-11-23
+
+The fourth of the sector map's 5 pull requests. The owner merged the third and asked to go ahead with events, sketching them together.
+
+Decided by the owner:
+
+| Topic | Decision |
+| --- | --- |
+| The events | The 10 sketched together (see `game/data/README.md`, "Placeholder events"), all placeholders. The spec's first playable asked for 6; with about 1 to 3 events a run, 10 keeps back-to-back runs from repeating. |
+| More events | 10 more, written by another agent from a writer prompt the owner gave it. The owner found that it "got the instructions wrong": its stories listed what each choice does and stated the odds ("about half the time"). Their stories were rewritten to hint instead, keeping the agent's choices and results, so there are 20. |
+| Outcomes | Hidden. A choice shows only its label, plus its salvage cost and the tag it needs. In the owner's words: "just because the game is on the phone doesn't mean it should be handholding experience. I'm much more interested in old-school design where reading matters." The story text carries the hints, such as "if it still listens to them" for a code that works 3 times in 5. |
+
+Taken as defaults, not raised by the owner (numbers are in `Rules` or `events.json` and are placeholders):
+- **Shape of an event.** 2 to 4 choices. A choice can cost salvage, paid when it is chosen, and can need a fitted piece with a tag. It has 1 or more results, one picked by weight. A result can change salvage, hull and max hull, give a piece to the cargo hold (named, or random by rarity or kind), upgrade a random piece, give a free hull section, or start a fight.
+- **Tagged choices** appear only when a fitted piece carries the tag, as FTL's blue options do, and show the tag. A choice the ship cannot afford is shown with its price in red and cannot be taken. Every event has a choice with no cost and no tag.
+- **After a choice** the screen shows the result's text, then what actually changed (numbers, and pieces by name). The button names where it leads: "Continue", "Fight · Feral Harvester" or "Hull section".
+- **Limits.** Event damage never takes the hull below 1, so a story choice cannot end the run. No event takes a piece away; whether crew can be lost stays an open question.
+- **Fights from events** are against the named enemy, with that enemy's normal reward: a hard enemy gives a rare piece and a hull section. An event cannot start a boss fight. The event's node is done after the fight's reward.
+- **Rolling.** An event is rolled when its node is chosen, all of the sector's events equally likely, and one repeats only once the others have been met in the run.
+- **Events on the map.** Event nodes have their weight (20) on the rolled rows.
+- **No refitting** during an event, as at a shipyard.
+- **Save.** The save schema goes to 8 (a run remembers its event and the events it has met), so a run saved by the third pull request is set aside and a new run starts.
+- **Revising the agent's events.** Besides the stories, a story no longer names a choice that needs a tag, since a player without the tag never sees that choice. Marooned Choir's elder costs only her 40 salvage, not also 5 max hull, because Humming Wreck already gives the same crew member for max hull.
+- **Balance.** The three bots, which take an event only when nothing else they want is reachable and then the first open choice, met 0.6 events a run and won 67% (plain, was 62%), 52% (smart, was 44%) and 64% (rare-only, was 59%) of 400 runs with the first 10 events, and 65%, 46% and 61% with all 20 (some of the new choices they take first cost hull or max hull). Event nodes take the place of some fights (about 4.6 fights won a run), so a path costs less hull. Players who chase fights and gambles in events will see something different from the bots.
+
 ## Proposed in the spec, not yet confirmed
 
 - Three sectors for each run, about 8 nodes and 25 minutes for each sector.

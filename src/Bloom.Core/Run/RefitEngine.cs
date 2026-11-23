@@ -253,6 +253,10 @@ public sealed class RefitEngine(ContentDb content, CombatEngine? combat = null)
                 throw new InvalidOperationException("Take or skip the reward first.");
             case RunPhase.Grove:
                 throw new InvalidOperationException("Finish at the grove first.");
+            case RunPhase.Shipyard:
+                throw new InvalidOperationException("Finish at the shipyard first.");
+            case RunPhase.Event:
+                throw new InvalidOperationException("Finish the event first.");
             default:
                 throw new InvalidOperationException("The run is over.");
         }

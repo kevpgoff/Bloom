@@ -53,6 +53,8 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
                 throw new InvalidOperationException("Leave the dock first.");
             case RunPhase.Shipyard:
                 throw new InvalidOperationException("Finish at the shipyard first.");
+            case RunPhase.Event:
+                throw new InvalidOperationException("Finish the event first.");
             case RunPhase.Won or RunPhase.Lost:
                 throw new InvalidOperationException("The run is over.");
         }

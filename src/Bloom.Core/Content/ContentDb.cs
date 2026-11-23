@@ -14,7 +14,7 @@ public sealed class ContentException(IReadOnlyList<string> errors)
 }
 
 /// <summary>
-/// All game content: pieces, cards, enemies, ship classes and hull sections. It knows nothing about files; the caller
+/// All game content: pieces, cards, enemies, ship classes, hull sections and events. It knows nothing about files; the caller
 /// passes the JSON text, so the Godot layer and the tests can each read the files their own way.
 /// Content is always validated on load.
 /// </summary>
@@ -26,19 +26,22 @@ public sealed class ContentDb
     private readonly Dictionary<string, EnemyDef> _enemies = [];
     private readonly Dictionary<string, ShipClassDef> _ships = [];
     private readonly Dictionary<string, HullSectionDef> _sections = [];
+    private readonly Dictionary<string, EventDef> _events = [];
 
     private ContentDb(
         IReadOnlyList<PieceDef> pieces,
         IReadOnlyList<CardDef> cards,
         IReadOnlyList<EnemyDef> enemies,
         IReadOnlyList<ShipClassDef> ships,
-        IReadOnlyList<HullSectionDef> sections)
+        IReadOnlyList<HullSectionDef> sections,
+        IReadOnlyList<EventDef> events)
     {
         Pieces = pieces;
         Cards = cards;
         Enemies = enemies;
         Ships = ships;
         Sections = sections;
+        Events = events;
 
         // First definition wins; the validator reports duplicates.
         foreach (var p in pieces.Where(p => p?.Id is not null))
@@ -68,6 +71,11 @@ public sealed class ContentDb
         {
             _sections.TryAdd(s.Id, s);
         }
+
+        foreach (var e in events.Where(e => e?.Id is not null))
+        {
+            _events.TryAdd(e.Id, e);
+        }
     }
 
     public IReadOnlyList<PieceDef> Pieces { get; }
@@ -80,19 +88,22 @@ public sealed class ContentDb
 
     public IReadOnlyList<HullSectionDef> Sections { get; }
 
+    public IReadOnlyList<EventDef> Events { get; }
+
     public static ContentDb Create(
         IReadOnlyList<PieceDef> pieces,
         IReadOnlyList<CardDef> cards,
         IReadOnlyList<EnemyDef> enemies,
         IReadOnlyList<ShipClassDef> ships,
-        IReadOnlyList<HullSectionDef> sections)
+        IReadOnlyList<HullSectionDef> sections,
+        IReadOnlyList<EventDef> events)
     {
-        var db = new ContentDb(pieces, cards, enemies, ships, sections);
+        var db = new ContentDb(pieces, cards, enemies, ships, sections, events);
         var errors = ContentValidator.Validate(db);
         return errors.Count == 0 ? db : throw new ContentException(errors);
     }
 
-    public static ContentDb FromJson(string piecesJson, string cardsJson, string enemiesJson, string shipsJson, string sectionsJson)
+    public static ContentDb FromJson(string piecesJson, string cardsJson, string enemiesJson, string shipsJson, string sectionsJson, string eventsJson)
     {
         var errors = new List<string>();
         var pieces = Parse(piecesJson, BloomJsonContext.Default.ListPieceDef, "pieces.json", errors);
@@ -100,7 +111,8 @@ public sealed class ContentDb
         var enemies = Parse(enemiesJson, BloomJsonContext.Default.ListEnemyDef, "enemies.json", errors);
         var ships = Parse(shipsJson, BloomJsonContext.Default.ListShipClassDef, "ships.json", errors);
         var sections = Parse(sectionsJson, BloomJsonContext.Default.ListHullSectionDef, "sections.json", errors);
-        return errors.Count == 0 ? Create(pieces, cards, enemies, ships, sections) : throw new ContentException(errors);
+        var events = Parse(eventsJson, BloomJsonContext.Default.ListEventDef, "events.json", errors);
+        return errors.Count == 0 ? Create(pieces, cards, enemies, ships, sections, events) : throw new ContentException(errors);
     }
 
     public PieceDef Piece(string id) => _pieces.TryGetValue(id, out var def) ? def : throw Unknown("piece", id);
@@ -118,6 +130,8 @@ public sealed class ContentDb
     public ShipClassDef Ship(string id) => _ships.TryGetValue(id, out var def) ? def : throw Unknown("ship class", id);
 
     public HullSectionDef Section(string id) => _sections.TryGetValue(id, out var def) ? def : throw Unknown("hull section", id);
+
+    public EventDef Event(string id) => _events.TryGetValue(id, out var def) ? def : throw Unknown("event", id);
 
     public bool HasPiece(string id) => _pieces.ContainsKey(id);
 
@@ -137,7 +151,7 @@ public sealed class ContentDb
         catch (NotSupportedException e)
         {
             // System.Text.Json throws this, not JsonException, when an effect's "type" is not its first property.
-            errors.Add($"{fileName}: {e.Message} Check that \"type\" is the first property of every effect.");
+            errors.Add($"{fileName}: {e.Message} Check that \"type\" is the first property of every effect and outcome.");
             return [];
         }
     }

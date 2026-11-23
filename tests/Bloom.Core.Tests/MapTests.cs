@@ -176,6 +176,7 @@ public class MapEngineTests
     [InlineData(NodeType.HardFight, 0, EnemyPool.Hard)]
     [InlineData(NodeType.Boss, Rules.MapRows, EnemyPool.Boss)]
     [InlineData(NodeType.Grove, 3, null)]
+    [InlineData(NodeType.Event, 3, null)]
     public void EachNodeDrawsFromItsPool(NodeType type, int row, EnemyPool? pool) =>
         Assert.Equal(pool, MapEngine.PoolFor(new MapNode(0, type, row, 0)));
 
