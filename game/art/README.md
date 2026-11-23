@@ -39,7 +39,7 @@ Icons are line art on a 64×64 view box, drawn like the ship's hologram:
 - **Effect icons** keep a dark well (`#0a1512` at 45–70% opacity) centered on (32, 32): the card draws the number there, centered, at 43% of the icon's size.
 - **Enemy icons** carry more detail than the rest, because the combat screen shows the enemy large, in a target-lock reticle (`Screens/EnemyEmblem.cs`).
 
-The backdrop is drawn in code: `Visuals/BloomBackdrop.cs` draws the sky, horizon glow, root veins, HUD rings and scanlines once, and `Visuals/BackdropMotes.cs` animates the pollen motes and the radar sweep. The motes, the sweep and the enemy's reticle all stand still in low-processor mode, so the engine can idle.
+The backdrop is drawn in code: `Visuals/BloomBackdrop.cs` draws the sky, horizon glow, root veins, HUD rings and scanlines once, and `Visuals/BackdropMotes.cs` animates the pollen motes and the radar sweep. As the hull wears, `BackdropMotes` also warms the horizon and the screen's edges (`Visuals/HullWarning.cs`). Keep that warning faint: the owner found a stronger glow "way too much". The motes, the sweep and the enemy's reticle all stand still in low-processor mode, so the engine can idle.
 
 Combat effects are drawn in code too, by `Feedback/FxLayer.cs`: glowing motes, streaks and hex shards made from `textures/glow.svg`, plus rings, bolts, flashes and ghost cards, all in Palette colors and blended additively so they read as light. Floating numbers use Saira bold with a dark outline. `Feedback/CombatFeedback.cs` decides which effect plays for each thing that happens in a fight. These effects still play in low-processor mode, because each one ends on its own; the layer stops updating once nothing is playing.
 

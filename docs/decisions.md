@@ -265,6 +265,20 @@ Taken as defaults, not raised by the owner (numbers are placeholders):
 - **The Grand Combine.** The body has 56 hull: attack 9, heavy 13 on lane 2, block 6. Its parts are the Thresher Arm (15 hull: attacks of 5, 6 and 7), the Chaff Screen (12 hull: block 3 every turn) and the Baling Ram (16 hull: heavy 10 on lane 4, attack 4, heavy 10 on lane 3). Together that is 99 hull, against the old boss's 120, and up to about 20 damage a turn while every part works, against 14.
 - **Balance.** Over 400 runs, with bots that aim at the part that hits hardest until it is disabled, then the next: plain 66% (was 65%), smart 48% (was 46%), rare-only 61% (unchanged). The boss fight lasts about 13 turns (was 14). Bots that only hit the body win 17%, 8% and 17%, and bots that aim at the part with the least hull left win 44%, 21% and 39%. Aiming matters: rushing the body leaves every part hitting until the end.
 
+## Low hull warning decided on 2026-11-23
+
+Before this, only the small white "Hull X / Y" numbers showed that the hull was low.
+
+| Topic | Decision |
+| --- | --- |
+| Feel | Subtle and subconscious, not in your face: felt rather than read, with no text, nothing sudden and nothing over the screen's content. The first version's glow on the screen's edges was "way too much", so it was toned down to about a third. The owner approved the toned-down version. |
+
+Taken as defaults, not raised by the owner (all numbers are placeholders, in `Visuals/HullWarning.cs`, `Visuals/BackdropMotes.cs` and `Screens/ShipGridView.cs`):
+- The warning starts below half of the maximum hull and is at full strength at a fifth. Every part of it eases in and out over about 2.5 s.
+- The hull's numbers turn from white to amber, then coral, on every screen that shows them. Only the hull is colored: the combat screen shows Block in a label of its own, and the status lines are now rich text labels.
+- Behind every screen, the horizon and the screen's edges warm faintly and breathe slowly, once every 5.5 s at first and every 3.4 s at full strength.
+- In a fight, the ship's open deck darkens toward red, like emergency lighting. Below about a third of the hull, the hologram dims for a moment every 4 to 9 s.
+
 ## Proposed in the spec, not yet confirmed
 
 - Three sectors for each run, about 8 nodes and 25 minutes for each sector.

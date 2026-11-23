@@ -1,6 +1,7 @@
 using Bloom.Core.Map;
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -14,7 +15,7 @@ public partial class MapScreen : Control
 {
     private MapView _map = null!;
     private Label _title = null!;
-    private Label _status = null!;
+    private RichTextLabel _status = null!;
     private Button _ship = null!;
     private Button _go = null!;
     private int? _selected;
@@ -25,7 +26,7 @@ public partial class MapScreen : Control
     {
         _map = GetNode<MapView>("%MapView");
         _title = GetNode<Label>("%Title");
-        _status = GetNode<Label>("%StatusLabel");
+        _status = GetNode<RichTextLabel>("%StatusLabel");
         _ship = GetNode<Button>("%ShipButton");
         _go = GetNode<Button>("%GoButton");
 
@@ -75,7 +76,7 @@ public partial class MapScreen : Control
         }
 
         _title.Text = run.Sectors > 1 ? $"Sector {run.Sector} of {run.Sectors}" : "Sector map";
-        _status.Text = $"Hull {run.Hull} / {run.MaxHull}  ·  Salvage {run.Salvage}";
+        _status.Text = $"{HullWarning.HullBbcode(run)}  ·  Salvage {run.Salvage}";
         _ship.Text = run.Cargo.Pieces.Count > 0 ? $"Ship · {run.Cargo.Pieces.Count} held" : "Ship";
         _go.Disabled = _selected is null;
         _go.Text = _selected is int chosen ? $"Set course · {NodeName(map.Node(chosen).Type)}" : "Set course";

@@ -1,6 +1,7 @@
 using Bloom.Core.Map;
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -37,7 +38,7 @@ public partial class ShipyardScreen : Control
         GetNode<Label>("%Message").Text = atShipyard
             ? "Shipwrights tend racks of grown hull, still green at the seams."
             : "Spare hull drifts where the fight was. The crew tows it alongside.";
-        GetNode<Label>("%StatusLabel").Text = $"Hull {run.Hull} / {run.MaxHull}  ·  Salvage {run.Salvage}";
+        GetNode<RichTextLabel>("%StatusLabel").Text = $"{HullWarning.HullBbcode(run)}  ·  Salvage {run.Salvage}";
 
         var options = GetNode<HBoxContainer>("%Options");
         options.Visible = yard.Sections.Count > 0;

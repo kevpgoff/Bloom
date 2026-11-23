@@ -26,6 +26,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         ShipGridView Grid,
         ProgressBar EnemyHullBar,
         Label ShipLabel,
+        Label BlockLabel,
         Label EnergyLabel,
         Label PilesLabel,
         Label TurnLabel,
@@ -355,9 +356,9 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Flash([box], Palette.Block with { A = 0.08f }, 0.35f);
             fx.RectRing(box, Palette.Block, 16f, 0.45f);
             fx.RectRing(box, Palette.Block, 30f, 0.55f, 2f, delay: 0.08f);
-            var hull = LabelCenter(w.ShipLabel);
-            fx.Stream(origin(), hull, Palette.Block, 8, Tuning.StreamTime, 3f, ParticleShape.Hex, 50f);
-            fx.FloatText($"+{amount} BLOCK", hull + new Vector2(0, -34), Palette.Block, 30, 0.9f, 40f, Tuning.StreamTime * 0.8f);
+            var block = LabelCenter(w.BlockLabel);
+            fx.Stream(origin(), block, Palette.Block, 8, Tuning.StreamTime, 3f, ParticleShape.Hex, 50f);
+            fx.FloatText($"+{amount} BLOCK", block + new Vector2(0, -34), Palette.Block, 30, 0.9f, 40f, Tuning.StreamTime * 0.8f);
             Haptics.Play(HapticKind.Light);
             Sfx.Play(SfxCue.BlockGain);
         });

@@ -9,11 +9,32 @@ namespace Bloom.Game.Screens;
 /// disabled or receive a bonus, and the lane and target of each coming heavy attack. Reports taps on
 /// pieces through <see cref="PieceTapped"/>. All of it is read from the run; nothing is decided here.
 /// </summary>
+/// <remarks>
+/// It also shows the <see cref="HullWarning"/>: as the hull wears, the open deck darkens toward red, and once
+/// the warning is past <see cref="FlickerFrom"/> the whole hologram flickers now and then, more often as it
+/// rises. The flicker only changes <see cref="CanvasItem.Modulate"/>, so it needs no redraw.
+/// </remarks>
 public partial class ShipGridView : Control
 {
     /// <summary>Room above the grid for the heavy-attack marker.</summary>
     private const float MarkerHeight = 40f;
 
+    /// <summary>The warning level at which the hologram starts to flicker.</summary>
+    private const float FlickerFrom = 0.45f;
+
+    /// <summary>Seconds between flickers when they start, and at full warning; each gap varies by 40% either way.</summary>
+    private const float FlickerGapLong = 9f;
+    private const float FlickerGapShort = 4f;
+
+    /// <summary>How far a flicker dims the hologram at full warning: 0.3 leaves it at 70% for a moment.</summary>
+    private const float FlickerDepth = 0.3f;
+
+    private readonly RandomNumberGenerator _rng = new();
+    private float _warning;
+    private float _warningTarget;
+    private bool _warningSet;
+    private float _untilFlicker;
+    private float _flickerAge = -1f;
     private RunSession? _session;
     private int? _highlightPieceId;
     private IReadOnlyCollection<int> _selectable = [];
@@ -43,10 +64,74 @@ public partial class ShipGridView : Control
         _selectable = selectable;
         _chosen = chosen;
         _highlightPieceId = null;
+        _warningTarget = HullWarning.Level(session.State);
+        if (!_warningSet)
+        {
+            // The level the screen opens with shows at once.
+            _warningSet = true;
+            _warning = _warningTarget;
+            _untilFlicker = _rng.RandfRange(1f, 3f);
+        }
+
+        SetProcess(_warning > 0f || _warningTarget > 0f);
         QueueRedraw();
     }
 
-    public override void _Ready() => Resized += QueueRedraw;
+    public override void _Ready()
+    {
+        Resized += QueueRedraw;
+        SetProcess(false);
+    }
+
+    public override void _Process(double delta)
+    {
+        float dt = (float)delta;
+        if (_warning != _warningTarget)
+        {
+            _warning = Mathf.MoveToward(_warning, _warningTarget, dt / HullWarning.EaseTime);
+            QueueRedraw();
+        }
+
+        float dim = 0f;
+        if (_flickerAge >= 0f)
+        {
+            _flickerAge += dt;
+            dim = FlickerShape(_flickerAge);
+            if (dim < 0f)
+            {
+                _flickerAge = -1f;
+                dim = 0f;
+            }
+        }
+        else if (_warning >= FlickerFrom)
+        {
+            _untilFlicker -= dt;
+            if (_untilFlicker <= 0f)
+            {
+                _flickerAge = 0f;
+                float strength = (_warning - FlickerFrom) / (1f - FlickerFrom);
+                _untilFlicker = Mathf.Lerp(FlickerGapLong, FlickerGapShort, strength) * _rng.RandfRange(0.6f, 1.4f);
+            }
+        }
+
+        Modulate = Modulate with { A = 1f - (dim * FlickerDepth * _warning) };
+        if (_warning <= 0f && _warningTarget <= 0f && _flickerAge < 0f)
+        {
+            SetProcess(false);
+        }
+    }
+
+    /// <summary>
+    /// How dim the hologram is <paramref name="age"/> seconds into a flicker, from 0 to 1: a short drop, a gap and
+    /// a smaller drop, like a projector that loses power for a moment. Below 0 once the flicker is over.
+    /// </summary>
+    private static float FlickerShape(float age) => age switch
+    {
+        < 0.05f => 1f,
+        < 0.11f => 0f,
+        < 0.15f => 0.55f,
+        _ => -1f,
+    };
 
     public override void _Draw()
     {
@@ -63,7 +148,7 @@ public partial class ShipGridView : Control
         var heavies = combat is null ? [] : _session.Combat.NextActions(run).Where(a => a.Lane is not null).ToList();
         var heavyLanes = heavies.Select(a => a.Lane!.Value).Distinct().ToList();
         GridPainter.DrawLanes(this, g, heavyLanes);
-        GridPainter.DrawHull(this, g, run.Ship.Grid.Cells);
+        GridPainter.DrawHull(this, g, run.Ship.Grid.Cells, HullWarning.Deck(_warning));
         foreach (int lane in heavyLanes)
         {
             GridPainter.DrawHeavyLane(this, g, lane);

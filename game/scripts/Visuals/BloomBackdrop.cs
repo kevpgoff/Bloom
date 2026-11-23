@@ -10,8 +10,8 @@ namespace Bloom.Game.Visuals;
 /// </summary>
 /// <remarks>
 /// This layer is static: Godot keeps what <see cref="_Draw"/> drew and redraws it only on a resize. The
-/// moving parts (pollen motes and a radar sweep) are a child <see cref="BackdropMotes"/>, which stands
-/// still in low-processor mode.
+/// moving parts (pollen motes, a radar sweep and the hull warning) are a child <see cref="BackdropMotes"/>,
+/// which stands still in low-processor mode.
 /// </remarks>
 public partial class BloomBackdrop : Control
 {
@@ -24,15 +24,20 @@ public partial class BloomBackdrop : Control
     /// <summary>The radius scale of the HUD rings.</summary>
     public static float RingScale(Vector2 size) => Mathf.Max(size.X, size.Y) * 0.68f;
 
+    private BackdropMotes _motes = null!;
+
     public override void _Ready()
     {
         MouseFilter = MouseFilterEnum.Ignore;
         Resized += QueueRedraw;
 
-        var motes = new BackdropMotes();
-        AddChild(motes);
-        motes.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _motes = new BackdropMotes();
+        AddChild(_motes);
+        _motes.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
     }
+
+    /// <summary>Shows a hull warning from 0 to 1 (<see cref="HullWarning"/>) on the moving layer, which eases toward it.</summary>
+    public void ShowWarning(float level) => _motes.Warning = level;
 
     public override void _Draw()
     {

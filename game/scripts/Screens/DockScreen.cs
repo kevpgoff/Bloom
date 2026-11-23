@@ -1,6 +1,7 @@
 using Bloom.Core;
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -22,7 +23,7 @@ public partial class DockScreen : Control
 
     private readonly List<(OptionCard Card, Trade Trade, int Value)> _options = [];
     private (Trade Trade, int Value)? _selected;
-    private Label _status = null!;
+    private RichTextLabel _status = null!;
     private VBoxContainer _list = null!;
     private Control _cargoNote = null!;
     private Button _ship = null!;
@@ -32,7 +33,7 @@ public partial class DockScreen : Control
 
     public override void _Ready()
     {
-        _status = GetNode<Label>("%StatusLabel");
+        _status = GetNode<RichTextLabel>("%StatusLabel");
         _list = GetNode<VBoxContainer>("%Options");
         _cargoNote = GetNode<Control>("%CargoNote");
         _ship = GetNode<Button>("%ShipButton");
@@ -66,7 +67,7 @@ public partial class DockScreen : Control
         }
 
         _options.Clear();
-        _status.Text = $"Hull {run.Hull} / {run.MaxHull}  ·  Salvage {run.Salvage}";
+        _status.Text = $"{HullWarning.HullBbcode(run)}  ·  Salvage {run.Salvage}";
         _ship.Text = run.Cargo.Pieces.Count > 0 ? $"Ship · {run.Cargo.Pieces.Count}" : "Ship";
         _cargoNote.Visible = run.Cargo.IsFull;
         string muted = Palette.Muted.ToHtml(false);

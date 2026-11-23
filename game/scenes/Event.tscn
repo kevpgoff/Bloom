@@ -32,12 +32,17 @@ theme_override_font_sizes/font_size = 40
 text = "Event"
 autowrap_mode = 3
 
-[node name="StatusLabel" type="Label" parent="Layout/Header"]
+[node name="StatusLabel" type="RichTextLabel" parent="Layout/Header"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 1
-theme_override_font_sizes/font_size = 26
+mouse_filter = 2
+theme_override_font_sizes/normal_font_size = 26
+bbcode_enabled = true
 text = "Hull"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
 vertical_alignment = 1
 
 [node name="Scroll" type="ScrollContainer" parent="Layout"]

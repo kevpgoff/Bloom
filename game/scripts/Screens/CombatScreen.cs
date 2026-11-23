@@ -71,6 +71,7 @@ public partial class CombatScreen : Control
     private HBoxContainer _partsRow = null!;
     private ShipGridView _grid = null!;
     private Label _ship = null!;
+    private Label _block = null!;
     private Label _energy = null!;
     private Label _piles = null!;
     private Control _targetBanner = null!;
@@ -102,6 +103,7 @@ public partial class CombatScreen : Control
         BloomTheme.AttachPanelFrame(GetNode<Control>("ResultOverlay/Center/ResultPanel"), Palette.HoloBright with { A = 0.7f });
         _grid = GetNode<ShipGridView>("%ShipGrid");
         _ship = GetNode<Label>("%ShipLabel");
+        _block = GetNode<Label>("%BlockLabel");
         _energy = GetNode<Label>("%EnergyLabel");
         _piles = GetNode<Label>("%PilesLabel");
         _targetBanner = GetNode<Control>("%TargetBanner");
@@ -121,7 +123,7 @@ public partial class CombatScreen : Control
         _fx.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         _feedback = new CombatFeedback(
             _fx,
-            new CombatFeedback.Widgets(_enemyEmblem, _grid, _enemyHullBar, _ship, _energy, _piles, _turn, _endTurn, PartAt),
+            new CombatFeedback.Widgets(_enemyEmblem, _grid, _enemyHullBar, _ship, _block, _energy, _piles, _turn, _endTurn, PartAt),
             CardRect,
             () => _cardButtons.Values.Where(IsLive).Select(b => b.GetGlobalRect()).ToList());
 
@@ -383,7 +385,10 @@ public partial class CombatScreen : Control
 
     private void ShowStatus(RunState run, CombatState? combat)
     {
-        _ship.Text = combat is null ? $"Hull {run.Hull} / {run.MaxHull}" : $"Hull {run.Hull} / {run.MaxHull}    Block {combat.Block}";
+        // The hull's numbers warm as it wears (HullWarning), with the deck and the backdrop.
+        _ship.Text = $"Hull {run.Hull} / {run.MaxHull}";
+        _ship.AddThemeColorOverride("font_color", HullWarning.TextColor(HullWarning.Level(run)));
+        _block.Text = combat is null ? "" : $"Block {combat.Block}";
         _energy.Text = combat is null ? "" : $"Energy {combat.Energy}";
         if (combat is null)
         {
