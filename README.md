@@ -12,13 +12,14 @@ A paid, single-player card roguelite for phones, where the ship is the deck (wor
 ## Commands
 
 ```sh
-dotnet build Bloom.sln          # builds the rules, the tests and the Godot game assembly; no editor needed
-dotnet test                     # runs the rule tests, including validation of game/data/*.json
+dotnet build Bloom.sln          # builds the rules, the tests, the sound-effect tool and the Godot game assembly; no editor needed
+dotnet test                     # runs the rule tests, including validation of game/data/*.json, and the checks on every sound effect
 godot --path game               # runs the game (portrait window, 405×720)
 godot -e --path game            # opens the project in the editor
 godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 16, …" and a screen line ("MapScreen: …" on a new run)
 godot --path game -- --fx-demo                 # debug builds: plays the first fight by itself to show the combat feedback; add =lose to show a defeat. The run stays in memory, so the save is untouched
 tools/import-music.sh                          # builds the game's music from the zips in music/; see Music below
+tools/sfx.sh render                            # renders the sound effects from their recipes into game/audio/sfx/; see Sound effects below
 tools/android-debug.sh                         # exports a debug APK, installs it on the phone connected by USB and starts it; --log follows its log, --no-install only exports
 ```
 
@@ -48,6 +49,14 @@ The music is Voltz Supreme's ["Analog Ambience"](https://voltzsupreme.itch.io/an
 
 To change which track plays where, or to cut a track, edit `tools/music-tracks.tsv` and run the script again. The moods are voyage (every screen outside a fight), fight, boss, and two stings for a run that is won or lost. `game/scripts/Audio/MusicDirector.cs` plays them. The credit the game owes is in `game/audio/CREDITS.md`.
 
+## Sound effects
+
+The sound effects are our own: each one is a synth recipe, a small JSON file in `tools/SfxGen/recipes/`, that the tool in `tools/SfxGen/` renders to a WAV file in `game/audio/sfx/`. The recipes and the rendered files are both in the repo, so a fresh clone has sound without running anything. The recipe format, the commands and the rules for a new sound are in [`tools/SfxGen/README.md`](tools/SfxGen/README.md).
+
+To change a sound, edit its recipe, run `tools/sfx.sh render`, and commit the recipe and the file together. `dotnet test` fails when a file no longer matches its recipe, when a sound would clip or click, or when a phone speaker would lose most of it. `tools/sfx.sh board` writes one page with a play button for every sound, for judging them by ear.
+
+In the game, `Sfx.Play(SfxCue.…)` starts a sound, and `game/scripts/Audio/SfxPlayer.cs` plays it on the Sfx bus. In a fight the calls sit beside the haptic pulses in `game/scripts/Feedback/CombatFeedback.cs`, so each sound lands with its visual effect.
+
 ## Layout
 
 ```
@@ -55,10 +64,13 @@ Bloom.sln                     solution; also the one Godot builds (dotnet/projec
 src/Bloom.Core/               the game rules in plain C#, with no Godot dependency
   Rng/ Grid/ Pieces/ Cards/ Combat/ Map/ Run/ Save/ Content/
 tests/Bloom.Core.Tests/       xUnit tests for the rules and the shipped data
+tests/SfxGen.Tests/           xUnit tests for the sound-effect tool, its recipes and the rendered files
+tools/SfxGen/                 renders the sound effects from recipes/*.json; see its README.md
 game/                         the Godot project (res://)
   Bloom.csproj                game assembly; references Bloom.Core
   data/                       content as JSON; see game/data/README.md
-  audio/                      the music, built by tools/import-music.sh and not committed; its credits
+  audio/                      sfx/: the sound effects, rendered by tools/SfxGen and committed
+                              music/: built by tools/import-music.sh and not committed; CREDITS.md
   scenes/ scripts/ art/
 docs/decisions.md             decisions made so far
 ```
@@ -91,6 +103,7 @@ A run is one sector: a branching map of about 20 nodes in 7 rows, ending in a bo
 | Fitting screen | Done: drag and drop with the piece floating above the finger, fit and bonus preview, tap to select and tap again to turn, cargo hold, Compost (for salvage), Undo. Opened from the map or a dock it goes back there; after choosing a fight it names the enemy, marks its heavy lanes and starts the fight. Upgraded pieces have "+" after their names |
 | Combat feedback | Done: particles, screen shake and haptics for every card effect, enemy action and the end of a fight (`game/scripts/Feedback/`). Shake strength and haptics are set in `user://settings.cfg`; there is no settings screen yet. Timings are placeholders in `CombatFeedback.Tuning` |
 | Music | Done: Voltz Supreme's "Analog Ambience" in four moods: voyage, fight, boss, and a short sting when a run is won or lost (see [Music](#music)). The voyage music pauses during a fight and resumes after it, and the music pauses while the phone shows another app. The volume is set in `user://settings.cfg`, and the fade times are placeholders in `MusicDirector.Tuning`. Before release, the game must show players the credit "Music by Voltz Supreme", but there is no credits screen yet |
+| Sound effects | In progress: our own synth sounds, rendered from recipes (see [Sound effects](#sound-effects)). The tool, the playback and all 31 combat sounds are done, in the Seedling's set (Wood and water); the owner is judging them by ear. The interface and the other screens are the next step. Each ship class is planned to get a sound set of its own; the game plays only the base set so far. The volume is set in `user://settings.cfg`, and the per-sound playback settings are placeholders in `SfxPlayer.Tuning` |
 | Map screen | Done: the whole sector, with the path taken lit and the reachable nodes pulsing; tap a reachable node, then Set course (which names it) to go there, and Ship to refit. Node icons are in `art/icons/nodes/` |
 | Grove screen | Done: repair the hull, or upgrade one piece, with its cards shown as they would be |
 | Dock screen | Done: 3 pieces for sale, hull repair, and the cargo hold's pieces to sell. Ship opens the Fitting screen, where the selected piece can be sold too |
