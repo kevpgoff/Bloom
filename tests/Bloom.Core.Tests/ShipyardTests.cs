@@ -205,6 +205,28 @@ public class ShipyardTests
         Assert.Equal(Json(restored), Json(again));
     }
 
+    /// <summary>The owner, 2026-11-23: a hard fight gives a free hull section after its reward, so its rare piece has room.</summary>
+    [Fact]
+    public void AHardFightGivesAFreeSectionAfterItsReward()
+    {
+        var run = UseTinyMap(NewRun());
+        run.Path.AddRange([0, 1]);
+        _map.Choose(run, 2);
+        var combat = new CombatEngine(Db);
+        var fight = combat.StartFight(run, run.Encounter!.EnemyId);
+        fight.Enemy.Hull = 1;
+        combat.PlayCard(run, Take(fight, "ram"));
+        Assert.True(run.Reward!.Section);
+
+        new RewardEngine(Db).Take(run, 0);
+        Assert.Equal(RunPhase.Shipyard, run.Phase);
+        Assert.Equal(Rules.ShipyardChoices, run.Shipyard!.Sections.Count);
+        var (origin, rotation) = ShipyardEngine.Placements(run.Ship.Grid, _yard.Offered(run, 0)!.Shape).First();
+        _yard.Attach(run, 0, origin, rotation);
+        Assert.Equal(RunPhase.Map, run.Phase);
+        Assert.Equal([3], _map.Reachable(run).Select(n => n.Id));
+    }
+
     /// <summary>The spec: a boss gives a free hull section. It comes after the boss's reward, before the next sector's first node.</summary>
     [Fact]
     public void ABossBeforeTheLastSectorGivesAFreeSection()
@@ -212,7 +234,7 @@ public class ShipyardTests
         var run = UseTinyMap(NewRun());
         run.Sectors = 2;
         run.Path.AddRange([0, 1, 2, 3]);
-        run.Reward = new RewardOffer(["lance"]);
+        run.Reward = new RewardOffer(["lance"], Section: true);
         new RewardEngine(Db).Skip(run);
         Assert.Equal(2, run.Sector);
         Assert.Empty(run.Path);
@@ -233,7 +255,7 @@ public class ShipyardTests
         run.Sectors = 2;
         run.Ship.Grid = new ShipGrid(WholeGrid.ToList());
         run.Path.AddRange([0, 1, 2, 3]);
-        run.Reward = new RewardOffer(["lance"]);
+        run.Reward = new RewardOffer(["lance"], Section: true);
         new RewardEngine(Db).Skip(run);
         Assert.Equal(2, run.Sector);
         Assert.Null(run.Shipyard);

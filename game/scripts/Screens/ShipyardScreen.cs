@@ -6,7 +6,7 @@ using Godot;
 namespace Bloom.Game.Screens;
 
 /// <summary>
-/// At a shipyard, or with a boss's free hull section: the whole grid on a <see cref="ShipyardBoard"/> and the
+/// At a shipyard, or with the free hull section of a hard fight or a boss: the whole grid on a <see cref="ShipyardBoard"/> and the
 /// offered sections as option cards under it. Tapping a card shows that section on the board as a ghost; the
 /// main button names it and attaches it where the ghost is, through <see cref="GameRoot.Act"/>. Leave takes none.
 /// </summary>
@@ -31,7 +31,7 @@ public partial class ShipyardScreen : Control
             return;
         }
 
-        // A boss's free section comes at the start of the next sector, away from any shipyard.
+        // A hard fight's or a boss's free section comes after its reward, away from any shipyard.
         bool atShipyard = run.CurrentNode is { Type: NodeType.Shipyard };
         GetNode<Label>("%Title").Text = atShipyard ? "Shipyard" : "Hull section";
         GetNode<Label>("%Message").Text = atShipyard

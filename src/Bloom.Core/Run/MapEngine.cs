@@ -99,19 +99,13 @@ public sealed class MapEngine(ContentDb content)
 
     /// <summary>
     /// Called when a node is done. After the boss of a sector that is not the last, the next sector
-    /// starts, and the spec's free hull section is offered before its first node (when one still fits).
-    /// The last boss wins the run when the fight ends, so it never gets here.
+    /// starts; the last boss wins the run when the fight ends, so it never gets here.
     /// </summary>
-    internal static void FinishNode(ContentDb content, RunState run)
+    internal static void FinishNode(RunState run)
     {
         if (run.CurrentNode is { Type: NodeType.Boss } && run.Sector < run.Sectors)
         {
             EnterSector(run, run.Sector + 1);
-            var sections = ShipyardEngine.RollSections(content, run);
-            if (sections.Count > 0)
-            {
-                run.Shipyard = new ShipyardVisit(sections);
-            }
         }
     }
 

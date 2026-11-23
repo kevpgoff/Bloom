@@ -58,10 +58,21 @@ public class RewardTests
         Assert.Equal(RunPhase.Shipyard, run.Phase); // the boss's free hull section, before the first node
     }
 
+    /// <summary>The spec gives a boss a free hull section; the owner gave hard fights one too on 2026-11-23.</summary>
+    [Theory]
+    [InlineData("dummy", false)]
+    [InlineData("heavy", false)]
+    [InlineData("brute", true)]
+    public void AHardFightAlsoGivesAHullSection(string enemyId, bool section)
+    {
+        var run = WinFight(NewRun(), enemyId);
+        Assert.Equal(section, run.Reward!.Section);
+    }
+
     [Theory]
     [InlineData("dummy", 20, 30)]
     [InlineData("heavy", 20, 30)]
-    [InlineData("brute", 40, 55)]
+    [InlineData("brute", 60, 80)]
     public void AWonFightPaysSalvage(string enemyId, int min, int max)
     {
         for (ulong seed = 0; seed < 20; seed++)

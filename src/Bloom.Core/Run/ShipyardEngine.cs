@@ -11,8 +11,8 @@ namespace Bloom.Core.Run;
 /// Decided by the owner on 2026-11-22: a shipyard is free, offers <see cref="Rules.ShipyardChoices"/> shapes,
 /// and attaches one per visit. Defaults taken on 2026-11-23: the shapes are rolled when the node is chosen,
 /// all equally likely, from the sections that can still attach somewhere; the player may leave without one;
-/// and a section adds cells only, since the spec gives sections no hull points. A boss before the last sector
-/// offers a free section the same way, as the spec's node table says, once its reward is taken.
+/// and a section adds cells only, since the spec gives sections no hull points. A hard fight or a boss offers a
+/// free section the same way once its reward is taken (see <see cref="RewardEngine"/>).
 /// </remarks>
 public sealed class ShipyardEngine(ContentDb content)
 {
@@ -105,10 +105,20 @@ public sealed class ShipyardEngine(ContentDb content)
         return offered;
     }
 
-    private void Finish(RunState run)
+    /// <summary>Offers sections away from a shipyard, after a hard fight or a boss. Nothing is offered when none fits.</summary>
+    internal static void OfferSections(ContentDb content, RunState run)
+    {
+        var sections = RollSections(content, run);
+        if (sections.Count > 0)
+        {
+            run.Shipyard = new ShipyardVisit(sections);
+        }
+    }
+
+    private static void Finish(RunState run)
     {
         run.Shipyard = null;
-        MapEngine.FinishNode(content, run);
+        MapEngine.FinishNode(run);
     }
 
     private static ShipyardVisit RequireShipyard(RunState run) =>

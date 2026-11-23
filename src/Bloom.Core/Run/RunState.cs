@@ -29,7 +29,7 @@ public enum RunPhase
     /// <summary>At a dock (<see cref="RunState.Dock"/>): buying, selling and repairing until the player leaves. The player may refit.</summary>
     Dock,
 
-    /// <summary>At a shipyard, or just after a boss before the last sector (<see cref="RunState.Shipyard"/>): attaching one offered hull section or none.</summary>
+    /// <summary>At a shipyard, or after a hard fight or a boss gave a hull section (<see cref="RunState.Shipyard"/>): attaching one offered section or none.</summary>
     Shipyard,
 
     /// <summary>At a grove (<see cref="RunState.Grove"/>), choosing what it does for the ship.</summary>

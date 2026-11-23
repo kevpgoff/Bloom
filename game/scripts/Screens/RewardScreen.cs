@@ -35,7 +35,8 @@ public partial class RewardScreen : Control
             string turns = last.Turns == 1 ? "1 turn" : $"{last.Turns} turns";
             GetNode<Label>("%Message").Text =
                 $"The {session.Content.Enemy(last.EnemyId).Name} powers down and drifts away. Won in {turns}.\n" +
-                $"Salvage +{offer.Salvage}  ·  {run.Salvage} in all  ·  Hull {run.Hull} / {run.MaxHull}";
+                $"Salvage +{offer.Salvage}  ·  {run.Salvage} in all  ·  Hull {run.Hull} / {run.MaxHull}" +
+                (offer.Section ? "\n+ Hull section" : "");
         }
 
         if (offer.Pieces.Count == 0)

@@ -91,7 +91,8 @@ public static class Rules
     /// <summary>Salvage for a won fight, from the first number up to and including the second.</summary>
     public static readonly (int Min, int Max) SkirmishSalvage = (20, 30);
 
-    public static readonly (int Min, int Max) HardFightSalvage = (40, 55);
+    /// <summary>Raised from 40 to 55 when the owner asked for better hard-fight rewards on 2026-11-23.</summary>
+    public static readonly (int Min, int Max) HardFightSalvage = (60, 80);
 
     /// <summary>For the boss of a sector that is not the last; the last one ends the run.</summary>
     public static readonly (int Min, int Max) BossSalvage = (60, 80);

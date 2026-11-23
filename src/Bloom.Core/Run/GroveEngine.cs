@@ -25,10 +25,10 @@ public sealed class GroveEngine(ContentDb content)
         Leave(run);
     }
 
-    private void Leave(RunState run)
+    private static void Leave(RunState run)
     {
         run.Grove = null;
-        MapEngine.FinishNode(content, run);
+        MapEngine.FinishNode(run);
     }
 
     private static void RequireGrove(RunState run)
