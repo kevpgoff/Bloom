@@ -15,7 +15,8 @@ namespace Bloom.Game.Autoload;
 /// </summary>
 /// <remarks>
 /// With <c>-- --fx-demo</c> in a debug build, the run is kept in memory with a fixed seed and an
-/// <see cref="FxDemo"/> plays it, so the saved run is never touched.
+/// <see cref="FxDemo"/> plays it, so the saved run is never touched. With <c>--ship=&lt;id&gt;</c> as well, the
+/// demo plays that ship class.
 /// </remarks>
 public partial class GameRoot : Node
 {
@@ -77,16 +78,16 @@ public partial class GameRoot : Node
                  $"events {Content.Events.Count}.";
         GD.Print($"GameRoot: {Status}");
 
-        if (demo)
-        {
-            Session = RunSession.StartNew(Content, _store, StartingShip, DemoSeed);
-            AddChild(new FxDemo());
-            GD.Print("GameRoot: FX demo; the run is kept in memory and not saved.");
-            return;
-        }
-
         string? requestedShip = RequestedShip(Content);
         _startingShip = requestedShip ?? StartingShip;
+
+        if (demo)
+        {
+            Session = RunSession.StartNew(Content, _store, _startingShip, DemoSeed);
+            AddChild(new FxDemo());
+            GD.Print($"GameRoot: FX demo ({_startingShip}); the run is kept in memory and not saved.");
+            return;
+        }
 
         try
         {
@@ -134,7 +135,7 @@ public partial class GameRoot : Node
 
     /// <summary>
     /// Debug launch option <c>-- --ship=&lt;id&gt;</c> chooses a ship class for testing before a ship choice screen
-    /// exists. Returns null when omitted or when the id is unknown (after logging an error).
+    /// exists, for a new run or for the FX demo. Returns null when omitted or when the id is unknown (after logging an error).
     /// </summary>
     private static string? RequestedShip(ContentDb content)
     {
