@@ -18,7 +18,7 @@ namespace Bloom.Game.Screens;
 /// </summary>
 public partial class FittingScreen : Control
 {
-    private Label _status = null!;
+    private RichTextLabel _status = null!;
     private Label _next = null!;
     private FittingBoard _board = null!;
     private RichTextLabel _info = null!;
@@ -30,7 +30,7 @@ public partial class FittingScreen : Control
 
     public override void _Ready()
     {
-        _status = GetNode<Label>("%StatusLabel");
+        _status = GetNode<RichTextLabel>("%StatusLabel");
         _next = GetNode<Label>("%NextLabel");
         _board = GetNode<FittingBoard>("%Board");
         _info = GetNode<RichTextLabel>("%InfoText");
@@ -64,7 +64,7 @@ public partial class FittingScreen : Control
 
         var run = session.State;
         int deck = DeckBuilder.Build(run.Ship, session.Content).Count;
-        _status.Text = $"Hull {run.Hull} / {run.MaxHull}  ·  Salvage {run.Salvage}  ·  Deck {deck}";
+        _status.Text = $"{HullWarning.HullBbcode(run)}  ·  Salvage {run.Salvage}  ·  Deck {deck}";
 
         var enemy = session.Refit.NextEnemy(run);
         _next.Visible = enemy is not null;

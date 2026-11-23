@@ -26,6 +26,7 @@ public partial class MainScreen : Control
     /// <summary>The layout's margin from the edges of a desktop window, as in Main.tscn.</summary>
     private const float EdgeMargin = 16f;
 
+    private BloomBackdrop _backdrop = null!;
     private Control _layout = null!;
     private Control _host = null!;
     private Label _status = null!;
@@ -37,21 +38,29 @@ public partial class MainScreen : Control
     public override void _Ready()
     {
         Theme = BloomTheme.Build();
+        _backdrop = GetNode<BloomBackdrop>("Backdrop");
         _layout = GetNode<Control>("Layout");
         _host = GetNode<Control>("Layout/ScreenHost");
         _status = GetNode<Label>("Layout/Status");
         _status.Text = GameRoot.Instance.Status;
         GameRoot.Instance.Changed += QueueSwap;
+        GameRoot.Instance.Changed += ShowHullWarning;
         GetViewport().SizeChanged += FitToScreen;
         FitToScreen();
+        ShowHullWarning();
         ShowScreenForPhase();
     }
 
     public override void _ExitTree()
     {
         GameRoot.Instance.Changed -= QueueSwap;
+        GameRoot.Instance.Changed -= ShowHullWarning;
         GetViewport().SizeChanged -= FitToScreen;
     }
+
+    /// <summary>The backdrop warms as the hull wears, behind every screen (<see cref="HullWarning"/>).</summary>
+    private void ShowHullWarning() =>
+        _backdrop.ShowWarning(GameRoot.Instance.Session is { } session ? HullWarning.Level(session.State) : 0f);
 
     /// <summary>
     /// Keeps every screen clear of a phone's camera cutout and rounded corners (<see cref="ScreenInsets"/>).

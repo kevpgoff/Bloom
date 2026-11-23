@@ -1,5 +1,6 @@
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -26,9 +27,9 @@ public partial class GroveScreen : Control
             return;
         }
 
-        GetNode<Label>("%Message").Text =
+        GetNode<RichTextLabel>("%Message").Text =
             "A garden habitat turns slowly in the sunlight. Its gardeners come aboard with grafts and resin.\n" +
-            $"Hull {run.Hull} / {run.MaxHull}  ·  Salvage {run.Salvage}";
+            $"{HullWarning.HullBbcode(run)}  ·  Salvage {run.Salvage}";
 
         var options = GetNode<VBoxContainer>("%Options");
         int repair = GroveEngine.RepairAmount(run);

@@ -134,13 +134,20 @@ script = ExtResource("2_grid")
 
 [node name="StatusRow" type="HBoxContainer" parent="Layout"]
 layout_mode = 2
+theme_override_constants/separation = 28
 
 [node name="ShipLabel" type="Label" parent="Layout/StatusRow"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 28
 text = "Hull"
+
+[node name="BlockLabel" type="Label" parent="Layout/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 28
+text = "Block"
 
 [node name="EnergyLabel" type="Label" parent="Layout/StatusRow"]
 unique_name_in_owner = true

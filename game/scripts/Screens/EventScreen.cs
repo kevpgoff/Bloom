@@ -2,6 +2,7 @@ using Bloom.Core.Content;
 using Bloom.Core.Map;
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -40,7 +41,7 @@ public partial class EventScreen : Control
         }
 
         GetNode<Label>("%Title").Text = ev.Name;
-        GetNode<Label>("%StatusLabel").Text = $"Hull {run.Hull} / {run.MaxHull}  ·  Salvage {run.Salvage}";
+        GetNode<RichTextLabel>("%StatusLabel").Text = $"{HullWarning.HullBbcode(run)}  ·  Salvage {run.Salvage}";
         GetNode<Label>("%Story").Text = ev.Text;
 
         var options = GetNode<VBoxContainer>("%Options");

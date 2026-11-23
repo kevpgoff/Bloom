@@ -118,9 +118,10 @@ internal static class GridPainter
 
     /// <summary>
     /// The hull as an open deck: each cell a dark pane, root traces from cell to cell, a mark at every
-    /// grid point, a thin hologram rim and brackets at the corners of its bounds.
+    /// grid point, a thin hologram rim and brackets at the corners of its bounds. <paramref name="deck"/> is
+    /// the panes' color, <see cref="Palette.Deck"/> unless given.
     /// </summary>
-    public static void DrawHull(CanvasItem canvas, GridLayout g, IEnumerable<Cell> cells)
+    public static void DrawHull(CanvasItem canvas, GridLayout g, IEnumerable<Cell> cells, Color? deck = null)
     {
         var hull = cells.ToHashSet();
         if (hull.Count == 0)
@@ -132,7 +133,7 @@ internal static class GridPainter
         foreach (var cell in hull)
         {
             var r = g.CellRect(cell);
-            canvas.DrawRect(r, Palette.Deck);
+            canvas.DrawRect(r, deck ?? Palette.Deck);
             if (cell.X % 2 == 1)
             {
                 canvas.DrawRect(r, Palette.HoloLine with { A = 0.035f });

@@ -1,5 +1,6 @@
 using Bloom.Core.Run;
 using Bloom.Game.Autoload;
+using Bloom.Game.Visuals;
 using Godot;
 
 namespace Bloom.Game.Screens;
@@ -33,9 +34,9 @@ public partial class RewardScreen : Control
         if (run.LastFight is { } last)
         {
             string turns = last.Turns == 1 ? "1 turn" : $"{last.Turns} turns";
-            GetNode<Label>("%Message").Text =
+            GetNode<RichTextLabel>("%Message").Text =
                 $"The {session.Content.Enemy(last.EnemyId).Name} powers down and drifts away. Won in {turns}.\n" +
-                $"Salvage +{offer.Salvage}  ·  {run.Salvage} in all  ·  Hull {run.Hull} / {run.MaxHull}" +
+                $"Salvage +{offer.Salvage}  ·  {run.Salvage} in all  ·  {HullWarning.HullBbcode(run)}" +
                 (offer.Section ? "\n+ Hull section" : "");
         }
 
