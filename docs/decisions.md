@@ -191,6 +191,21 @@ Taken as defaults, not raised by the owner:
 - **What is left alone.** The grove's repair (30%), the starting hull (60), salvage and prices. Shipyards, events and the boss's parts will each change the balance, so another pass will follow them.
 - **Why the smart bot wins less.** Hard fights cost about 22 hull, and their rare piece usually has no room on the starting ship, which has 3 free cells. Hard fights should become worth their risk once shipyards add hull to fit pieces on; if not, their reward needs a look.
 
+## Shipyards decided on 2026-11-23
+
+The third of the sector map's 5 pull requests. The owner had already decided that a shipyard is free and attaches 1 of 3 sections per visit (see above). The owner merged the second pull request and asked to go ahead with this one.
+
+Taken as defaults, not raised by the owner (all numbers are in `Rules` or `sections.json` and are placeholders):
+- **Sections.** `game/data/sections.json` holds 10 placeholder shapes in the spec's range of 3 to 5 cells: two of 3 cells, five of 4 and three of 5. A section adds cells only, not hull points, since the spec gives sections none. The validator checks that each is one group of 3 to 5 cells and that there are at least 3.
+- **The offer.** 3 different sections, all equally likely, rolled when the node is chosen, from those that can still attach somewhere. If fewer fit, fewer are offered; if none fits, the shipyard offers only Leave.
+- **Attaching.** A section can go anywhere it stays inside the 6×8 grid, covers no hull and shares an edge with the hull, in any of its 4 turns. The player may leave without one. The ship cannot be refitted at a shipyard; the new cells can be used from the map.
+- **The Shipyard screen.** The whole grid with its free cells, and the sections as 3 cards under it. The chosen section shows on the grid as a ghost, green where it attaches and red where it does not, starting where it shares the most edges with the hull. Dragging moves it, floating above the finger as on the Fitting screen; a tap on it turns it; a tap elsewhere moves it to the nearest place it fits. The main button names the section ("Attach · Keel"). There is no instruction text.
+- **A boss's free section.** As the spec's node table says, a boss before the last sector also gives a section: the same offer, after its reward and before the next sector's first node, on the same screen titled "Hull section". With one sector it cannot happen yet; tests cover it.
+- **Shipyards on the map.** Shipyards now have their weight (10) on the rolled rows, and every map has at least one.
+- **Save.** The save schema goes to 7 (a run remembers the sections on offer), so a run saved by the second pull request is set aside and a new run starts.
+- **Balance.** The same two bots, with the smart one now choosing a shipyard over a skirmish and attaching the first section where it shares the most edges, win 59% (plain, was 55%) and 49% (smart, was 44%) of 400 runs. Shipyards take the place of some skirmishes, so a path has a few fewer fights. The smart bot attaches 0.7 sections a run, about 3 cells, which does not make hard fights worth their risk: it still wins less than the plain bot. Their reward needs a look, or the map needs more shipyards.
+- **The leftmost lane.** The seedling's hull leaves lane L1 (lane 0 in the data) empty, and no enemy aims a heavy attack there, so pieces on a section attached in L1 are never hit by one. The enemies' lanes are placeholders, so this is left alone for now.
+
 ## Proposed in the spec, not yet confirmed
 
 - Three sectors for each run, about 8 nodes and 25 minutes for each sector.
