@@ -70,12 +70,13 @@ public static class Rules
     public static readonly NodeType? MapRowBeforeBoss = NodeType.Grove;
 
     /// <summary>
-    /// How often each type appears on the other rows. A type with no weight is never placed; events get
-    /// theirs when they are built.
+    /// How often each type appears on the other rows. A type with no weight is never placed. These are the
+    /// plan's weights from 2026-11-22; events got theirs when they were built.
     /// </summary>
     public static readonly IReadOnlyList<(NodeType Type, int Weight)> MapNodeWeights =
     [
         (NodeType.Skirmish, 40),
+        (NodeType.Event, 20),
         (NodeType.HardFight, 15),
         (NodeType.Dock, 10),
         (NodeType.Shipyard, 10),
@@ -139,4 +140,9 @@ public static class Rules
     public const int MinSectionCells = 3;
 
     public const int MaxSectionCells = 5;
+
+    /// <summary>An event offers 2 to 4 choices, so they fit on a phone screen under its text.</summary>
+    public const int MinEventChoices = 2;
+
+    public const int MaxEventChoices = 4;
 }

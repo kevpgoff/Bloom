@@ -18,3 +18,15 @@ public sealed record DockVisit(List<string> Pieces, int Repairs);
 /// Attaching one ends the visit, so the list never changes.
 /// </summary>
 public sealed record ShipyardVisit(List<string> Sections);
+
+/// <summary>
+/// A visit to an event: which one, and once the player has chosen, which choice, which of its results came up
+/// and what that changed. The visit lasts until the player continues past the result.
+/// </summary>
+public sealed record EventVisit(string EventId, int? Choice = null, int? Result = null, EventChanges? Changes = null);
+
+/// <summary>
+/// What an event's result changed, kept to show it: the actual salvage, hull and maximum hull differences
+/// (after the limits, and with the choice's cost), and the instance ids of the pieces gained and upgraded.
+/// </summary>
+public sealed record EventChanges(int Salvage, int Hull, int MaxHull, List<int> Gained, List<int> Upgraded);

@@ -150,7 +150,7 @@ public class SaveTests
 
     /// <summary>
     /// Plays a whole run through <see cref="RunSession"/> on a short fixed map: a skirmish, a dock, a shipyard,
-    /// a grove, a hard fight and the boss, with rewards, trading (buy, sell, repair), a hull section, an upgrade,
+    /// a grove, an event, a hard fight and the boss, with rewards, trading (buy, sell, repair), a hull section, an upgrade, an event's choice,
     /// and refitting (fit, move, turn, undo) before each fight. After every action the session is resumed from the saved JSON and
     /// compared with a copy that is never saved.
     /// </summary>
@@ -168,10 +168,11 @@ public class SaveTests
                 new MapNode(1, NodeType.Dock, 1, 0),
                 new MapNode(2, NodeType.Shipyard, 2, 0),
                 new MapNode(3, NodeType.Grove, 3, 0),
-                new MapNode(4, NodeType.HardFight, 4, 0),
-                new MapNode(5, NodeType.Boss, 5, 0),
+                new MapNode(4, NodeType.Event, 4, 0),
+                new MapNode(5, NodeType.HardFight, 5, 0),
+                new MapNode(6, NodeType.Boss, 6, 0),
             ],
-            Edges = [new MapEdge(0, 1), new MapEdge(1, 2), new MapEdge(2, 3), new MapEdge(3, 4), new MapEdge(4, 5)],
+            Edges = [new MapEdge(0, 1), new MapEdge(1, 2), new MapEdge(2, 3), new MapEdge(3, 4), new MapEdge(4, 5), new MapEdge(5, 6)],
         };
         Fit(session.State, "lance", 1, 1);
         Fit(session.State, "plating", 1, 3);
@@ -186,6 +187,7 @@ public class SaveTests
         var grove = new GroveEngine(Db);
         var dock = new DockEngine(Db);
         var yard = new ShipyardEngine(Db);
+        var events = new EventEngine(Db);
 
         var seen = new HashSet<string>();
         int refitStep = 0;
@@ -216,6 +218,15 @@ public class SaveTests
                 case RunPhase.Dock:
                     action = NextDockAction(dock, reference, seen);
                     break;
+                case RunPhase.Event when reference.Event!.Choice is null:
+                    seen.Add("choose");
+                    int open = Enumerable.Range(0, events.Current(reference)!.Choices.Count).First(i => events.CanChoose(reference, i));
+                    action = r => events.Choose(r, open);
+                    break;
+                case RunPhase.Event:
+                    seen.Add("continue");
+                    action = events.Continue;
+                    break;
                 case RunPhase.Shipyard:
                     seen.Add("attach");
                     var (origin, rotation) = ShipyardEngine.Placements(reference.Ship.Grid, yard.Offered(reference, 0)!.Shape).First();
@@ -238,8 +249,8 @@ public class SaveTests
         }
 
         Assert.Equal(RunPhase.Won, reference.Phase);
-        Assert.Equal(["attach", "buy", "fit", "leave", "map", "move", "repair", "reward", "rotate", "sell", "undo", "upgrade"], seen.Order());
-        Assert.Equal([0, 1, 2, 3, 4, 5], reference.Path);
+        Assert.Equal(["attach", "buy", "choose", "continue", "fit", "leave", "map", "move", "repair", "reward", "rotate", "sell", "undo", "upgrade"], seen.Order());
+        Assert.Equal([0, 1, 2, 3, 4, 5, 6], reference.Path);
         Assert.True(reference.Ship.Grid.CellCount > NewRun().Ship.Grid.CellCount);
         Assert.Contains(reference.Ship.Fitted, f => f.Piece.Upgraded);
     }

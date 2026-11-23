@@ -1,0 +1,272 @@
+[
+  {
+    "id": "vault_sprout",
+    "name": "Vault Sprout",
+    "placeholder": true,
+    "text": "A seed in the vault has split its casing. In the night its roots felt their way along the inner hull, looking for light, and found the seams between the plates. The botanist names it a hull-tree, the kind the first ships were grown from.",
+    "choices": [
+      {
+        "label": "Let it grow",
+        "results": [
+          { "text": "You give it water and a window. By morning the roots have knit a new chamber onto the hull, still green and warm to the touch.", "outcomes": [ { "type": "section" } ] }
+        ]
+      },
+      {
+        "label": "Prune it back",
+        "results": [
+          { "text": "The cuttings will trade well at any orchard. You wrap them in damp cloth and stow them with the scrap.", "outcomes": [ { "type": "salvage", "amount": 25 } ] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "toll_beacon",
+    "name": "Toll Beacon",
+    "placeholder": true,
+    "text": "An old customs buoy swings into your path, lights strobing. It demands a toll in a currency that ended two hundred years ago, and its impound hold is full of cargo from ships that could not pay. Its gun ports are rusted, but not shut.",
+    "choices": [
+      {
+        "label": "Pay in scrap",
+        "cost": 25,
+        "results": [
+          { "text": "The beacon weighs your scrap, decides it is close enough, and opens its hold. Most of the cargo has rotted. One crate has not.", "outcomes": [ { "type": "piece", "rarity": "Uncommon" } ] }
+        ]
+      },
+      {
+        "label": "Send a drone to reset it",
+        "needsTag": "Drone",
+        "results": [
+          { "text": "Your drone finds the reset switch under a century of dust. The beacon reboots in a cheerful mood and opens its hold as a welcome gift.", "outcomes": [ { "type": "piece", "rarity": "Uncommon" } ] }
+        ]
+      },
+      {
+        "label": "Refuse to pay",
+        "results": [
+          { "text": "The beacon runs out its guns and locks onto your sails.", "outcomes": [ { "type": "fight", "enemy": "toll_beacon" } ] }
+        ]
+      },
+      {
+        "label": "Slip past its blind side",
+        "results": [
+          { "text": "You ghost past while it hails an empty patch of sky.", "outcomes": [] },
+          { "text": "It catches you halfway. A warning shot, but a well-aimed one.", "outcomes": [ { "type": "hull", "amount": -8 } ] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "drifting_orchard",
+    "name": "Drifting Orchard",
+    "placeholder": true,
+    "text": "A runaway orchard habitat tumbles past, its trees heavy with fruit inside their glass bubbles. One keeper still lives aboard, alone, and waves a lantern at you. The glass alone would fetch a good price.",
+    "choices": [
+      {
+        "label": "Harvest the fruit",
+        "results": [
+          { "text": "The keeper helps you fill the hold. The crew eat well, and the rinds make good patching for the seams.", "outcomes": [ { "type": "hull", "amount": 12 } ] }
+        ]
+      },
+      {
+        "label": "Offer the keeper a berth",
+        "results": [
+          { "text": "The keeper packs a satchel of seeds and comes aboard without looking back.", "outcomes": [ { "type": "piece", "id": "orchard_keeper" } ] }
+        ]
+      },
+      {
+        "label": "Strip the glass",
+        "results": [
+          { "text": "The keeper says nothing as you cut the bubbles free. The glass is worth a great deal.", "outcomes": [ { "type": "salvage", "amount": 30 } ] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "humming_wreck",
+    "name": "Humming Wreck",
+    "placeholder": true,
+    "text": "A derelict drifts in the dark, furred with choir moss that hums in four parts. Where the moss grows thickest, the wreck's plating has been eaten down to lace. The song is the loveliest thing you have heard in weeks.",
+    "choices": [
+      {
+        "label": "Listen a while",
+        "results": [
+          { "text": "The crew sit at the viewports for an hour. Afterwards someone retunes part of the ship to the song, and it runs sweeter for it.", "outcomes": [ { "type": "upgrade" } ] }
+        ]
+      },
+      {
+        "label": "Invite the choir aboard",
+        "results": [
+          { "text": "A tuft of moss drifts across on the airlock breeze and settles in. It sings to the crew at night, and it has already begun on the hull.", "outcomes": [ { "type": "piece", "id": "choir_elder" }, { "type": "maxHull", "amount": -6 } ] }
+        ]
+      },
+      {
+        "label": "Scrape the hull for parts",
+        "results": [
+          { "text": "You scrape the wreck clean and the song stops. The parts are good.", "outcomes": [ { "type": "salvage", "amount": 35 } ] },
+          { "text": "You scrape the wreck clean and the song stops, but a cloud of spores follows you home and settles in the vents.", "outcomes": [ { "type": "salvage", "amount": 35 }, { "type": "hull", "amount": -6 } ] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mirror_field",
+    "name": "Mirror Field",
+    "placeholder": true,
+    "text": "An abandoned Sunwright array turns slowly, every mirror still searching for a sun it can no longer find. Its focus wanders across your hull, warm as a hand. A kite of mirrors hangs tangled in its rigging.",
+    "choices": [
+      {
+        "label": "Realign the array",
+        "needsTag": "Solar",
+        "results": [
+          { "text": "Your sailwrights turn the array back toward the sun. As it locks on, the tangled kite shakes loose and drifts into your hold.", "outcomes": [ { "type": "piece", "id": "mirror_kite" } ] }
+        ]
+      },
+      {
+        "label": "Bask in its focus",
+        "results": [
+          { "text": "You hold station in the wandering light while the hull's green seams drink it in.", "outcomes": [ { "type": "hull", "amount": 10 } ] }
+        ]
+      },
+      {
+        "label": "Pry loose a mirror",
+        "results": [
+          { "text": "One mirror comes free with a groan. It will fetch a good price, and the array will hardly miss it.", "outcomes": [ { "type": "salvage", "amount": 30 } ] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stalled_harvester",
+    "name": "Stalled Harvester",
+    "placeholder": true,
+    "text": "A feral harvester hangs dead ahead, its intake turning slowly toward your hull. Its hopper is full to bursting with two centuries of gleanings. Your library still holds the old shutdown codes, if it still listens to them.",
+    "choices": [
+      {
+        "label": "Broadcast the shutdown code",
+        "results": [
+          { "weight": 3, "text": "The harvester shudders, folds its arms and goes dark. You empty its hopper before it can change its mind.", "outcomes": [ { "type": "salvage", "amount": 45 } ] },
+          { "weight": 2, "text": "The harvester takes the code as an insult. Its intake roars to life.", "outcomes": [ { "type": "fight", "enemy": "feral_harvester" } ] }
+        ]
+      },
+      {
+        "label": "Calm it by force",
+        "results": [
+          { "text": "You run out the lance and close in.", "outcomes": [ { "type": "fight", "enemy": "feral_harvester" } ] }
+        ]
+      },
+      {
+        "label": "Back away slowly",
+        "results": [
+          { "text": "It takes a bite out of your stern as you go, and chews thoughtfully.", "outcomes": [ { "type": "hull", "amount": -5 } ] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lost_swarm",
+    "name": "Lost Swarm",
+    "placeholder": true,
+    "text": "A Tinker Hive swarm has lost its beacon and circles the ship, chittering. A few have landed on the hull and are tightening bolts that did not need it. They want something to follow.",
+    "choices": [
+      {
+        "label": "Lend them your drone's call sign",
+        "needsTag": "Drone",
+        "results": [
+          { "text": "The swarm forms up behind your drone. Their wrangler, who was riding the largest of them, asks politely for a bunk.", "outcomes": [ { "type": "piece", "id": "drone_wrangler" } ] }
+        ]
+      },
+      {
+        "label": "Let them tinker",
+        "results": [
+          { "text": "For an hour the hull rings with tiny hammers. When the swarm moves on, every seam is tight.", "outcomes": [ { "type": "hull", "amount": 12 } ] }
+        ]
+      },
+      {
+        "label": "Shoo them off",
+        "results": [
+          { "text": "They take the hint and drift away in search of a better beacon.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "comets_wake",
+    "name": "Comet's Wake",
+    "placeholder": true,
+    "text": "The Singing Comet passed through here days ago. Its wake glitters with ice that still holds the tune, and far ahead its tail is still singing to itself. It does not like to be followed.",
+    "choices": [
+      {
+        "label": "Gather the singing ice",
+        "results": [
+          { "text": "You pack the ice into the hull's hollow places. It sets hard and keeps humming.", "outcomes": [ { "type": "maxHull", "amount": 6 } ] }
+        ]
+      },
+      {
+        "label": "Chase the comet",
+        "results": [
+          { "text": "You catch the comet's tail, and it turns to face you mid-song.", "outcomes": [ { "type": "fight", "enemy": "singing_comet" } ] }
+        ]
+      },
+      {
+        "label": "Sail on",
+        "results": [
+          { "text": "You leave the ice to its song.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "extraction_rig",
+    "name": "Extraction Rig",
+    "placeholder": true,
+    "text": "A drill from the age of extraction still bores into an asteroid, long after anyone wanted what it digs. The asteroid is wrapped in lichen gardens, and the drill is chewing through them. Its reactor runs hot enough to power a fleet, and something large keeps watch over it.",
+    "choices": [
+      {
+        "label": "Shut it down",
+        "results": [
+          { "text": "The rig's guardian wakes as you close in: a strip miner the size of a habitat.", "outcomes": [ { "type": "fight", "enemy": "strip_miner" } ] }
+        ]
+      },
+      {
+        "label": "Siphon its reactor",
+        "results": [
+          { "text": "You tap the reactor and drink deep. The surge leaves part of the ship better than before, and the backlash scorches the hull.", "outcomes": [ { "type": "upgrade" }, { "type": "hull", "amount": -8 } ] }
+        ]
+      },
+      {
+        "label": "Leave it be",
+        "results": [
+          { "text": "The drill keeps chewing. Someone else will have to stop it.", "outcomes": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "drift_market",
+    "name": "Drift Market",
+    "placeholder": true,
+    "text": "Rafts from all four communes are lashed together here, haggling over seeds, sails and gossip. A Tinker sells sealed crates at a single price, and swears that one in ten holds something remarkable.",
+    "choices": [
+      {
+        "label": "Buy a sealed crate",
+        "cost": 40,
+        "results": [
+          { "weight": 6, "text": "The crate holds something useful, if ordinary.", "outcomes": [ { "type": "piece", "rarity": "Common" } ] },
+          { "weight": 3, "text": "The crate holds something worth more than you paid.", "outcomes": [ { "type": "piece", "rarity": "Uncommon" } ] },
+          { "weight": 1, "text": "The Tinker winces as you lift the lid. This one was not meant to be in the pile.", "outcomes": [ { "type": "piece", "rarity": "Rare" } ] }
+        ]
+      },
+      {
+        "label": "Trade stories",
+        "results": [
+          { "text": "Your crew trade tales of the inner gardens for a purse of scrap.", "outcomes": [ { "type": "salvage", "amount": 15 } ] }
+        ]
+      },
+      {
+        "label": "Moor for a meal",
+        "results": [
+          { "text": "You eat well, sleep well and leave with the seams patched.", "outcomes": [ { "type": "hull", "amount": 8 } ] }
+        ]
+      }
+    ]
+  }
+]

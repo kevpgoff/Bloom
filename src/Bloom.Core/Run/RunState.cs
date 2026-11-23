@@ -34,6 +34,9 @@ public enum RunPhase
 
     /// <summary>At a grove (<see cref="RunState.Grove"/>), choosing what it does for the ship.</summary>
     Grove,
+
+    /// <summary>At an event (<see cref="RunState.Event"/>): choosing what to do, then reading what came of it.</summary>
+    Event,
     Won,
     Lost,
 }
@@ -44,7 +47,7 @@ public enum RunPhase
 /// </summary>
 public sealed class RunState
 {
-    public const int CurrentSchemaVersion = 7;
+    public const int CurrentSchemaVersion = 8;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -93,6 +96,12 @@ public sealed class RunState
     /// <summary>Set while the ship is at a grove and the player has not yet chosen what it does.</summary>
     public GroveVisit? Grove { get; set; }
 
+    /// <summary>Set while the ship is at an event, from choosing its node until the player continues past its result.</summary>
+    public EventVisit? Event { get; set; }
+
+    /// <summary>Every event met this run, so that a sector repeats an event only once it runs out.</summary>
+    public List<string> SeenEvents { get; set; } = [];
+
     public int FightsWon { get; set; }
 
     public CombatState? Combat { get; set; }
@@ -119,6 +128,7 @@ public sealed class RunState
         _ when Dock is not null => RunPhase.Dock,
         _ when Shipyard is not null => RunPhase.Shipyard,
         _ when Grove is not null => RunPhase.Grove,
+        _ when Event is not null => RunPhase.Event,
         _ => RunPhase.Map,
     };
 

@@ -24,12 +24,12 @@ public class ContentTests
     ];
     private static readonly ShipClassDef Ship = new("ship", "Ship", 60, Shape.Parse(["###", "###"]), new Cell(0, 0), [new StartingPiece("bridge", new Cell(0, 0))]);
 
-    private static ContentDb Create(PieceDef[]? pieces = null, CardDef[]? cards = null, EnemyDef[]? enemies = null, ShipClassDef[]? ships = null, HullSectionDef[]? sections = null) =>
-        ContentDb.Create(pieces ?? [Bridge, Lance], cards ?? [Ram], enemies ?? Enemies, ships ?? [Ship], sections ?? [.. TestContent.Db.Sections]);
+    private static ContentDb Create(PieceDef[]? pieces = null, CardDef[]? cards = null, EnemyDef[]? enemies = null, ShipClassDef[]? ships = null, HullSectionDef[]? sections = null, EventDef[]? events = null) =>
+        ContentDb.Create(pieces ?? [Bridge, Lance], cards ?? [Ram], enemies ?? Enemies, ships ?? [Ship], sections ?? [.. TestContent.Db.Sections], events ?? [.. TestContent.PlainEvents]);
 
-    private static void AssertInvalid(string expectedError, PieceDef[]? pieces = null, CardDef[]? cards = null, EnemyDef[]? enemies = null, ShipClassDef[]? ships = null, HullSectionDef[]? sections = null)
+    private static void AssertInvalid(string expectedError, PieceDef[]? pieces = null, CardDef[]? cards = null, EnemyDef[]? enemies = null, ShipClassDef[]? ships = null, HullSectionDef[]? sections = null, EventDef[]? events = null)
     {
-        var e = Assert.Throws<ContentException>(() => Create(pieces, cards, enemies, ships, sections));
+        var e = Assert.Throws<ContentException>(() => Create(pieces, cards, enemies, ships, sections, events));
         Assert.Contains(e.Errors, error => error.Contains(expectedError, StringComparison.Ordinal));
     }
 
@@ -115,10 +115,95 @@ public class ContentTests
     public void ADuplicateSectionIdIsReported() =>
         AssertInvalid("Duplicate hull section id 'rib'", sections: [.. TestContent.Db.Sections, TestContent.Db.Sections[0]]);
 
+    private static readonly EventChoice Leave = new("Leave", [new EventResult("Gone.")]);
+
+    /// <summary>An event with the given first choice and an open "Leave" after it.</summary>
+    private static EventDef EventWith(params EventOutcome[] outcomes) =>
+        new("ev", "Ev", "Text.", [new EventChoice("Do", [new EventResult("Done.", outcomes)]), Leave]);
+
+    [Fact]
+    public void AnEventWithOneChoiceIsReported() =>
+        AssertInvalid("event 'ev': an event has 2 to 4 choices, but this one has 1", events: [new EventDef("ev", "Ev", "Text.", [Leave])]);
+
+    [Fact]
+    public void AnEventWithFiveChoicesIsReported() =>
+        AssertInvalid("but this one has 5", events: [new EventDef("ev", "Ev", "Text.", [Leave, Leave, Leave, Leave, Leave])]);
+
+    [Fact]
+    public void AnEventWithNoOpenChoiceIsReported() =>
+        AssertInvalid("event 'ev': needs a choice with no cost and no tag", events: [new EventDef("ev", "Ev", "Text.", [
+            Leave with { Cost = 10 },
+            Leave with { NeedsTag = Tag.Drone }])]);
+
+    [Fact]
+    public void AnEventWithoutTextIsReported() =>
+        AssertInvalid("event 'ev': missing text", events: [EventWith() with { Text = "" }]);
+
+    [Fact]
+    public void AChoiceWithoutResultsIsReported() =>
+        AssertInvalid("event 'ev', choice 1: needs at least one result", events: [new EventDef("ev", "Ev", "Text.", [Leave with { Results = [] }, Leave])]);
+
+    [Fact]
+    public void AResultWithoutWeightIsReported() =>
+        AssertInvalid("a result's weight must be at least 1", events: [new EventDef("ev", "Ev", "Text.", [new EventChoice("Do", [new EventResult("Done.", Weight: 0)]), Leave])]);
+
+    [Fact]
+    public void AnOutcomeOfZeroIsReported() =>
+        AssertInvalid("'HullOutcome' needs an amount other than 0", events: [EventWith(new HullOutcome(0))]);
+
+    [Fact]
+    public void AnEventGivingAnUnknownPieceIsReported() =>
+        AssertInvalid("event 'ev', choice 1: unknown piece 'nope'", events: [EventWith(new PieceOutcome("nope"))]);
+
+    [Fact]
+    public void AnEventGivingTheBridgeIsReported() =>
+        AssertInvalid("an event cannot give the bridge", events: [EventWith(new PieceOutcome("bridge"))]);
+
+    [Fact]
+    public void APieceFilterThatMatchesNothingIsReported() =>
+        AssertInvalid("no piece matches rarity Rare and kind any", events: [EventWith(new PieceOutcome(Rarity: Rarity.Rare))]);
+
+    [Fact]
+    public void AnEventFightingAnUnknownEnemyIsReported() =>
+        AssertInvalid("unknown enemy 'nope'", events: [EventWith(new FightOutcome("nope"))]);
+
+    [Fact]
+    public void AnEventFightingABossIsReported() =>
+        AssertInvalid("enemy 'boss' is a boss", events: [EventWith(new FightOutcome("boss"))]);
+
+    [Fact]
+    public void AResultWithTwoFightsIsReported() =>
+        AssertInvalid("a result can start only one fight", events: [EventWith(new FightOutcome("dummy"), new FightOutcome("late"))]);
+
+    [Fact]
+    public void AResultWithAFightAndASectionIsReported() =>
+        AssertInvalid("cannot both start a fight and give a hull section", events: [EventWith(new FightOutcome("dummy"), new SectionOutcome())]);
+
+    [Fact]
+    public void ASectorWithoutEventsIsReported() =>
+        AssertInvalid("Sector 1 has no event.", events: []);
+
+    [Fact]
+    public void ADuplicateEventIdIsReported() =>
+        AssertInvalid("Duplicate event id 'ev'", events: [EventWith(), EventWith()]);
+
+    [Fact]
+    public void AValidEventLoads() =>
+        Create(events: [EventWith(new SalvageOutcome(-5), new HullOutcome(3), new MaxHullOutcome(-2), new PieceOutcome("lance"),
+            new PieceOutcome(Kind: PieceKind.Equipment), new UpgradeOutcome(), new SectionOutcome())]);
+
+    [Fact]
+    public void AnOutcomeMustStartWithItsType()
+    {
+        const string events = """[{ "id": "e", "name": "E", "text": "T", "choices": [{ "label": "A", "results": [{ "text": "R", "outcomes": [{ "amount": 5, "type": "salvage" }] }] }] }]""";
+        var e = Assert.Throws<ContentException>(() => ContentDb.FromJson("[]", "[]", "[]", "[]", "[]", events));
+        Assert.StartsWith("events.json:", Assert.Single(e.Errors));
+    }
+
     [Fact]
     public void BrokenJsonNamesTheFile()
     {
-        var e = Assert.Throws<ContentException>(() => ContentDb.FromJson("[", "[]", "[]", "[]", "[]"));
+        var e = Assert.Throws<ContentException>(() => ContentDb.FromJson("[", "[]", "[]", "[]", "[]", "[]"));
         Assert.StartsWith("pieces.json:", Assert.Single(e.Errors));
     }
 
@@ -128,7 +213,7 @@ public class ContentTests
         // .NET 8 reads the "type" discriminator only when it comes first. If this starts passing after a
         // runtime upgrade, the rule in game/data/README.md can be dropped.
         const string cards = """[{ "id": "ram", "name": "Ram", "cost": 1, "effects": [{ "amount": 5, "type": "damage" }] }]""";
-        Assert.Throws<ContentException>(() => ContentDb.FromJson("[]", cards, "[]", "[]", "[]"));
+        Assert.Throws<ContentException>(() => ContentDb.FromJson("[]", cards, "[]", "[]", "[]", "[]"));
     }
 }
 
@@ -143,6 +228,52 @@ public class ShippedContentTests
         Assert.Equal(12, db.Enemies.Count);
         Assert.Single(db.Ships);
         Assert.Equal(10, db.Sections.Count);
+        Assert.Equal(10, db.Events.Count); // the 10 placeholder events sketched with the owner on 2026-11-23
+    }
+
+    /// <summary>
+    /// Every choice of every shipped event can be taken on the starting ship and continued past, with salvage to
+    /// pay for it. A choice that needs a tag the seedling lacks is played with a piece of that tag fitted on new hull.
+    /// </summary>
+    [Fact]
+    public void EveryShippedEventChoiceCanBePlayed()
+    {
+        var db = TestContent.LoadShipped();
+        var events = new EventEngine(db);
+        foreach (var ev in db.Events)
+        {
+            for (int i = 0; i < ev.Choices.Count; i++)
+            {
+                for (ulong seed = 1; seed <= 4; seed++)
+                {
+                    var run = RunFactory.NewRun(db, "seedling", seed);
+                    run.Salvage = 500;
+                    if (ev.Choices[i].NeedsTag is { } tag)
+                    {
+                        FitPieceWithTag(db, run, tag);
+                    }
+
+                    run.Event = new EventVisit(ev.Id);
+                    Assert.Equal(ChoiceState.Open, events.StateOf(run, ev.Choices[i]));
+                    events.Choose(run, i);
+                    events.Continue(run);
+                    Assert.Contains(run.Phase, new[] { RunPhase.Map, RunPhase.Shipyard, RunPhase.Prepare });
+                }
+            }
+        }
+    }
+
+    /// <summary>Test setup: grows two rows of hull behind the ship and fits the first piece with <paramref name="tag"/> there.</summary>
+    private static void FitPieceWithTag(ContentDb db, RunState run, Tag tag)
+    {
+        run.Ship.Grid.Attach([.. Enumerable.Range(0, Rules.GridColumns).SelectMany(x => new[] { new Cell(x, 6), new Cell(x, 7) })]);
+        var piece = run.NewPiece(db.Pieces.First(p => !p.IsBridge && p.Tags.Contains(tag)).Id);
+        run.Cargo.Add(piece);
+        var refit = new RefitEngine(db);
+        var spot = Enum.GetValues<Rotation>()
+            .SelectMany(r => Enumerable.Range(0, Rules.GridColumns).Select(x => (Origin: new Cell(x, 6), Rotation: r)))
+            .First(s => refit.PreviewPlacement(run, piece.Id, s.Origin, s.Rotation).Error == FitError.None);
+        refit.FitFromCargo(run, piece.Id, spot.Origin, spot.Rotation);
     }
 
     /// <summary>Every shipped hull section can be offered on the starting ship, so the first shipyard offers any of them.</summary>

@@ -20,6 +20,7 @@ internal static class ContentValidator
         CheckIds(db.Enemies.Select(e => e?.Id), "enemy", errors);
         CheckIds(db.Ships.Select(s => s?.Id), "ship class", errors);
         CheckIds(db.Sections.Select(s => s?.Id), "hull section", errors);
+        CheckIds(db.Events.Select(e => e?.Id), "event", errors);
 
         foreach (var piece in db.Pieces.Where(p => p is not null))
         {
@@ -51,6 +52,19 @@ internal static class ContentValidator
         if (db.Sections.Count < Rules.ShipyardChoices)
         {
             errors.Add($"There are {db.Sections.Count} hull sections, but a shipyard offers {Rules.ShipyardChoices}.");
+        }
+
+        foreach (var ev in db.Events.Where(e => e is not null))
+        {
+            ValidateEvent(db, ev, errors);
+        }
+
+        for (int sector = 1; sector <= Rules.SectorsPerRun; sector++)
+        {
+            if (!db.Events.Any(e => e?.Sector == sector))
+            {
+                errors.Add($"Sector {sector} has no event.");
+            }
         }
 
         // Fitting the starting pieces needs valid pieces and shapes, so it runs only on otherwise clean content.
@@ -370,6 +384,164 @@ internal static class ContentValidator
         if (section.Shape.Count < Rules.MinSectionCells || section.Shape.Count > Rules.MaxSectionCells)
         {
             errors.Add($"{where}: a section covers {Rules.MinSectionCells} to {Rules.MaxSectionCells} cells, but the shape covers {section.Shape.Count}.");
+        }
+    }
+
+    private static void ValidateEvent(ContentDb db, EventDef ev, List<string> errors)
+    {
+        string where = $"event '{ev.Id}'";
+        if (string.IsNullOrWhiteSpace(ev.Name))
+        {
+            errors.Add($"{where}: missing name.");
+        }
+
+        if (string.IsNullOrWhiteSpace(ev.Text))
+        {
+            errors.Add($"{where}: missing text.");
+        }
+
+        if (ev.Sector < 1 || ev.Sector > Rules.SectorsPerRun)
+        {
+            errors.Add($"{where}: sector {ev.Sector} is outside 1 to {Rules.SectorsPerRun}.");
+        }
+
+        if (ev.Choices is null || ev.Choices.Count < Rules.MinEventChoices || ev.Choices.Count > Rules.MaxEventChoices)
+        {
+            errors.Add($"{where}: an event has {Rules.MinEventChoices} to {Rules.MaxEventChoices} choices, but this one has {ev.Choices?.Count ?? 0}.");
+            return;
+        }
+
+        if (!ev.Choices.Any(c => c is not null && c.Cost == 0 && c.NeedsTag is null))
+        {
+            errors.Add($"{where}: needs a choice with no cost and no tag, so that one is always open.");
+        }
+
+        for (int i = 0; i < ev.Choices.Count; i++)
+        {
+            var choice = ev.Choices[i];
+            string at = $"{where}, choice {i + 1}";
+            if (choice is null)
+            {
+                errors.Add($"{at}: the choice is empty.");
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(choice.Label))
+            {
+                errors.Add($"{at}: missing label.");
+            }
+
+            if (choice.Cost < 0)
+            {
+                errors.Add($"{at}: the cost cannot be negative.");
+            }
+
+            if (choice.NeedsTag is { } tag && !Enum.IsDefined(tag))
+            {
+                errors.Add($"{at}: unknown tag '{tag}'.");
+            }
+
+            if (choice.Results is null || choice.Results.Count == 0)
+            {
+                errors.Add($"{at}: needs at least one result.");
+                continue;
+            }
+
+            foreach (var result in choice.Results)
+            {
+                ValidateEventResult(db, ev, at, result, errors);
+            }
+        }
+    }
+
+    private static void ValidateEventResult(ContentDb db, EventDef ev, string at, EventResult? result, List<string> errors)
+    {
+        if (result is null)
+        {
+            errors.Add($"{at}: a result is empty.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(result.Text))
+        {
+            errors.Add($"{at}: a result needs text.");
+        }
+
+        if (result.Weight < 1)
+        {
+            errors.Add($"{at}: a result's weight must be at least 1.");
+        }
+
+        var outcomes = result.AllOutcomes;
+        foreach (var outcome in outcomes)
+        {
+            switch (outcome)
+            {
+                case null:
+                    errors.Add($"{at}: an outcome is empty.");
+                    break;
+                case SalvageOutcome { Amount: 0 } or HullOutcome { Amount: 0 } or MaxHullOutcome { Amount: 0 }:
+                    errors.Add($"{at}: '{outcome.GetType().Name}' needs an amount other than 0.");
+                    break;
+                case PieceOutcome piece:
+                    ValidatePieceOutcome(db, at, piece, errors);
+                    break;
+                case FightOutcome fight:
+                    ValidateFightOutcome(db, ev, at, fight, errors);
+                    break;
+            }
+        }
+
+        int fights = outcomes.Count(o => o is FightOutcome);
+        if (fights > 1)
+        {
+            errors.Add($"{at}: a result can start only one fight.");
+        }
+
+        if (fights > 0 && outcomes.Any(o => o is SectionOutcome))
+        {
+            errors.Add($"{at}: a result cannot both start a fight and give a hull section.");
+        }
+    }
+
+    private static void ValidateFightOutcome(ContentDb db, EventDef ev, string at, FightOutcome fight, List<string> errors)
+    {
+        var enemy = db.Enemies.FirstOrDefault(e => e?.Id is not null && e.Id == fight.Enemy);
+        if (enemy is null)
+        {
+            errors.Add($"{at}: unknown enemy '{fight.Enemy}'.");
+        }
+        else if (enemy.Sector != ev.Sector)
+        {
+            errors.Add($"{at}: enemy '{fight.Enemy}' belongs to sector {enemy.Sector}, not the event's sector {ev.Sector}.");
+        }
+        else if (enemy.Pool == EnemyPool.Boss)
+        {
+            errors.Add($"{at}: enemy '{fight.Enemy}' is a boss, and an event cannot start a boss fight.");
+        }
+    }
+
+    private static void ValidatePieceOutcome(ContentDb db, string at, PieceOutcome piece, List<string> errors)
+    {
+        if (piece.Id is not null)
+        {
+            if (!db.HasPiece(piece.Id))
+            {
+                errors.Add($"{at}: unknown piece '{piece.Id}'.");
+            }
+            else if (db.Piece(piece.Id).IsBridge)
+            {
+                errors.Add($"{at}: an event cannot give the bridge.");
+            }
+
+            if (piece.Rarity is not null || piece.Kind is not null)
+            {
+                errors.Add($"{at}: a piece outcome names a piece or filters by rarity and kind, not both.");
+            }
+        }
+        else if (!EventEngine.PiecesFor(db, piece).Any())
+        {
+            errors.Add($"{at}: no piece matches rarity {piece.Rarity?.ToString() ?? "any"} and kind {piece.Kind?.ToString() ?? "any"}.");
         }
     }
 
