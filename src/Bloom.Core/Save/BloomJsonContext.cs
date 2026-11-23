@@ -4,6 +4,7 @@ using Bloom.Core.Cards;
 using Bloom.Core.Combat;
 using Bloom.Core.Content;
 using Bloom.Core.Pieces;
+using Bloom.Core.Profile;
 using Bloom.Core.Run;
 
 namespace Bloom.Core.Save;
@@ -20,6 +21,7 @@ namespace Bloom.Core.Save;
     ReadCommentHandling = JsonCommentHandling.Skip,
     AllowTrailingCommas = true)]
 [JsonSerializable(typeof(RunState))]
+[JsonSerializable(typeof(ProfileState))]
 [JsonSerializable(typeof(List<PieceDef>))]
 [JsonSerializable(typeof(List<CardDef>))]
 [JsonSerializable(typeof(List<EnemyDef>))]

@@ -103,7 +103,7 @@ internal static class TestContent
                 { "piece": "lance", "origin": { "x": 0, "y": 0 } }] }] },
           { "id": "solar", "name": "Solar", "hull": 60,
             "hullShape": ["######", "######", "######"], "hullOrigin": { "x": 0, "y": 2 },
-            "rule": { "type": "keepEnergy" },
+            "rule": { "type": "keepEnergy" }, "unlock": { "type": "winWith", "ship": "test" },
             "loadouts": [{ "id": "a", "name": "Bare", "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 4 } }] }] }
         ]
         """;
