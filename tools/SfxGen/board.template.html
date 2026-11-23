@@ -269,6 +269,15 @@
     font-stretch: 87.5%;
   }
   .take-desc { margin: 0; max-width: 65ch; color: var(--muted); font-size: var(--step--1); }
+  .take-state {
+    justify-self: start;
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    color: var(--muted);
+    font-size: var(--step--1);
+  }
+  .take-state.in-game { border-color: var(--ok); color: var(--ok); }
   .take .tools { grid-column: auto; }
 
   .sheet {
@@ -422,7 +431,7 @@
   }
 
   // A short fight, in seconds from the press: three cards drawn, two played, two hits, a heavy hit taken,
-  // block and energy gained, the fight won. It is for a take that has only some of the sounds; a take without
+  // block and energy gained, the fight won. It is for a take, which has only some of the sounds; a take without
   // one of these sounds skips it.
   const FIGHT = [
     ["card-draw", 0], ["card-draw", 0.2], ["card-draw", 0.4], ["card-play", 1.1], ["card-play-weapon", 1.9],
@@ -430,7 +439,7 @@
     ["energy-gain", 6.2], ["fight-won", 7.4],
   ];
 
-  // Two turns of a fight, for a set that has every combat sound: the turn starts, five cards are drawn, four
+  // Two turns of a fight, for a set in the game, which has every combat sound: the turn starts, five cards are drawn, four
   // are played (core, weapon, garden, solar), the turn ends, the enemy's three hits land; then a shuffle, a drone
   // card, focus spent on a heavy hit, and the fight is won.
   const FULL_FIGHT = [
@@ -448,7 +457,9 @@
     const versions = new Map();
     for (const family of DATA.families) {
       for (const sound of family.sounds) {
-        const version = sound.versions.find(v => v.take === take);
+        // A ship's set holds only that ship's own sounds. As in the game, the base set supplies the rest.
+        const version = sound.versions.find(v => v.take === take.name)
+          || (take.inGame && sound.versions.find(v => v.take === "now"));
         if (version) versions.set(sound.id, version);
       }
     }
@@ -460,7 +471,7 @@
     return end;
   }
 
-  // The game's own sounds keep the keys they had before there were takes, so earlier notes stay.
+  // The base set's sounds keep the keys they had before there were sets or takes, so earlier notes stay.
   const keyOf = (take, id) => take === "now" ? id : `${take}/${id}`;
   const slug = text => text.replace(/[^a-z0-9_-]/gi, "-");
 
@@ -573,13 +584,15 @@
   }
 
   function takeCard(take) {
-    const button = el("button", { class: "chip", type: "button", id: "fight-" + take.name, "aria-label": `Hear a short fight with the take ${take.title}` }, "Hear a fight");
-    button.addEventListener("click", () => flash(button, fight(take.name)));
-    const note = el("input", { class: "note", type: "text", id: "take-note-" + take.name, placeholder: "Note on the whole take", "aria-label": `Note on the take ${take.title}`, autocomplete: "off" });
+    const kind = take.inGame ? "set" : "take";
+    const button = el("button", { class: "chip", type: "button", id: "fight-" + take.name, "aria-label": `Hear a short fight in ${take.title}` }, "Hear a fight");
+    button.addEventListener("click", () => flash(button, fight(take)));
+    const note = el("input", { class: "note", type: "text", id: "take-note-" + take.name, placeholder: `Note on the whole ${kind}`, "aria-label": `Note on ${take.title}`, autocomplete: "off" });
     note.value = store("take:" + take.name) || "";
     note.addEventListener("input", () => store("take:" + take.name, note.value.trim()));
     return el("li", { class: "take" },
       el("h3", { class: "take-title" }, take.title),
+      el("span", { class: take.inGame ? "take-state in-game" : "take-state" }, take.inGame ? "In the game" : "A take, not in the game"),
       el("p", { class: "take-desc" }, take.description),
       el("div", { class: "tools" }, button, note));
   }
@@ -588,7 +601,7 @@
     const lines = [];
     for (const take of DATA.takes) {
       const note = document.getElementById("take-note-" + take.name).value.trim();
-      if (note) lines.push(`take ${take.name}: ${note}`);
+      if (note) lines.push(`${take.inGame ? "set" : "take"} ${take.name}: ${note}`);
     }
     for (const family of DATA.families) {
       for (const sound of family.sounds) {
@@ -614,14 +627,14 @@
 
   function start() {
     const total = DATA.families.reduce((n, f) => n + f.sounds.reduce((m, s) => m + s.versions.length, 0), 0);
-    const takeCount = DATA.takes.length ? ` · ${DATA.takes.length} takes` : "";
+    const takeCount = DATA.takes.length ? ` · ${DATA.takes.length} sets and takes` : "";
     document.getElementById("round").textContent = `round ${DATA.round} · ${total} sounds${takeCount}`;
     const host = document.getElementById("families");
     const titles = new Map(DATA.takes.map(t => [t.name, t.title]));
     if (DATA.takes.length) {
       const list = el("ul", { class: "takes" });
       for (const take of DATA.takes) list.append(takeCard(take));
-      host.append(el("section", {}, el("h2", {}, "Takes"), list));
+      host.append(el("section", {}, el("h2", {}, "Sets and takes"), list));
     }
     for (const family of DATA.families) {
       const list = el("ul");

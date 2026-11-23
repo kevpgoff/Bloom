@@ -21,6 +21,10 @@ public sealed record StartingPiece(string Piece, Cell Origin, Rotation Rotation 
 /// A ship class as defined in ships.json: its starting hull, hull points, pieces and optional special rule.
 /// <see cref="HullOrigin"/> places the hull shape inside the 6x8 grid, leaving room for hull sections.
 /// </summary>
+/// <param name="SoundSet">
+/// The name of the ship's own set of sound effects, or null for a ship that uses only the base set. The rules
+/// never read it; the game plays the set's version of a sound where the set has one.
+/// </param>
 public sealed record ShipClassDef(
     string Id,
     string Name,
@@ -29,4 +33,5 @@ public sealed record ShipClassDef(
     Cell HullOrigin,
     IReadOnlyList<StartingPiece> StartingPieces,
     ShipRule? Rule = null,
+    string? SoundSet = null,
     bool Placeholder = false);

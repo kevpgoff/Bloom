@@ -278,6 +278,42 @@ public class ContentTests
         var e = Assert.Throws<ContentException>(() => ContentDb.FromJson("[]", "[]", "[]", ships, "[]", "[]"));
         Assert.StartsWith("ships.json:", Assert.Single(e.Errors));
     }
+
+    private const string OneBridge = """[{ "id": "bridge", "name": "Bridge", "kind": "Equipment", "tags": ["Core"], "rarity": "Common", "shape": ["##"], "cards": [{ "card": "ram", "count": 2 }] }]""";
+    private const string OneCard = """[{ "id": "ram", "name": "Ram", "cost": 1, "effects": [{ "type": "damage", "amount": 5 }] }]""";
+    private const string FourEnemies = """
+        [{ "id": "a", "name": "A", "pool": "Early", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] },
+         { "id": "b", "name": "B", "pool": "Late", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] },
+         { "id": "c", "name": "C", "pool": "Hard", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] },
+         { "id": "d", "name": "D", "pool": "Boss", "hull": 9, "pattern": [{ "kind": "Attack", "amount": 1 }] }]
+        """;
+
+    private static string ShipWithSoundSet(string soundSet) =>
+        $$"""[{ "id": "s", "name": "S", "hull": 60, "hullShape": ["##"], "hullOrigin": { "x": 0, "y": 0 }, {{soundSet}} "startingPieces": [{ "piece": "bridge", "origin": { "x": 0, "y": 0 } }] }]""";
+
+    [Fact]
+    public void AShipSoundSetIsReadFromJsonAndIsOptional()
+    {
+        var with = ContentDb.FromJson(OneBridge, OneCard, FourEnemies, ShipWithSoundSet("\"soundSet\": \"warm-circuits\","), TestContent.SectionsJson, TestContent.PlainEventsJson);
+        Assert.Equal("warm-circuits", with.Ship("s").SoundSet);
+
+        var without = ContentDb.FromJson(OneBridge, OneCard, FourEnemies, ShipWithSoundSet(""), TestContent.SectionsJson, TestContent.PlainEventsJson);
+        Assert.Null(without.Ship("s").SoundSet);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Warm")]
+    [InlineData("warm circuits")]
+    [InlineData("warm--circuits")]
+    [InlineData("-warm")]
+    [InlineData("warm/circuits")]
+    public void AShipSoundSetMustBeAFolderName(string name)
+    {
+        string ships = ShipWithSoundSet($"\"soundSet\": \"{name}\",");
+        var e = Assert.Throws<ContentException>(() => ContentDb.FromJson(OneBridge, OneCard, FourEnemies, ships, TestContent.SectionsJson, TestContent.PlainEventsJson));
+        Assert.Contains("soundSet", Assert.Single(e.Errors), StringComparison.Ordinal);
+    }
 }
 
 public class ShippedContentTests

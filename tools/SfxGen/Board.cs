@@ -11,15 +11,20 @@ internal static class Board
 {
     private const string Placeholder = "/*SOUNDS*/null";
 
-    /// <summary>The name the page gives the game's own sounds when there are takes to compare them with.</summary>
+    /// <summary>The name the page gives the base set when there are sets or takes to compare it with.</summary>
     public const string NowTake = "now";
 
     /// <summary>
-    /// The page holds, for each sound, the game's own version (the take named "now") and every take's version of
-    /// it, in that order. A sound that only a take has is listed too.
+    /// The page holds, for each sound, the base version (under the name "now"), every other set's version of it
+    /// and every take's, in that order. A sound that only a take has is listed too. The page treats a set like a
+    /// take that is in the game: when it plays a fight in a set, the base set supplies the sounds the set lacks.
     /// </summary>
-    public static string Build(IReadOnlyList<Recipe> recipes, IReadOnlyList<Take> takes)
+    public static string Build(IReadOnlyList<Recipe> recipes, IReadOnlyList<SoundSet> sets, IReadOnlyList<Take> takes)
     {
+        var others = sets.Select(s => (s.Name, s.Title, s.Description, s.Recipes, InGame: true))
+            .Concat(takes.Select(t => (t.Name, t.Title, t.Description, t.Recipes, InGame: false)))
+            .ToList();
+
         string template = File.ReadAllText(Path.Combine(Paths.RepoRoot, "tools", "SfxGen", "board.template.html"));
         if (!template.Contains(Placeholder, StringComparison.Ordinal))
         {
@@ -42,8 +47,8 @@ internal static class Board
                 }
 
                 ms = Math.Max(ms, samples.Length * 1000.0 / Synth.OutputRate);
-                // The page finds a sound by its name, so a take's files are named after the take as well:
-                // "fairy-ring/block-gain" and the game's own "block-gain" must never be taken for each other.
+                // The page finds a sound by its name, so a set's or a take's files are named after it as well:
+                // "fairy-ring/block-gain" and the base set's "block-gain" must never be taken for each other.
                 string file = Path.GetFileNameWithoutExtension(Synth.FileName(recipe, v));
                 variants.Add(new { name = take == NowTake ? file : $"{take}/{file}", wav = Convert.ToBase64String(wav) });
             }
@@ -55,7 +60,7 @@ internal static class Board
         foreach (var (name, title, _) in Families.All)
         {
             var ids = recipes.Where(r => r.Family == name).Select(r => r.Id)
-                .Concat(takes.SelectMany(t => t.Recipes).Where(r => r.Family == name).Select(r => r.Id))
+                .Concat(others.SelectMany(t => t.Recipes).Where(r => r.Family == name).Select(r => r.Id))
                 .Distinct()
                 .Order(StringComparer.Ordinal)
                 .ToList();
@@ -68,7 +73,7 @@ internal static class Board
                     versions.Add(Version(own, NowTake));
                 }
 
-                foreach (var take in takes)
+                foreach (var take in others)
                 {
                     if (take.Recipes.FirstOrDefault(r => r.Id == id) is { } tried)
                     {
@@ -86,12 +91,12 @@ internal static class Board
         }
 
         var takeList = new List<object>();
-        if (recipes.Count > 0 && takes.Count > 0)
+        if (recipes.Count > 0 && others.Count > 0)
         {
-            takeList.Add(new { name = NowTake, title = "Now: Seedling", description = "The sounds the game plays now. They are the Seedling's set, in Wood and water: things grown and made by hand, such as wooden bars, a thumb piano, plucked strings, seed pods, leaves and a glass bowl of water." });
+            takeList.Add(new { name = NowTake, title = "Seedling: wood and water", description = "The base set: the Seedling's own sounds, and the sounds every ship shares. Things grown and made by hand, such as wooden bars, a thumb piano, plucked strings, seed pods, leaves and a glass bowl of water.", inGame = true });
         }
 
-        takeList.AddRange(takes.Select(t => new { name = t.Name, title = t.Title, description = t.Description }));
+        takeList.AddRange(others.Select(t => new { name = t.Name, title = t.Title, description = t.Description, inGame = t.InGame }));
 
         string json = JsonSerializer.Serialize(new
         {

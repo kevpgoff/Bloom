@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 
 namespace Bloom.SfxGen;
 
@@ -177,6 +178,130 @@ internal static class Checks
 
         return found;
     }
+
+    /// <summary>
+    /// Checks a ship's sound set. Every sound in it must pass <see cref="Sound"/>, must be one of the sounds that
+    /// may change with the ship, and must keep the family and the level of the base sound it stands in for, so
+    /// that a fight reads the same on any ship. A length far from the base sound's earns a warning, and so does a
+    /// set that lacks some of a ship's sounds, for which the game plays the base ones.
+    /// </summary>
+    public static IReadOnlyList<Finding> Set(SoundSet set, IReadOnlyList<Recipe> baseRecipes)
+    {
+        var found = new List<Finding>();
+        foreach (var recipe in set.Recipes)
+        {
+            string name = $"{set.Name}/{recipe.Id}";
+            found.AddRange(Sound(recipe).Select(f => f with { Sound = $"{set.Name}/{f.Sound}" }));
+            if (!SoundSets.ShipSounds.Contains(recipe.Id))
+            {
+                found.Add(new Finding(name, true, "every ship shares this sound, so a ship's set may not hold it. See the list in tools/SfxGen/README.md, \"Ships' sets\"."));
+                continue;
+            }
+
+            if (baseRecipes.FirstOrDefault(r => r.Id == recipe.Id) is not { } basis)
+            {
+                found.Add(new Finding(name, true, "the base set in recipes/ has no sound of this name."));
+                continue;
+            }
+
+            if (recipe.Family != basis.Family)
+            {
+                found.Add(new Finding(name, true, $"its family is {recipe.Family}, but the base sound's is {basis.Family}."));
+            }
+
+            if (recipe.Level != basis.Level)
+            {
+                found.Add(new Finding(name, true, $"its level is {Num(recipe.Level)}, but the base sound's is {Num(basis.Level)}. A sound keeps its level in every set."));
+            }
+
+            double own = LongestMs(recipe);
+            double theirs = LongestMs(basis);
+            if (own < theirs * SoundSets.ShortestShare || own > theirs * SoundSets.LongestShare)
+            {
+                found.Add(new Finding(name, false, $"it is {Num(own)} ms long, far from the base sound's {Num(theirs)} ms."));
+            }
+        }
+
+        var missing = SoundSets.Missing(set);
+        if (missing.Count > 0)
+        {
+            found.Add(new Finding(set.Name, false, $"the set has no {string.Join(", ", missing)}; the game plays the base sound instead."));
+        }
+
+        return found;
+    }
+
+    /// <summary>
+    /// Checks the names of the sets and the takes. The sound board and the command line find a sound by
+    /// <c>name/id</c>, so no set may share a name with a take, and none may take the name the board gives the
+    /// base set.
+    /// </summary>
+    public static IReadOnlyList<Finding> Names(IReadOnlyList<SoundSet> sets, IReadOnlyList<Take> takes)
+    {
+        var found = new List<Finding>();
+        foreach (var set in sets.Where(s => takes.Any(t => t.Name == s.Name)))
+        {
+            found.Add(new Finding(set.Name, true, "there is both a set and a take of this name. Rename the take, or delete it."));
+        }
+
+        foreach (string name in sets.Select(s => s.Name).Concat(takes.Select(t => t.Name)).Where(n => n == Board.NowTake))
+        {
+            found.Add(new Finding(name, true, "the sound board uses this name for the base set. Rename the folder."));
+        }
+
+        return found;
+    }
+
+    /// <summary>
+    /// Checks the rendered files of every set, each in its folder inside the game's sound folder, as
+    /// <see cref="Files"/> does for the base set, and that every folder there belongs to a set.
+    /// </summary>
+    public static IReadOnlyList<Finding> SetFiles(IReadOnlyList<SoundSet> sets, string outputDir)
+    {
+        var found = new List<Finding>();
+        foreach (var set in sets)
+        {
+            found.AddRange(Files(set.Recipes, Path.Combine(outputDir, set.Name)).Select(f => f with { Sound = $"{set.Name}/{f.Sound}" }));
+        }
+
+        if (Directory.Exists(outputDir))
+        {
+            foreach (string folder in Directory.GetDirectories(outputDir))
+            {
+                string name = Path.GetFileName(folder);
+                if (sets.All(s => s.Name != name))
+                {
+                    found.Add(new Finding(name + "/", true, "no set in tools/SfxGen/sets makes this folder. Delete it."));
+                }
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>
+    /// Checks that every sound set a ship class names in <c>game/data/ships.json</c> has a folder here. A ship
+    /// that names a set nobody made would play only the base sounds.
+    /// </summary>
+    public static IReadOnlyList<Finding> Ships(IReadOnlyList<SoundSet> sets, string shipsPath)
+    {
+        var found = new List<Finding>();
+        using var ships = JsonDocument.Parse(File.ReadAllText(shipsPath));
+        foreach (var ship in ships.RootElement.EnumerateArray())
+        {
+            if (ship.TryGetProperty("soundSet", out var named) && named.GetString() is { } name && sets.All(s => s.Name != name))
+            {
+                string id = ship.TryGetProperty("id", out var given) ? given.GetString() ?? "?" : "?";
+                found.Add(new Finding("ships.json", true, $"the ship class '{id}' names the sound set '{name}', but tools/SfxGen/sets has no folder of that name."));
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>The length of a recipe's longest variant.</summary>
+    private static double LongestMs(Recipe recipe) =>
+        Enumerable.Range(0, recipe.Variants).Max(v => RenderCache.Of(recipe, v).Samples.Length * 1000.0 / Synth.OutputRate);
 
     private static string Num(double value) => value.ToString("0.#", CultureInfo.InvariantCulture);
 }

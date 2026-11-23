@@ -28,7 +28,12 @@ internal static partial class TakeFiles
     };
 
     /// <summary>Every take, in the order of their folder names. No folder means no takes.</summary>
-    public static IReadOnlyList<Take> LoadAll(string dir)
+    /// <param name="dir">The folder that holds one folder per take.</param>
+    /// <param name="kind">
+    /// What the folders are called in an error: <c>takes</c>, or <c>sets</c> when <see cref="SoundSets"/> reads
+    /// the ships' sets, which are kept in folders of the same form.
+    /// </param>
+    public static IReadOnlyList<Take> LoadAll(string dir, string kind = "takes")
     {
         if (!Directory.Exists(dir))
         {
@@ -37,32 +42,32 @@ internal static partial class TakeFiles
 
         var folders = Directory.GetDirectories(dir);
         Array.Sort(folders, StringComparer.Ordinal);
-        return folders.Select(Load).ToList();
+        return folders.Select(folder => Load(folder, kind)).ToList();
     }
 
-    public static Take Load(string folder)
+    public static Take Load(string folder, string kind = "takes")
     {
         string name = Path.GetFileName(folder);
         if (!NamePattern().IsMatch(name))
         {
-            throw new RecipeException($"takes/{name}: a take's folder name must be lowercase words joined by hyphens.");
+            throw new RecipeException($"{kind}/{name}: the folder's name must be lowercase words joined by hyphens.");
         }
 
         string aboutPath = Path.Combine(folder, AboutFile);
         if (!File.Exists(aboutPath))
         {
-            throw new RecipeException($"takes/{name}: the folder needs an {AboutFile} with a title and a description.");
+            throw new RecipeException($"{kind}/{name}: the folder needs an {AboutFile} with a title and a description.");
         }
 
         About about;
         try
         {
             about = JsonSerializer.Deserialize<About>(File.ReadAllText(aboutPath), Options)
-                ?? throw new RecipeException($"takes/{name}/{AboutFile} is empty.");
+                ?? throw new RecipeException($"{kind}/{name}/{AboutFile} is empty.");
         }
         catch (JsonException e)
         {
-            throw new RecipeException($"takes/{name}/{AboutFile}: {e.Message}");
+            throw new RecipeException($"{kind}/{name}/{AboutFile}: {e.Message}");
         }
 
         var files = Directory.GetFiles(folder, "*.json").Where(f => Path.GetFileName(f) != AboutFile).ToArray();
@@ -76,7 +81,7 @@ internal static partial class TakeFiles
             }
             catch (RecipeException e)
             {
-                throw new RecipeException($"takes/{name}/{e.Message}");
+                throw new RecipeException($"{kind}/{name}/{e.Message}");
             }
         }
 
