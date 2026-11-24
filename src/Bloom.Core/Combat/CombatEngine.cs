@@ -17,6 +17,10 @@ namespace Bloom.Core.Combat;
 public sealed record CardPreview(CardInstance Card, CardDef Def, IReadOnlyList<Effect> Effects, bool Playable, int RepairTargets);
 
 /// <summary>One thing the enemy will do at the end of the turn, with its body (<paramref name="Part"/> null) or one of its working parts.</summary>
+/// <param name="Intent">
+/// The move as it will land on this ship: for a heavy attack, its amount is the damage left after the lane armor
+/// of the piece it reaches. Otherwise it is the move as the enemy's pattern has it.
+/// </param>
 /// <param name="Lane">
 /// For a heavy attack, the lane it hits: the lane it aims at, or the nearest one the hull reaches
 /// (<see cref="Grid.ShipGrid.LaneHit"/>). Null for any other intent.
@@ -25,7 +29,8 @@ public sealed record CardPreview(CardInstance Card, CardDef Def, IReadOnlyList<E
 /// For a heavy attack, the piece it disables if its damage gets past block: the frontmost working piece in its lane,
 /// behind any that an earlier heavy attack of the same turn would disable. Null when the lane has none left.
 /// </param>
-public sealed record EnemyAction(int? Part, Intent Intent, int? Lane = null, FittedPiece? Target = null);
+/// <param name="Armor">The damage that the lane armor of <paramref name="Target"/> takes off a heavy attack; 0 without armor.</param>
+public sealed record EnemyAction(int? Part, Intent Intent, int? Lane = null, FittedPiece? Target = null, int Armor = 0);
 
 /// <summary>
 /// The turn cycle of a fight. Each public method that changes state is one player action and leaves
@@ -48,6 +53,15 @@ public sealed record EnemyAction(int? Part, Intent Intent, int? Lane = null, Fit
 /// Without this, cards that draw and cost no energy could be played without end.
 /// </para>
 /// <para>
+/// Passives (<see cref="PassiveDef"/>): a turn starts with its energy, then the passives of the working pieces
+/// take effect in the order of <see cref="ShipFitter.ActivePassives"/>, then the cards are drawn. The first turn
+/// takes the <see cref="PassiveTrigger.FightStart"/> ones before the <see cref="PassiveTrigger.TurnStart"/> ones.
+/// A passive's damage hits what the player aims at, as a card's does, but it is not a card: adjacency bonuses and
+/// focus do not add to it, and it uses up no focus. Since it can beat the enemy, a fight can be won as a turn
+/// starts. Lane armor is part of <see cref="EffectiveIntent"/>, which says what an enemy's move does to this ship.
+/// The passives of <see cref="PassiveTrigger.FightWon"/> give back hull when a fight is won.
+/// </para>
+/// <para>
 /// Each change is reported to <paramref name="emit"/> as a <see cref="CombatEvent"/>, in the order it
 /// happens, so the game can show it. Reporting happens only after validation, so a rejected action reports nothing.
 /// </para>
@@ -59,7 +73,9 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
 
     /// <summary>
     /// Starts a fight against an enemy. Players start fights through <see cref="RefitEngine.StartFight"/>,
-    /// against the enemy of the node they chose; tests may start one from the map.
+    /// against the enemy of the node they chose; tests may start one from the map. Returns the fight. If the
+    /// ship's passives beat the enemy as the first turn starts, the fight is already over when this returns, and
+    /// <see cref="RunState.Combat"/> is null again.
     /// </summary>
     public CombatState StartFight(RunState run, string enemyId)
     {
@@ -99,7 +115,39 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         run.Combat = combat;
         Emit(new FightStarted(enemy.Id));
         StartTurn(run, combat);
+        if (combat.Enemy.Hull <= 0)
+        {
+            EndFight(run, combat, CombatOutcome.Won);
+        }
+
         return combat;
+    }
+
+    /// <summary>
+    /// What a move of the enemy does to the ship as it is, with the pieces of <paramref name="disabledPieceIds"/>
+    /// not working. For a heavy attack this gives the lane it hits, the piece it reaches there, and its damage
+    /// after that piece's lane armor (<see cref="LaneArmorEffect"/>). Any other move comes back as it is. The
+    /// enemy's turn, <see cref="NextActions"/> and the Fitting screen all read a move through this, so what the
+    /// player is shown is what happens.
+    /// </summary>
+    public EnemyAction EffectiveIntent(ShipLayout ship, Intent intent, IReadOnlyCollection<int> disabledPieceIds, int? part = null)
+    {
+        if (intent is not { Kind: IntentKind.HeavyAttack, Lane: int aimed })
+        {
+            return new EnemyAction(part, intent);
+        }
+
+        int lane = ship.Grid.LaneHit(aimed);
+        var target = _fitter.FrontmostInLane(ship, lane, disabledPieceIds);
+        int armor = target is null
+            ? 0
+            : _fitter.ActivePassives(ship, disabledPieceIds)
+                .Where(p => p.Fitted.Piece.Id == target.Piece.Id && p.Passive.Trigger == PassiveTrigger.Standing)
+                .Select(p => p.Effect)
+                .OfType<LaneArmorEffect>()
+                .Sum(e => e.Amount);
+        int amount = Math.Max(0, intent.Amount - armor);
+        return new EnemyAction(part, intent with { Amount = amount }, lane, target, intent.Amount - amount);
     }
 
     /// <summary>What the enemy will do at the end of this turn, in order: its body, then each working part.</summary>
@@ -112,20 +160,13 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         var actions = new List<EnemyAction>();
         void Add(int? part, Intent intent)
         {
-            if (intent is not { Kind: IntentKind.HeavyAttack, Lane: int aimed })
-            {
-                actions.Add(new EnemyAction(part, intent));
-                return;
-            }
-
-            int lane = run.Ship.Grid.LaneHit(aimed);
-            var target = _fitter.FrontmostInLane(run.Ship, lane, disabled);
-            if (target is not null)
+            var action = EffectiveIntent(run.Ship, intent, disabled, part);
+            if (action.Target is { } target)
             {
                 disabled.Add(target.Piece.Id);
             }
 
-            actions.Add(new EnemyAction(part, intent, lane, target));
+            actions.Add(action);
         }
 
         Add(null, Next(def.Pattern, enemy.PatternIndex));
@@ -293,7 +334,7 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
 
     /// <summary>
     /// The enemy acts, the cards played this turn and the unplayed cards go to the discard pile, block returns to 0,
-    /// and the next turn starts.
+    /// and the next turn starts. The fight is won here if the ship's passives beat the enemy as that turn starts.
     /// </summary>
     public CombatOutcome EndTurn(RunState run)
     {
@@ -315,7 +356,7 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         combat.Hand.Clear();
         combat.Block = 0;
         StartTurn(run, combat);
-        return CombatOutcome.Ongoing;
+        return combat.Enemy.Hull <= 0 ? EndFight(run, combat, CombatOutcome.Won) : CombatOutcome.Ongoing;
     }
 
     /// <summary>Cards drawn at the start of a turn: one fewer while the bridge is disabled.</summary>
@@ -395,7 +436,65 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
             ? combat.Energy + Rules.EnergyPerTurn
             : Rules.EnergyPerTurn;
         Emit(new TurnStarted(combat.Turn));
-        Draw(run, combat, CardsToDraw(run, combat));
+        if (combat.Turn == 1)
+        {
+            FirePassives(run, combat, PassiveTrigger.FightStart);
+        }
+
+        FirePassives(run, combat, PassiveTrigger.TurnStart);
+
+        // A passive's damage may have beaten the enemy. The caller ends the fight; no cards are drawn for it.
+        if (combat.Enemy.Hull > 0)
+        {
+            Draw(run, combat, CardsToDraw(run, combat));
+        }
+    }
+
+    /// <summary>
+    /// The passives of one trigger take effect, in the order of <see cref="ShipFitter.ActivePassives"/>. They stop
+    /// once the enemy is beaten. This has its own list of effects, apart from the one for cards in
+    /// <see cref="PlayCard"/>, because a passive is not a card: nothing is added to its numbers.
+    /// </summary>
+    private void FirePassives(RunState run, CombatState combat, PassiveTrigger trigger)
+    {
+        foreach (var active in _fitter.ActivePassives(run.Ship, combat.DisabledPieceIds))
+        {
+            if (active.Passive.Trigger != trigger)
+            {
+                continue;
+            }
+
+            if (combat.Enemy.Hull <= 0)
+            {
+                return;
+            }
+
+            Emit(new PassiveFired(active.Fitted.Piece.Id, trigger));
+            switch (active.Effect)
+            {
+                case BlockEffect block:
+                    combat.Block += block.Amount;
+                    Emit(new BlockGained(block.Amount, combat.Block));
+                    break;
+                case GainEnergyEffect energy:
+                    combat.Energy += energy.Amount;
+                    Emit(new EnergyGained(energy.Amount, combat.Energy));
+                    break;
+                case DrawEffect draw:
+                    Draw(run, combat, draw.Count);
+                    break;
+                case FocusEffect focus:
+                    combat.PendingFocus += focus.Amount;
+                    Emit(new FocusGained(focus.Amount, combat.PendingFocus));
+                    break;
+                case DamageEffect damage:
+                    DamageEnemy(combat, damage.Amount);
+                    break;
+                default:
+                    // The content validator lists the effects that each trigger takes.
+                    throw new UnreachableException($"Effect '{active.Effect.GetType().Name}' cannot be a passive of {trigger}.");
+            }
+        }
     }
 
     private static Intent Next(IReadOnlyList<Intent> pattern, int index) => pattern[index % pattern.Count];
@@ -428,10 +527,15 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
                 DamageShip(run, combat, intent.Amount, heavyLane: null, part);
                 break;
             case IntentKind.HeavyAttack:
-                int lane = run.Ship.Grid.LaneHit(intent.Lane!.Value);
-                if (DamageShip(run, combat, intent.Amount, lane, part) > 0)
+                var heavy = EffectiveIntent(run.Ship, intent, combat.DisabledPieceIds, part);
+                if (heavy is { Armor: > 0, Target: { } armored })
                 {
-                    DisableFrontmost(run, combat, lane);
+                    Emit(new PassiveFired(armored.Piece.Id, PassiveTrigger.Standing));
+                }
+
+                if (DamageShip(run, combat, heavy.Intent.Amount, heavy.Lane, part, heavy.Armor) > 0)
+                {
+                    DisableFrontmost(run, combat, heavy.Lane!.Value);
                 }
 
                 break;
@@ -444,14 +548,17 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         }
     }
 
-    /// <summary>Block absorbs damage first; the rest reduces hull points. Returns the hull damage.</summary>
-    private int DamageShip(RunState run, CombatState combat, int amount, int? heavyLane, int? part)
+    /// <summary>
+    /// Block absorbs damage first; the rest reduces hull points. Returns the hull damage. <paramref name="armored"/>
+    /// is what lane armor already took off <paramref name="amount"/>, for the event only.
+    /// </summary>
+    private int DamageShip(RunState run, CombatState combat, int amount, int? heavyLane, int? part, int armored = 0)
     {
         int absorbed = Math.Min(combat.Block, amount);
         combat.Block -= absorbed;
         int hullDamage = amount - absorbed;
         run.Hull = Math.Max(0, run.Hull - hullDamage);
-        Emit(new ShipHit(amount, absorbed, hullDamage, run.Hull, heavyLane, part));
+        Emit(new ShipHit(amount, absorbed, hullDamage, run.Hull, heavyLane, part, armored));
         return hullDamage;
     }
 
@@ -540,8 +647,9 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
 
     /// <summary>
     /// Records the result on the run. Disabled pieces come back at no cost: the next fight rebuilds the
-    /// deck from the ship. Beating the boss of the last sector wins the run; any other win pays salvage
-    /// and offers a reward. All of it happens in the same action, so it is saved together.
+    /// deck from the ship. A won fight first gives back the hull of the <see cref="PassiveTrigger.FightWon"/>
+    /// passives, from the pieces that still work. Beating the boss of the last sector wins the run; any other win
+    /// pays salvage and offers a reward. All of it happens in the same action, so it is saved together.
     /// </summary>
     private CombatOutcome EndFight(RunState run, CombatState combat, CombatOutcome outcome)
     {
@@ -555,6 +663,7 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         else
         {
             run.FightsWon++;
+            int regained = RegainHull(run, combat);
             var pool = content.Enemy(combat.Enemy.DefId).Pool ?? EnemyPool.Early;
             if (pool == EnemyPool.Boss && run.Sector >= run.Sectors)
             {
@@ -564,12 +673,41 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
             {
                 var offer = _rewards.Roll(run, pool);
                 run.Salvage += offer.Salvage;
-                run.Reward = offer;
+                run.Reward = offer with { HullRegained = regained };
             }
         }
 
         Emit(new FightEnded(outcome));
         return outcome;
+    }
+
+    /// <summary>
+    /// The passives of <see cref="PassiveTrigger.FightWon"/> give back hull, never past its maximum. A passive
+    /// that has nothing left to give back does not fire. Returns the points regained in all.
+    /// </summary>
+    private int RegainHull(RunState run, CombatState combat)
+    {
+        int total = 0;
+        foreach (var active in _fitter.ActivePassives(run.Ship, combat.DisabledPieceIds))
+        {
+            if (active.Passive.Trigger != PassiveTrigger.FightWon || active.Effect is not RegainHullEffect regain)
+            {
+                continue;
+            }
+
+            int gain = Math.Min(regain.Amount, run.MaxHull - run.Hull);
+            if (gain <= 0)
+            {
+                continue;
+            }
+
+            run.Hull += gain;
+            total += gain;
+            Emit(new PassiveFired(active.Fitted.Piece.Id, PassiveTrigger.FightWon));
+            Emit(new HullRegained(gain, run.Hull));
+        }
+
+        return total;
     }
 
     private void Emit(CombatEvent e) => emit?.Invoke(e);

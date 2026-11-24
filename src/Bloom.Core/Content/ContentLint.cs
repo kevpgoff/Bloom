@@ -20,6 +20,7 @@ public static class ContentLint
         var offered = db.Pieces.Where(p => !p.IsBridge).ToList();
         CheckCards(db, findings);
         CheckBonuses(db, findings);
+        CheckPassives(db, findings);
         CheckRarities(offered, findings);
         CheckFit(db, offered, findings);
         CheckEnemies(db, findings);
@@ -67,7 +68,8 @@ public static class ContentLint
 
     private static void CheckBonuses(ContentDb db, List<string> findings)
     {
-        var carried = db.Pieces.SelectMany(p => p.Tags).ToHashSet();
+        // A piece without cards receives no bonus (ShipFitter.ActiveBonuses), so its tags do not count here.
+        var carried = db.Pieces.Where(p => p.Cards.Count > 0).SelectMany(p => p.Tags).ToHashSet();
         var byName = new Dictionary<string, AdjacencyBonus>();
         foreach (var piece in db.Pieces)
         {
@@ -84,7 +86,7 @@ public static class ContentLint
 
             if (!carried.Contains(bonus.TargetTag))
             {
-                findings.Add($"{where}: its bonus targets {bonus.TargetTag}, a tag that no piece carries.");
+                findings.Add($"{where}: its bonus targets {bonus.TargetTag}, a tag that no piece with cards carries.");
             }
 
             // A piece receives a bonus of a given name once, so two bonuses that share a name must be the same bonus.
@@ -97,12 +99,47 @@ public static class ContentLint
         }
     }
 
-    /// <summary>An offer rolls a rarity for each slot, so a rarity with fewer pieces than an offer has slots repeats in every offer.</summary>
+    private static void CheckPassives(ContentDb db, List<string> findings)
+    {
+        var byName = new Dictionary<string, PassiveDef>();
+        foreach (var piece in db.Pieces)
+        {
+            if (piece.Passive is not { } passive)
+            {
+                continue;
+            }
+
+            string where = $"piece '{piece.Id}'";
+            if (Amount(passive.Effect) == 0)
+            {
+                findings.Add($"{where}: its passive '{passive.Name}' has an amount of 0, so it does nothing.");
+            }
+
+            if (passive.Upgrade is { } upgrade && Amount(upgrade) <= Amount(passive.Effect))
+            {
+                findings.Add($"{where}: the upgrade of its passive '{passive.Name}' is not larger than the passive, so upgrading it gains nothing.");
+            }
+
+            // A ship counts a passive of a given name once, so two passives that share a name must be the same passive.
+            if (byName.TryGetValue(passive.Name, out var first) && first != passive)
+            {
+                findings.Add($"{where}: its passive '{passive.Name}' shares its name with a different passive, and a ship counts a name only once.");
+            }
+
+            byName.TryAdd(passive.Name, passive);
+        }
+    }
+
+    /// <summary>
+    /// An offer rolls a rarity for each slot, so a rarity with fewer pieces than an offer has slots repeats in every
+    /// offer. An offer holds at most one piece without cards, so those count as one.
+    /// </summary>
     private static void CheckRarities(List<PieceDef> offered, List<string> findings)
     {
         foreach (var rarity in Enum.GetValues<Rarity>())
         {
-            int count = offered.Count(p => p.Rarity == rarity);
+            var ofRarity = offered.Where(p => p.Rarity == rarity).ToList();
+            int count = ofRarity.Count(p => p.Cards.Count > 0) + Math.Min(1, ofRarity.Count(p => p.Cards.Count == 0));
             if (count < Rules.RewardChoices)
             {
                 findings.Add($"Only {count} {rarity} pieces can be offered, but a reward offers {Rules.RewardChoices}.");
@@ -199,6 +236,8 @@ public static class ContentLint
         GrowEffect e => e.Amount,
         DamageBonusEffect e => e.Amount,
         StartGrownEffect e => e.Times,
+        LaneArmorEffect e => e.Amount,
+        RegainHullEffect e => e.Amount,
         _ => throw new InvalidOperationException($"The lint has no amount for '{effect.GetType().Name}'."),
     };
 }

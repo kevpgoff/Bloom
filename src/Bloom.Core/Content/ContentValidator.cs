@@ -145,9 +145,16 @@ internal static class ContentValidator
             }
         }
 
-        if (piece.Cards is null || piece.Cards.Count == 0)
+        if (piece.Cards is null)
         {
-            errors.Add($"{where}: must add at least one card.");
+            errors.Add($"{where}: missing cards (use [] for a piece that has only a passive).");
+        }
+        else if (piece.Cards.Count == 0)
+        {
+            if (piece.Passive is null)
+            {
+                errors.Add($"{where}: must add at least one card or have a passive.");
+            }
         }
         else
         {
@@ -182,7 +189,71 @@ internal static class ContentValidator
                 errors.Add($"{where}: the adjacency bonus needs an effect.");
             }
         }
+
+        if (piece.Passive is { } passive)
+        {
+            ValidatePassive(where, passive, errors);
+        }
     }
+
+    /// <summary>
+    /// A passive needs a name, a trigger and an effect that its trigger takes (<see cref="PassiveTakes"/>). Its
+    /// upgrade must be the same kind of effect, so that upgrading a piece never changes what its passive does.
+    /// </summary>
+    private static void ValidatePassive(string where, PassiveDef passive, List<string> errors)
+    {
+        if (string.IsNullOrWhiteSpace(passive.Name))
+        {
+            errors.Add($"{where}: the passive needs a name.");
+        }
+
+        if (passive.Trigger is not { } trigger || !Enum.IsDefined(trigger))
+        {
+            errors.Add($"{where}: the passive needs a trigger: {string.Join(", ", Enum.GetNames<PassiveTrigger>())}.");
+            return;
+        }
+
+        if (passive.Effect is null)
+        {
+            errors.Add($"{where}: the passive needs an effect.");
+            return;
+        }
+
+        foreach (var (effect, what) in new[] { (passive.Effect, "passive"), (passive.Upgrade, "passive's upgrade") })
+        {
+            if (effect is null)
+            {
+                continue;
+            }
+
+            if (!PassiveTakes(trigger, effect))
+            {
+                errors.Add($"{where}: the {what} cannot be '{effect.GetType().Name}' with the trigger {trigger}.");
+            }
+            else if (Magnitude(effect) < 0)
+            {
+                errors.Add($"{where}: the {what} cannot have a negative amount.");
+            }
+        }
+
+        if (passive.Upgrade is { } upgrade && upgrade.GetType() != passive.Effect.GetType())
+        {
+            errors.Add($"{where}: the passive's upgrade must be the same kind of effect as the passive.");
+        }
+    }
+
+    /// <summary>
+    /// The effects that each trigger takes. The passives that fire take the card effects that need no choice by the
+    /// player; repair and grow are left out. Lane armor only stands, and hull is regained only after a won fight.
+    /// </summary>
+    private static bool PassiveTakes(PassiveTrigger trigger, Effect effect) => trigger switch
+    {
+        PassiveTrigger.FightStart or PassiveTrigger.TurnStart =>
+            effect is BlockEffect or GainEnergyEffect or DrawEffect or FocusEffect or DamageEffect,
+        PassiveTrigger.Standing => effect is LaneArmorEffect,
+        PassiveTrigger.FightWon => effect is RegainHullEffect,
+        _ => false,
+    };
 
     private static void ValidateCard(CardDef card, List<string> errors)
     {
@@ -240,6 +311,10 @@ internal static class ContentValidator
             else if (effect is BonusEffect)
             {
                 errors.Add($"{where}: '{effect.GetType().Name}' can only be used in an adjacency bonus.");
+            }
+            else if (effect is PassiveOnlyEffect)
+            {
+                errors.Add($"{where}: '{effect.GetType().Name}' can only be used in a passive.");
             }
             else if (Magnitude(effect) < 0)
             {
@@ -702,6 +777,8 @@ internal static class ContentValidator
         RepairEffect e => e.Count,
         FocusEffect e => e.Amount,
         GrowEffect e => e.Amount,
+        LaneArmorEffect e => e.Amount,
+        RegainHullEffect e => e.Amount,
         _ => 0,
     };
 }

@@ -81,7 +81,7 @@ public class ContentLintTests
     public void ABonusForATagThatNoPieceCarriesIsReported()
     {
         var pieces = Db.Pieces.Where(p => !p.Tags.Contains(Tag.Garden)).ToList();
-        AssertFinding(With(pieces: pieces), "piece 'singer': its bonus targets Garden, a tag that no piece carries.");
+        AssertFinding(With(pieces: pieces), "piece 'singer': its bonus targets Garden, a tag that no piece with cards carries.");
     }
 
     [Fact]
@@ -94,12 +94,67 @@ public class ContentLintTests
         AssertNoFinding(With(pieces: [.. Db.Pieces, same]), "shares its name");
     }
 
+    private static PieceDef Bare(string id, PassiveDef passive, Rarity rarity = Rarity.Common, Tag[]? tags = null) =>
+        new(id, id, PieceKind.Equipment, tags ?? [], rarity, Shape.Parse(["##"]), [], Passive: passive);
+
+    [Fact]
+    public void ABonusForATagThatOnlyAPieceWithoutCardsCarriesIsReported()
+    {
+        // A piece without cards receives no bonus, so its Garden tag gives the singer's bonus nothing to change.
+        var bed = Bare("bed", new PassiveDef("dew", PassiveTrigger.FightWon, new RegainHullEffect(3)), tags: [Tag.Garden]);
+        var pieces = Db.Pieces.Where(p => !p.Tags.Contains(Tag.Garden)).Append(bed).ToList();
+        AssertFinding(With(pieces: pieces), "piece 'singer': its bonus targets Garden, a tag that no piece with cards carries.");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void APassiveOfZeroIsReported(bool inUpgrade)
+    {
+        var passive = inUpgrade
+            ? new PassiveDef("dew", PassiveTrigger.FightWon, new RegainHullEffect(3), new RegainHullEffect(0))
+            : new PassiveDef("dew", PassiveTrigger.FightWon, new RegainHullEffect(0));
+        AssertFinding(
+            With(pieces: [.. Db.Pieces, Bare("still", passive)]),
+            inUpgrade ? "piece 'still': the upgrade of its passive 'dew' is not larger" : "piece 'still': its passive 'dew' has an amount of 0");
+    }
+
+    [Fact]
+    public void APassiveWhoseUpgradeIsNotLargerIsReported()
+    {
+        var same = new PassiveDef("dew", PassiveTrigger.FightWon, new RegainHullEffect(3), new RegainHullEffect(3));
+        AssertFinding(With(pieces: [.. Db.Pieces, Bare("still", same)]), "piece 'still': the upgrade of its passive 'dew' is not larger than the passive");
+
+        var larger = same with { Upgrade = new RegainHullEffect(4) };
+        AssertNoFinding(With(pieces: [.. Db.Pieces, Bare("still", larger)]), "piece 'still'");
+        AssertNoFinding(With(pieces: [.. Db.Pieces, Bare("still", same with { Upgrade = null })]), "piece 'still'");
+    }
+
+    [Fact]
+    public void TwoDifferentPassivesWithOneNameAreReported()
+    {
+        var dew = new PassiveDef("dew", PassiveTrigger.FightWon, new RegainHullEffect(3));
+        var pieces = new[] { Bare("still", dew), Bare("pond", dew with { Effect = new RegainHullEffect(6) }) };
+        AssertFinding(With(pieces: [.. Db.Pieces, .. pieces]), "piece 'pond': its passive 'dew' shares its name with a different passive, and a ship counts a name only once.");
+        AssertNoFinding(With(pieces: [.. Db.Pieces, Bare("still", dew), Bare("pond", dew)]), "shares its name");
+    }
+
     [Fact]
     public void ARarityWithFewerPiecesThanAnOfferIsReported()
     {
         AssertFinding(With(), "Only 1 Rare pieces can be offered");
         var db = With(pieces: [.. Db.Pieces, Piece("r2", rarity: Rarity.Rare), Piece("r3", rarity: Rarity.Rare)]);
         AssertNoFinding(db, "Rare pieces can be offered");
+    }
+
+    /// <summary>An offer holds at most one piece without cards, so several of them fill only one of its slots.</summary>
+    [Fact]
+    public void PiecesWithoutCardsCountAsOneTowardARarity()
+    {
+        var dew = new PassiveDef("dew", PassiveTrigger.FightWon, new RegainHullEffect(3));
+        var db = With(pieces: [.. Db.Pieces, Bare("r2", dew, Rarity.Rare), Bare("r3", dew, Rarity.Rare)]);
+        AssertFinding(db, "Only 2 Rare pieces can be offered");
+        AssertNoFinding(With(pieces: [.. Db.Pieces, Bare("r2", dew, Rarity.Rare), Piece("r3", rarity: Rarity.Rare)]), "Rare pieces can be offered");
     }
 
     [Fact]

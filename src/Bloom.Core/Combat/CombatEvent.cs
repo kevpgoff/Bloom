@@ -1,3 +1,5 @@
+using Bloom.Core.Pieces;
+
 namespace Bloom.Core.Combat;
 
 /// <summary>
@@ -57,15 +59,27 @@ public sealed record CardGrew(int CardId, int Growth) : CombatEvent;
 /// <summary>
 /// The enemy attacked the ship, with its body or with the part <paramref name="Part"/>. <paramref name="Blocked"/>
 /// went into the ship's block and <paramref name="HullDamage"/> got past it. <paramref name="HeavyLane"/> is the
-/// lane of a heavy attack, or null for a normal one.
+/// lane of a heavy attack, or null for a normal one. <paramref name="Amount"/> is the damage that arrived:
+/// <paramref name="Armored"/> more was taken off before it by the lane armor of the piece that the heavy attack
+/// reached, and a <see cref="PassiveFired"/> for that piece comes just before this event.
 /// </summary>
-public sealed record ShipHit(int Amount, int Blocked, int HullDamage, int HullLeft, int? HeavyLane, int? Part = null) : CombatEvent;
+public sealed record ShipHit(int Amount, int Blocked, int HullDamage, int HullLeft, int? HeavyLane, int? Part = null, int Armored = 0) : CombatEvent;
 
 /// <summary>A heavy attack disabled a piece; its cards went offline.</summary>
 public sealed record PieceDisabled(int PieceId, int Lane) : CombatEvent;
 
 /// <summary>The enemy's body, or its part <paramref name="Part"/>, raised the enemy's one block to <paramref name="Total"/>.</summary>
 public sealed record EnemyBlocked(int Amount, int Total, int? Part = null) : CombatEvent;
+
+/// <summary>
+/// The passive of a piece took effect. What it did follows as the usual events (<see cref="BlockGained"/>,
+/// <see cref="EnemyHit"/>, <see cref="CardDrawn"/> and so on); for lane armor, the <see cref="ShipHit"/> that it
+/// reduced follows.
+/// </summary>
+public sealed record PassiveFired(int PieceId, PassiveTrigger Trigger) : CombatEvent;
+
+/// <summary>The hull regained <paramref name="Amount"/> points after a won fight and now has <paramref name="Hull"/>.</summary>
+public sealed record HullRegained(int Amount, int Hull) : CombatEvent;
 
 /// <summary>The fight is over. Always the last event of its action.</summary>
 public sealed record FightEnded(CombatOutcome Outcome) : CombatEvent;

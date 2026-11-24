@@ -6,13 +6,17 @@ namespace Bloom.Core.Run;
 /// <summary>
 /// Upgrading pieces. The spec: each piece can be upgraded once, at a grove or through an event, and the
 /// upgrade improves every card the piece adds. How each card improves is written in cards.json
-/// (<see cref="Cards.CardDef.Upgrade"/>).
+/// (<see cref="Cards.CardDef.Upgrade"/>). The upgrade also improves the piece's passive, as written with
+/// the piece in pieces.json (<see cref="PassiveDef.Upgrade"/>).
 /// </summary>
 public static class PieceUpgrades
 {
-    /// <summary>Whether a piece can still be upgraded: it is not upgraded yet, and at least one of its cards has an upgrade.</summary>
+    /// <summary>Whether a piece can still be upgraded: it is not upgraded yet, and its passive or at least one of its cards has an upgrade.</summary>
     public static bool CanUpgrade(ContentDb content, PieceInstance piece) =>
-        !piece.Upgraded && content.Piece(piece.DefId).Cards.Any(g => content.Card(g.Card).Upgrade is not null);
+        !piece.Upgraded && CanUpgrade(content, content.Piece(piece.DefId));
+
+    private static bool CanUpgrade(ContentDb content, PieceDef def) =>
+        def.Passive?.Upgrade is not null || def.Cards.Any(g => content.Card(g.Card).Upgrade is not null);
 
     /// <summary>The owned pieces that can be upgraded: the fitted ones in layout order, then the cargo hold's.</summary>
     public static IReadOnlyList<PieceInstance> Upgradable(ContentDb content, RunState run) =>
@@ -30,7 +34,7 @@ public static class PieceUpgrades
         {
             throw new InvalidOperationException(piece.Upgraded
                 ? $"'{piece.DefId}' is already upgraded."
-                : $"'{piece.DefId}' has no card that can be upgraded.");
+                : $"'{piece.DefId}' has no card and no passive that can be upgraded.");
         }
 
         var upgraded = piece with { Upgraded = true };

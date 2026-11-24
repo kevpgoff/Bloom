@@ -1,3 +1,4 @@
+using Bloom.Core.Cards;
 using Bloom.Core.Content;
 using Bloom.Core.Grid;
 
@@ -13,6 +14,12 @@ public enum FitError
 
 /// <summary>A bonus that is active this fight: <see cref="GiverId"/> gives it to <see cref="ReceiverId"/>.</summary>
 public sealed record ActiveBonus(int ReceiverId, int GiverId, AdjacencyBonus Bonus);
+
+/// <summary>
+/// A passive that counts on the ship now: the piece that carries it, and its <see cref="Effect"/> with the
+/// piece's upgrade applied.
+/// </summary>
+public sealed record ActivePassive(FittedPiece Fitted, PassiveDef Passive, Effect Effect);
 
 /// <summary>
 /// The rules of fitting: placement, moving, removal, adjacency and lanes. Stateless; it reads shapes
@@ -104,7 +111,8 @@ public sealed class ShipFitter(ContentDb content)
 
     /// <summary>
     /// The adjacency bonuses that apply, in layout order. Disabled pieces neither give nor receive
-    /// bonuses, and a piece receives each named bonus at most once.
+    /// bonuses, and a piece receives each named bonus at most once. A piece that adds no cards receives none,
+    /// because every bonus changes the cards of the piece that receives it.
     /// </summary>
     public IReadOnlyList<ActiveBonus> ActiveBonuses(ShipLayout layout, IReadOnlyCollection<int> disabledPieceIds)
     {
@@ -125,6 +133,7 @@ public sealed class ShipFitter(ContentDb content)
             foreach (var receiver in working)
             {
                 if (receiver.Fitted.Piece.Id == giver.Fitted.Piece.Id
+                    || receiver.Def.Cards.Count == 0
                     || !receiver.Def.Tags.Contains(bonus.TargetTag)
                     || !Touches(giver.Cells, receiver.Cells)
                     || !received.Add((receiver.Fitted.Piece.Id, bonus.Name)))
@@ -133,6 +142,33 @@ public sealed class ShipFitter(ContentDb content)
                 }
 
                 result.Add(new ActiveBonus(receiver.Fitted.Piece.Id, giver.Fitted.Piece.Id, bonus));
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// The passives that count, in the order they take effect: by each piece's first cell, the front row first
+    /// and then from the left. That order does not depend on the order in which the pieces were fitted. A
+    /// disabled piece's passive is off, and the ship counts each named passive once: the first working piece
+    /// in that order that carries the name. When that piece is disabled, the next one counts in its place.
+    /// </summary>
+    public IReadOnlyList<ActivePassive> ActivePassives(ShipLayout layout, IReadOnlyCollection<int> disabledPieceIds)
+    {
+        var result = new List<ActivePassive>();
+        var counted = new HashSet<string>();
+        var carriers = layout.Fitted
+            .Where(f => !disabledPieceIds.Contains(f.Piece.Id))
+            .Select(f => (Fitted: f, content.Piece(f.Piece.DefId).Passive, First: FirstCell(f)))
+            .Where(c => c.Passive is not null)
+            .OrderBy(c => c.First.Y)
+            .ThenBy(c => c.First.X);
+        foreach (var (fitted, passive, _) in carriers)
+        {
+            if (counted.Add(passive!.Name))
+            {
+                result.Add(new ActivePassive(fitted, passive, passive.EffectFor(fitted.Piece.Upgraded)));
             }
         }
 
@@ -166,6 +202,10 @@ public sealed class ShipFitter(ContentDb content)
 
         return best;
     }
+
+    /// <summary>The cell of a piece that is nearest the front, and of those the one furthest left.</summary>
+    private Cell FirstCell(FittedPiece fitted) =>
+        CellsOf(fitted).OrderBy(c => c.Y).ThenBy(c => c.X).First();
 
     private HashSet<Cell> OccupiedCells(ShipLayout layout, int? ignorePieceId)
     {
