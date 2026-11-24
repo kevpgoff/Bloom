@@ -1,6 +1,21 @@
 # Game content
 
-The game loads these files at startup through `Bloom.Core.Content.ContentDb`. The test `ShippedContentTests` loads and validates them, so `dotnet test` catches mistakes in them. The files must be strict JSON, with no comments, because Godot's own JSON parser also reads files in the project.
+The game loads these files at startup through `Bloom.Core.Content.ContentDb`. The test `ShippedContentTests` loads and validates them, so `dotnet test` catches mistakes in them. The files must be strict JSON, with no comments and no trailing commas, because Godot's own JSON parser also reads files in the project.
+
+The files are read strictly (since 2026-11-23). A property that no definition has is an error that names the file, the property and its place in the file, so a misspelled `"ammount"` stops the game from loading instead of giving a card that deals 0 damage. Property names are written exactly as in the examples below, in the same letter case. Four names are an exception, because the code works each of them out from other fields: `"isBridge"` on a piece, `"allParts"` and `"allIntents"` on an enemy, and `"allOutcomes"` on an event result load without an error and are ignored. Do not write them.
+
+`dotnet test` also runs a lint on these files (`Bloom.Core.Content.ContentLint`). It reports content that would load and play but is very likely a mistake:
+
+- a card that no piece adds;
+- a card effect, a bonus or an enemy intent with an amount of 0;
+- a card that grows but has no block, since growth raises only block;
+- a bonus that targets a tag that no piece carries, or two different bonuses that share a name;
+- a rarity with fewer pieces than a reward offers;
+- a piece that fits on no ship's starting hull;
+- an event choice that needs a tag that no piece carries, so that it can never open, or a tag that the bridge carries, so that it is always open;
+- two pieces, two cards or two enemies with the same name.
+
+The tests check the structure of the content and not its exact counts, so adding an entry needs no change to a test. They ask for at least 4 pieces for every tag (2 of them common and 1 uncommon or rare), and for each sector at least 3 early, 3 late and 2 hard enemies, a boss and 4 events.
 
 All numbers are placeholders for testing, as the design spec says. Entries marked `"placeholder": true` are invented and not in the spec. For the 7 example pieces, the spec gives no rarity or commune, so the values here are guesses.
 
@@ -117,6 +132,21 @@ Added with docks and groves on 2026-11-22. All of them are placeholders.
 | Hymn | 1: next attack +6 | next attack +9 |
 | Shutter | 1: block 7 | block 10 |
 | Sear | 3: deal 14 | deal 20 |
+| Swell | 1: block 3, grows +2 | block 5, grows +3 |
+| Surge | 1: block 5, grows +3 | block 7, grows +4 |
+| Canopy | 2: block 9, grows +5 | costs 1 |
+| Shell | 0: block 3 | block 5 |
+| Nip | 0: deal 2, block 2 | deal 3, block 3 |
+| Weld | 1: repair 1, block 6 | repair 1, block 9 |
+| Sting | 0: deal 4 | deal 6 |
+| Hunker | 2: block 15 | block 20 |
+| Bulwark | 1: block 7, next attack +3 | block 9, next attack +5 |
+| Aegis | 1: block 14 | block 19 |
+| Corona | 0: gain 3 energy | gain 4 energy |
+| Splice | 2: repair 1, block 8 | costs 1 |
+| Signal | 0: gain 1 energy | gain 2 energy |
+| Refrain | 1: next attack +3 | next attack +5 |
+| Shelter | 0: block 4 | block 6 |
 
 ## Placeholder hull sections
 
@@ -171,6 +201,36 @@ The enemies of sector 1, by pool. Lanes are 0-based; the seedling's hull covers 
 | Boss part | Thresher Arm | 15 | Attack 5, attack 6, attack 7 |
 | Boss part | Chaff Screen | 12 | Block 3 |
 | Boss part | Baling Ram | 16 | Heavy 10 on lane 4, attack 4, heavy 10 on lane 3 |
+
+## Piece set A
+
+Added on 2026-11-23, after the owner's first full run, in which the game felt short on pieces. All 15 are `"placeholder": true`, use only existing effects, and are proposals to confirm in play. They fill what was thin: there were only 2 uncommon and 2 rare pieces, and Garden and Drone had one equipment piece each. With them the pieces that can be offered are 20 common, 6 uncommon and 6 rare. The small Drone and crew pieces and the Garden lines are also what the two planned ship classes (the Fairy Ring and the Comb) will need.
+
+| Piece | Kind, tag, rarity | Shape | Cards | Bonus |
+| --- | --- | --- | --- | --- |
+| Kelp Bed | Equipment, Garden, Common | `##` | 2 Swell (1: block 3, grows +2) | none |
+| Tide Trellis | Equipment, Garden, Uncommon | `###` | 2 Surge (1: block 5, grows +3) | none |
+| Elder Grove | Equipment, Garden, Rare | `#..` / `###` | 2 Canopy (2: block 9, grows +5) | none |
+| Shell Drone | Equipment, Drone, Common | `##` | 2 Shell (0: block 3) | none |
+| Mite Swarm | Equipment, Drone, Common | `##` / `#.` | 2 Nip (0: deal 2, block 2) | none |
+| Weld Drone | Equipment, Drone, Uncommon | `###` | 2 Weld (1: repair 1, block 6) | none |
+| Hive Core | Equipment, Drone, Rare | `#.#` / `###` | 4 Sting (0: deal 4) | none |
+| Bark Plate | Equipment, Shield, Common | `##` | 1 Hunker (2: block 15) | none |
+| Tide Wall | Equipment, Shield, Uncommon | `..#` / `###` | 2 Bulwark (1: block 7, next attack +3) | none |
+| Storm Shell | Equipment, Shield, Rare | `###` / `###` | 2 Aegis (1: block 14) | none |
+| Corona Sail | Equipment, Solar, Rare | `.#.` / `###` / `.#.` | 1 Corona (0: gain 3 energy) | none |
+| Hive Mender | Crew, Common | `#` | 1 Splice (2: repair 1, block 8) | none |
+| Drone Minder | Crew, Common | `#` | 1 Signal (0: gain 1 energy) | adjacent Drone pieces deal 1 more damage |
+| Reed Piper | Crew, Common | `#` | 1 Refrain (1: next attack +3) | adjacent Weapon pieces deal 1 more damage |
+| Root Warden | Crew, Uncommon | `##` | 1 Shelter (0: block 4) | adjacent Garden pieces start grown once |
+
+Notes on how these play under today's rules:
+
+- A card with `repair` cannot be played while no piece is disabled, so Weld and Splice give their block only when there is something to repair.
+- A piece receives a bonus of a given name once. Every bonus here has a new name, so Reed Piper's bonus adds to Lens Grinder's and Choir Elder's on the same Weapon piece, and Root Warden's adds to Spore Singer's and Orchard Keeper's.
+- None of them has an icon yet, so each shows the icon of its tag, and the crew show the Spore Singer's.
+- No card of this set draws. The discard pile is shuffled back into the draw pile in the middle of a turn, so a card that was played can be drawn and played again in the same turn. A group of cards does that without end when together they cost no energy and draw at least as many cards as are played: the Mirror Kite's two Glides (0: gain 1 energy, draw 1) already do, and any card that draws 1 for 1 energy would join them. See "Content guard and piece set A" and "Open questions" in `docs/decisions.md`.
+- Hive Mender's Splice costs 2 where the Tinker's Patch costs 1, so that the new crew is not simply a better Tinker.
 
 ## Placeholder events
 

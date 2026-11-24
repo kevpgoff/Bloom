@@ -16,7 +16,7 @@ dotnet build Bloom.sln          # builds the rules, the tests, the sound-effect 
 dotnet test                     # runs the rule tests, including validation of game/data/*.json, and the checks on every sound effect
 godot --path game               # runs the game (portrait window, 405×720)
 godot -e --path game            # opens the project in the editor
-godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 18, …" and a screen line ("MapScreen: …" on a new run)
+godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 33, …" and a screen line ("MapScreen: …" on a new run)
 godot --path game -- --fx-demo                 # debug builds: plays the first fight by itself to show the combat feedback; add =lose to show a defeat. The run stays in memory, so the save is untouched
 godot --path game -- --fx-demo --ship=heliotrope   # debug builds: the FX demo plays that ship class. In the game itself, the ship is chosen in the hangar
 tools/import-music.sh                          # builds the game's music from the zips in music/; see Music below
@@ -95,6 +95,7 @@ A debug build can also start test runs from the hangar's Test tab: on the map, o
 | Grid, shapes, rotation, hull sections | Done, tested |
 | Fitting, adjacency, bonuses, lanes, cargo | Done, tested |
 | Deck from fitted pieces | Done, tested |
+| Content files: 33 pieces, 34 cards, 12 enemies, 20 events, 10 hull sections and 2 ship classes | Read strictly (an unknown property is an error) and checked by a validator and a lint in `dotnet test`; see `game/data/README.md`. Almost all of it is placeholder content |
 | Combat turn cycle (energy, draw, block, damage, heavy attacks that disable pieces) | Done, tested |
 | Card effects `repair`, `focus` and `grow`, and adjacency bonuses (`damageBonus`, `startGrown`) in combat | Done, tested; rulings in `docs/decisions.md` |
 | Rewards (1 of 3 pieces) and refitting (move, turn, fit, unfit, compost, undo) between fights | Done, tested; rulings in `docs/decisions.md` |

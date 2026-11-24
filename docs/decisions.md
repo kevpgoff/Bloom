@@ -348,14 +348,48 @@ Taken as defaults, not raised by the owner (all numbers are placeholders):
   - **Not built.** Locks on loadouts, a way to reset the profile, and records across all loadouts of a ship.
 - **Room for later.** A voyage level would be a field of `RunSetup`, a number in the profile's record for a ship, and a control on the Voyage tab. No field exists for it yet. The rail shares the screen's width among the ships, which works for the spec's 4 classes; more would need it to scroll.
 
+## Content expansion, decided on 2026-11-23
+
+The owner played a full run and found the game fun but short on content: too few pieces, pieces that play alike, and a run that ends too soon. The owner decided:
+
+- **Items are passive pieces.** A passive piece adds no cards and gives a standing effect while it is fitted. It takes room on the ship like any piece. There are no relics that sit outside the grid and no single-use items.
+- **Scope.** The expansion includes sectors 2 and 3 and ship classes 3 and 4 (the Fairy Ring and the Comb).
+- **Order.** A quick set of pieces that use today's effects, then passive pieces, then the three-sector run, then cards whose numbers count things on the grid. Each is a pull request with a stop for the owner to play.
+- **Hull between sectors.** Damage carries over, and each boss before the last repairs half of the maximum hull. The number is a placeholder.
+- **Difficulty.** A full run of three sectors should be about as winnable as a run of one sector was. Sector 1 becomes an easier opening act and the difficulty climbs through sectors 2 and 3.
+- **Testing later sectors.** In debug builds, the Test tab may start at sector 2 or 3 with a preset ship. This is a narrow exception to "no starting extras" in the hangar's rulings.
+
+### Content guard and piece set A, built on 2026-11-23
+
+The first step. Nothing in it changes the rules of play or the save.
+
+Taken as defaults, not raised by the owner:
+
+- **Strict content files.** The content files are read through their own JSON context, which refuses a property that no definition has, a comment and a trailing comma. Saves and the profile keep the lenient context, so that an old save still reads as "wrong version" and not as "broken".
+- **A lint for the content.** `ContentLint` reports content that loads but is very likely a mistake; `game/data/README.md` lists what it checks. It is separate from the validator because the small test content breaks its checks on purpose.
+- **Tests check structure, not counts.** The tests that pinned 18 pieces, 19 cards, 12 enemies and so on now ask for minimums per tag, rarity, pool and sector. The owner's sizes for sector 1 (4 early, 4 late and 3 hard enemies and a boss) are no longer pinned: the test asks every sector for at least 3, 3, 2 and 1, and for at least 4 events. Every event choice is now played on every ship, not only on the Seedling.
+
+Taken as defaults, to confirm (all numbers and names are placeholders):
+
+- **Piece set A.** 15 pieces and their 15 cards, listed in `game/data/README.md`. They use only today's effects. The pieces that can be offered go from 13 common, 2 uncommon and 2 rare to 20, 6 and 6, so the rare slot after a hard fight no longer shows the same two pieces. Garden goes from 1 piece to 4, Drone from 1 to 5, Shield from 2 to 5 and Solar from 3 to 4.
+- **Stacking bonuses.** The three new crew bonuses (Drone Minder's, Reed Piper's and Root Warden's) have new names, so they add to the existing bonuses on the same piece. A Weapon piece that touches Lens Grinder, Choir Elder and Reed Piper deals 6 more damage with each card.
+- **Cards at no cost.** Shell, Nip, Sting, Corona, Signal and Shelter cost 0. A ship that collects them plays most of its hand every turn. Whether that is too strong is for the owner's play to settle; no balance tool exists in the repository yet.
+- **No card of the set draws.** Found while writing the set, and measured with small programs that play the real rules: the discard pile is shuffled back into the draw pile in the middle of a turn (`CombatEngine.Draw`), so a card that was played can be drawn and played again in the same turn. The game as it was before this set already has a ship that wins on its first turn:
+  - On a ship stripped down to the bridge and a Mirror Kite, the kite's two Glide cards (0: gain 1 energy, draw 1) draw each other without end, so the energy has no limit. That ship still plays at most 3 Rams in a turn, because a Glide draws one card and each Ram that is played stays out of the hand.
+  - With a card that draws two (the Spore Singer's Chorus, or the upgraded kite's Glide), every card that is played comes back. A ship of the bridge, the Spore Singer and a Mirror Kite destroyed the Feral Harvester, the Strip Miner and the Grand Combine on turn 1 in 500 of 500 tries each.
+  - Such a ship needs a Mirror Kite, which the Mirror Field event gives to any ship with a Solar piece, and it costs the pieces that are composted to strip the ship: at least 4 on the Seedling's first loadout, since the cargo hold keeps 3.
+  - A first draft of the set made this easier: a card that draws 1 for 1 energy (Nip, Bulwark and Shelter in that draft) pays for itself next to a Glide, and the bridge, a Mirror Kite and the common Mite Swarm won most fights on turn 1 with nothing upgraded. So no card of the set draws now. The rule itself is a question for the owner (below).
+- **Commune of the Shield pieces.** Bark Plate, Tide Wall and Storm Shell are marked `tide_orchard`, since the spec gives the Seedling Garden and Shield as main tags. The two older Shield pieces have no commune. The rules do not read it.
+- **No icons.** The new equipment shows the icon of its tag, and the new crew show the Spore Singer's. Icons come in a later batch.
+
 ## Proposed in the spec, not yet confirmed
 
-- Three sectors for each run, about 8 nodes and 25 minutes for each sector.
+- About 8 nodes and 25 minutes for each sector. (Three sectors for each run was decided on 2026-11-23; see "Content expansion".)
 - Grid of at most 6 columns by 8 rows. About 20 cells at the start and about 40 at the end of a run.
 - Each column is a lane. A heavy attack disables the frontmost working piece in its lane.
 - 3 energy and 5 cards each turn. 60 hull points at the start of a run.
 - Disabled pieces come back at no cost after a fight.
-- Renown fills an unlock track. 4 ship classes and 10 voyage levels for each ship at launch.
+- Renown fills an unlock track. 4 ship classes and 10 voyage levels for each ship at launch. (Ship classes 3 and 4 are in the scope of the content expansion of 2026-11-23; "at launch" and the voyage levels are not confirmed.)
 - Setting names: the Bloom, Sunwrights, Tide Orchard, Mycelial Choir, Tinker Hives.
 
 ## Open questions
@@ -366,4 +400,5 @@ Taken as defaults, not raised by the owner (all numbers are placeholders):
 - Whether disabled pieces stay disabled after a fight.
 - Whether normal enemies have parts to target.
 - Whether crew can be lost for the rest of a run.
+- Whether a card that was played this turn can be drawn again in the same turn. Today it can, and a small ship with a Mirror Kite and the Spore Singer wins any fight of sector 1 on its first turn (see "Content guard and piece set A"). Options: keep played cards out of the shuffle until the turn ends, which ends every such loop because a card is then played at most once a turn; or keep the rule and take the draw or the energy off Glide, which leaves other pairs of cards to watch for; or treat the loop as a build that the player has earned.
 - Team and schedule for the first playable version.
