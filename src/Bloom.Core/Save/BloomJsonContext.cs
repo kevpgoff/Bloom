@@ -10,9 +10,10 @@ using Bloom.Core.Run;
 namespace Bloom.Core.Save;
 
 /// <summary>
-/// Source-generated JSON metadata for saves and content. Source generation needs no reflection at run
+/// Source-generated JSON metadata for saves and the profile. Source generation needs no reflection at run
 /// time, so it keeps working under trimming and NativeAOT, which iOS builds use. Add any new type that
-/// is read or written as a root here.
+/// is read or written as a root here. The content files are read through the stricter
+/// <see cref="Content.BloomContentJsonContext"/>.
 /// </summary>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
@@ -22,12 +23,6 @@ namespace Bloom.Core.Save;
     AllowTrailingCommas = true)]
 [JsonSerializable(typeof(RunState))]
 [JsonSerializable(typeof(ProfileState))]
-[JsonSerializable(typeof(List<PieceDef>))]
-[JsonSerializable(typeof(List<CardDef>))]
-[JsonSerializable(typeof(List<EnemyDef>))]
-[JsonSerializable(typeof(List<ShipClassDef>))]
-[JsonSerializable(typeof(List<HullSectionDef>))]
-[JsonSerializable(typeof(List<EventDef>))]
 internal sealed partial class BloomJsonContext : JsonSerializerContext
 {
 }

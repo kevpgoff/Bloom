@@ -3,7 +3,6 @@ using System.Text.Json.Serialization.Metadata;
 using Bloom.Core.Cards;
 using Bloom.Core.Combat;
 using Bloom.Core.Pieces;
-using Bloom.Core.Save;
 
 namespace Bloom.Core.Content;
 
@@ -106,12 +105,12 @@ public sealed class ContentDb
     public static ContentDb FromJson(string piecesJson, string cardsJson, string enemiesJson, string shipsJson, string sectionsJson, string eventsJson)
     {
         var errors = new List<string>();
-        var pieces = Parse(piecesJson, BloomJsonContext.Default.ListPieceDef, "pieces.json", errors);
-        var cards = Parse(cardsJson, BloomJsonContext.Default.ListCardDef, "cards.json", errors);
-        var enemies = Parse(enemiesJson, BloomJsonContext.Default.ListEnemyDef, "enemies.json", errors);
-        var ships = Parse(shipsJson, BloomJsonContext.Default.ListShipClassDef, "ships.json", errors);
-        var sections = Parse(sectionsJson, BloomJsonContext.Default.ListHullSectionDef, "sections.json", errors);
-        var events = Parse(eventsJson, BloomJsonContext.Default.ListEventDef, "events.json", errors);
+        var pieces = Parse(piecesJson, BloomContentJsonContext.Default.ListPieceDef, "pieces.json", errors);
+        var cards = Parse(cardsJson, BloomContentJsonContext.Default.ListCardDef, "cards.json", errors);
+        var enemies = Parse(enemiesJson, BloomContentJsonContext.Default.ListEnemyDef, "enemies.json", errors);
+        var ships = Parse(shipsJson, BloomContentJsonContext.Default.ListShipClassDef, "ships.json", errors);
+        var sections = Parse(sectionsJson, BloomContentJsonContext.Default.ListHullSectionDef, "sections.json", errors);
+        var events = Parse(eventsJson, BloomContentJsonContext.Default.ListEventDef, "events.json", errors);
         return errors.Count == 0 ? Create(pieces, cards, enemies, ships, sections, events) : throw new ContentException(errors);
     }
 
@@ -145,7 +144,12 @@ public sealed class ContentDb
         }
         catch (JsonException e)
         {
-            errors.Add($"{fileName}: {e.Message}");
+            // The message for a property that no definition has names the property but not where it is, so
+            // add the place in the form that the reader's other messages use.
+            string where = e.Message.Contains("LineNumber:", StringComparison.Ordinal)
+                ? ""
+                : $" Path: {e.Path} | LineNumber: {e.LineNumber} | BytePositionInLine: {e.BytePositionInLine}.";
+            errors.Add($"{fileName}: {e.Message}{where}");
             return [];
         }
         catch (NotSupportedException e)
