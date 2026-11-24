@@ -299,7 +299,7 @@ Questions for the owner:
 - Confirm no cap on stored energy, or should `KeepEnergyRule` enforce a maximum?
 - Confirm that card-gained energy (`Unfurl`, `Glide`) carries over just like base turn energy?
 - Is `-- --ship=heliotrope` (desktop debug flag; phone requires baking into `command_line/extra_args`) enough for testing until a ship choice screen exists, or do you want a minimal in-game switcher on the phone? Answered on 2026-11-23: the owner asked for the hangar (below).
-- `Sun Shutter` and `Burning Glass` currently reuse the `Sun Sail` and `Light Lance` fallback icons; confirm leaving icons out of scope for now?
+- `Sun Shutter` and `Burning Glass` currently reuse the `Sun Sail` and `Light Lance` fallback icons; confirm leaving icons out of scope for now? Answered on 2026-11-23: the owner asked for icons for all new pieces and crew, and these two were drawn in that batch (see "Content guard and piece set A"). The owner approved the icons the same day.
 - Should the end of a fight also change with the ship? The Heliotrope's version of a won fight exists as a take; a lost fight has none.
 
 ## The hangar, decided on 2026-11-23
@@ -380,7 +380,13 @@ Taken as defaults, to confirm (all numbers and names are placeholders):
   - Such a ship needs a Mirror Kite, which the Mirror Field event gives to any ship with a Solar piece, and it costs the pieces that are composted to strip the ship: at least 4 on the Seedling's first loadout, since the cargo hold keeps 3.
   - A first draft of the set made this easier: a card that draws 1 for 1 energy (Nip, Bulwark and Shelter in that draft) pays for itself next to a Glide, and the bridge, a Mirror Kite and the common Mite Swarm won most fights on turn 1 with nothing upgraded. So no card of the set draws now. The rule itself is a question for the owner (below).
 - **Commune of the Shield pieces.** Bark Plate, Tide Wall and Storm Shell are marked `tide_orchard`, since the spec gives the Seedling Garden and Shield as main tags. The two older Shield pieces have no commune. The rules do not read it.
-- **No icons.** The new equipment shows the icon of its tag, and the new crew show the Spore Singer's. Icons come in a later batch.
+
+Asked for and approved by the owner:
+
+- **Icons.** The owner asked for them on 2026-11-23 ("icon design for all new pieces and crew"), was given a review page with screenshots of the game, and approved them the same day ("Icons look good"). Each of the 15 pieces has its own icon in `game/art/icons/pieces/`, drawn to the style rules in `game/art/README.md`. Sun Shutter and Burning Glass, which came with the Heliotrope and had shown the Sun Sail's and the Light Lance's icons, were drawn in the same batch, so every piece in the game now has its own icon. The first line of each file says what it shows. They were checked in the desktop build, and the exported Android package holds them; they had not been run on the phone when they were committed. Three choices that were pointed out to the owner and approved with the rest:
+  - The Mite Swarm shows three mites and not a cloud of them, because smaller mites vanish at the 26 px that a three-cell piece gets on the grid.
+  - The Shell Drone is a small drone under a dome of three plates, not a drone whose body is a shell. A domed body looked too much like the bridge and the Hive Core.
+  - The Burning Glass uses the pointed lens of the Lens Grinder, so that the two Sunwrights lens pieces look related.
 
 ## Proposed in the spec, not yet confirmed
 

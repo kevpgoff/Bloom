@@ -228,7 +228,7 @@ Notes on how these play under today's rules:
 
 - A card with `repair` cannot be played while no piece is disabled, so Weld and Splice give their block only when there is something to repair.
 - A piece receives a bonus of a given name once. Every bonus here has a new name, so Reed Piper's bonus adds to Lens Grinder's and Choir Elder's on the same Weapon piece, and Root Warden's adds to Spore Singer's and Orchard Keeper's.
-- None of them has an icon yet, so each shows the icon of its tag, and the crew show the Spore Singer's.
+- Each has its own icon in `game/art/icons/pieces/`, approved by the owner on 2026-11-23. The first line of each file says what it shows.
 - No card of this set draws. The discard pile is shuffled back into the draw pile in the middle of a turn, so a card that was played can be drawn and played again in the same turn. A group of cards does that without end when together they cost no energy and draw at least as many cards as are played: the Mirror Kite's two Glides (0: gain 1 energy, draw 1) already do, and any card that draws 1 for 1 energy would join them. See "Content guard and piece set A" and "Open questions" in `docs/decisions.md`.
 - Hive Mender's Splice costs 2 where the Tinker's Patch costs 1, so that the new crew is not simply a better Tinker.
 
