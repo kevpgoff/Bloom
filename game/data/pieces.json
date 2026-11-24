@@ -394,5 +394,158 @@
       "targetTag": "Garden",
       "effect": { "type": "startGrown", "times": 1 }
     }
+  },
+  {
+    "id": "dawn_battery",
+    "name": "Dawn Battery",
+    "kind": "Equipment",
+    "tags": ["Solar"],
+    "rarity": "Common",
+    "commune": "sunwrights",
+    "placeholder": true,
+    "shape": ["##"],
+    "cards": [],
+    "passive": {
+      "name": "dawn_charge",
+      "trigger": "FightStart",
+      "effect": { "type": "gainEnergy", "amount": 2 },
+      "upgrade": { "type": "gainEnergy", "amount": 3 }
+    }
+  },
+  {
+    "id": "heliostat",
+    "name": "Heliostat",
+    "kind": "Equipment",
+    "tags": ["Solar"],
+    "rarity": "Uncommon",
+    "commune": "sunwrights",
+    "placeholder": true,
+    "shape": ["###"],
+    "cards": [],
+    "passive": {
+      "name": "heliostat_glare",
+      "trigger": "TurnStart",
+      "effect": { "type": "focus", "amount": 2 },
+      "upgrade": { "type": "focus", "amount": 3 }
+    }
+  },
+  {
+    "id": "breakwater",
+    "name": "Breakwater",
+    "kind": "Equipment",
+    "tags": ["Shield"],
+    "rarity": "Common",
+    "commune": "tide_orchard",
+    "placeholder": true,
+    "shape": ["###"],
+    "cards": [{ "card": "deflect", "count": 1 }],
+    "passive": {
+      "name": "breakwater_armor",
+      "trigger": "Standing",
+      "effect": { "type": "laneArmor", "amount": 4 },
+      "upgrade": { "type": "laneArmor", "amount": 6 }
+    }
+  },
+  {
+    "id": "dew_still",
+    "name": "Dew Still",
+    "kind": "Equipment",
+    "tags": ["Garden"],
+    "rarity": "Common",
+    "commune": "tide_orchard",
+    "placeholder": true,
+    "shape": ["##"],
+    "cards": [],
+    "passive": {
+      "name": "dew_still",
+      "trigger": "FightWon",
+      "effect": { "type": "regainHull", "amount": 3 },
+      "upgrade": { "type": "regainHull", "amount": 5 }
+    }
+  },
+  {
+    "id": "moss_bank",
+    "name": "Moss Bank",
+    "kind": "Equipment",
+    "tags": ["Garden"],
+    "rarity": "Uncommon",
+    "commune": "tide_orchard",
+    "placeholder": true,
+    "shape": [".#", "##"],
+    "cards": [],
+    "passive": {
+      "name": "moss_bank",
+      "trigger": "TurnStart",
+      "effect": { "type": "block", "amount": 2 },
+      "upgrade": { "type": "block", "amount": 3 }
+    }
+  },
+  {
+    "id": "sentry_drone",
+    "name": "Sentry Drone",
+    "kind": "Equipment",
+    "tags": ["Drone"],
+    "rarity": "Uncommon",
+    "commune": "tinker_hives",
+    "placeholder": true,
+    "shape": ["##"],
+    "cards": [],
+    "passive": {
+      "name": "sentry_fire",
+      "trigger": "TurnStart",
+      "effect": { "type": "damage", "amount": 2 },
+      "upgrade": { "type": "damage", "amount": 3 }
+    }
+  },
+  {
+    "id": "hornet_nest",
+    "name": "Hornet Nest",
+    "kind": "Equipment",
+    "tags": ["Drone"],
+    "rarity": "Rare",
+    "commune": "tinker_hives",
+    "placeholder": true,
+    "shape": ["##", "##"],
+    "cards": [],
+    "passive": {
+      "name": "hornet_swarm",
+      "trigger": "TurnStart",
+      "effect": { "type": "damage", "amount": 4 },
+      "upgrade": { "type": "damage", "amount": 6 }
+    }
+  },
+  {
+    "id": "lookout",
+    "name": "Lookout",
+    "kind": "Crew",
+    "tags": [],
+    "rarity": "Common",
+    "commune": "mycelial_choir",
+    "placeholder": true,
+    "shape": ["#"],
+    "cards": [],
+    "passive": {
+      "name": "lookout_watch",
+      "trigger": "FightStart",
+      "effect": { "type": "draw", "count": 2 },
+      "upgrade": { "type": "draw", "count": 3 }
+    }
+  },
+  {
+    "id": "cantor",
+    "name": "Cantor",
+    "kind": "Crew",
+    "tags": [],
+    "rarity": "Rare",
+    "commune": "mycelial_choir",
+    "placeholder": true,
+    "shape": ["##"],
+    "cards": [],
+    "passive": {
+      "name": "cantor_round",
+      "trigger": "TurnStart",
+      "effect": { "type": "draw", "count": 1 },
+      "upgrade": { "type": "draw", "count": 2 }
+    }
   }
 ]

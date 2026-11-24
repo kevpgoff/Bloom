@@ -37,6 +37,22 @@
           { "piece": "spore_singer", "origin": { "x": 3, "y": 4 }, "rotation": "R0" },
           { "piece": "bridge", "origin": { "x": 4, "y": 4 }, "rotation": "R0" }
         ]
+      },
+      {
+        "id": "c",
+        "name": "Tidepool",
+        "placeholder": true,
+        "startingPieces": [
+          { "piece": "breakwater", "origin": { "x": 1, "y": 1 }, "rotation": "R0" },
+          { "piece": "arc_cutter", "origin": { "x": 4, "y": 1 }, "rotation": "R0" },
+          { "piece": "light_lance", "origin": { "x": 1, "y": 2 }, "rotation": "R0" },
+          { "piece": "moss_bank", "origin": { "x": 4, "y": 2 }, "rotation": "R0" },
+          { "piece": "kelp_bed", "origin": { "x": 1, "y": 3 }, "rotation": "R0" },
+          { "piece": "tinker", "origin": { "x": 1, "y": 4 }, "rotation": "R0" },
+          { "piece": "lookout", "origin": { "x": 5, "y": 4 }, "rotation": "R0" },
+          { "piece": "dew_still", "origin": { "x": 1, "y": 5 }, "rotation": "R0" },
+          { "piece": "bridge", "origin": { "x": 4, "y": 5 }, "rotation": "R0" }
+        ]
       }
     ]
   },

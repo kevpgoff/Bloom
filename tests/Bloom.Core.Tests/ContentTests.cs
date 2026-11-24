@@ -653,7 +653,7 @@ public class ShippedContentTests
     {
         var db = TestContent.LoadShipped();
         var seedling = db.Ship("seedling");
-        Assert.Equal(["a", "b"], seedling.Loadouts.Select(l => l.Id));
+        Assert.Equal(["a", "b", "c"], seedling.Loadouts.Select(l => l.Id));
 
         var run = RunFactory.NewRun(db, new RunSetup("seedling", Seed: 1, LoadoutId: "b"));
         var fitter = new ShipFitter(db);
@@ -667,6 +667,65 @@ public class ShippedContentTests
             .Select(b => $"{DefOf(b.GiverId)}->{DefOf(b.ReceiverId)}")
             .Order();
         Assert.Equal(["orchard_keeper->moss_reactor", "spore_singer->moss_reactor"], bonuses);
+    }
+
+    /// <summary>
+    /// The Seedling's placeholder third loadout starts with four passive pieces, one for each trigger, so that
+    /// each kind of passive shows in the first fight. The Breakwater is the frontmost piece of lanes 1 to 3, and
+    /// the Tinker is there to bring a disabled piece, and so its passive, back.
+    /// </summary>
+    [Fact]
+    public void TheSeedlingsTidepoolLoadoutMatchesItsSetup()
+    {
+        var db = TestContent.LoadShipped();
+        var run = RunFactory.NewRun(db, new RunSetup("seedling", Seed: 1, LoadoutId: "c"));
+        var fitter = new ShipFitter(db);
+        Assert.Equal(25, run.Ship.Grid.CellCount);
+        Assert.Equal(19, run.Ship.Fitted.Sum(f => fitter.CellsOf(f).Count));
+        Assert.Equal(12, DeckBuilder.Build(run.Ship, db).Count);
+        Assert.Empty(fitter.ActiveBonuses(run.Ship, []));
+
+        var passives = fitter.ActivePassives(run.Ship, []);
+        Assert.Equal(["breakwater", "moss_bank", "lookout", "dew_still"], passives.Select(p => p.Fitted.Piece.DefId));
+        Assert.Equal(
+            [PassiveTrigger.Standing, PassiveTrigger.TurnStart, PassiveTrigger.FightStart, PassiveTrigger.FightWon],
+            passives.Select(p => p.Passive.Trigger!.Value));
+        Assert.All(new[] { 1, 2, 3 }, lane => Assert.Equal("breakwater", fitter.FrontmostInLane(run.Ship, lane, [])!.Piece.DefId));
+
+        // The numbers are read from the content, so that rebalancing a piece does not break this.
+        int Amount(string pieceId) => db.Piece(pieceId).Passive!.Effect switch
+        {
+            LaneArmorEffect armor => armor.Amount,
+            BlockEffect block => block.Amount,
+            DrawEffect draw => draw.Count,
+            var other => throw new InvalidOperationException($"'{pieceId}' has the passive {other}."),
+        };
+
+        // The Feral Harvester's heavy attack on lane 2 lands on the Breakwater, less its armor.
+        var heavy = db.Enemy("feral_harvester").Pattern.Single(i => i.Kind == IntentKind.HeavyAttack);
+        var landing = new CombatEngine(db).EffectiveIntent(run.Ship, heavy, []);
+        Assert.Equal("breakwater", landing.Target!.Piece.DefId);
+        Assert.Equal((heavy.Amount - Amount("breakwater"), Amount("breakwater")), (landing.Intent.Amount, landing.Armor));
+
+        // The first hand has the Lookout's cards on top of the turn's five, and the Moss Bank's block is up.
+        var combat = new CombatEngine(db).StartFight(run, "feral_harvester");
+        Assert.Equal(Rules.CardsDrawnPerTurn + Amount("lookout"), combat.Hand.Count);
+        Assert.Equal(Amount("moss_bank"), combat.Block);
+    }
+
+    /// <summary>
+    /// Every shipped passive has an upgrade, as every shipped card has, so that every piece can be upgraded at a
+    /// grove. Each trigger is on at least one piece, and every commune has at least two passive pieces.
+    /// </summary>
+    [Fact]
+    public void TheShippedPassivesCoverEveryTriggerAndCommuneAndCanBeUpgraded()
+    {
+        var db = TestContent.LoadShipped();
+        var passive = db.Pieces.Where(p => p.Passive is not null).ToList();
+        Assert.All(passive, p => Assert.NotNull(p.Passive!.Upgrade));
+        Assert.All(Enum.GetValues<PassiveTrigger>(), trigger => Assert.Contains(passive, p => p.Passive!.Trigger == trigger));
+        var communes = db.Pieces.Select(p => p.Commune).Where(c => c is not null).Distinct().ToList();
+        Assert.All(communes, commune => Assert.True(passive.Count(p => p.Commune == commune) >= 2, commune));
     }
 
     /// <summary>The hangar shows each ship's commune and what it is grown from, and names each loadout.</summary>
