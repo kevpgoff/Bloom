@@ -48,6 +48,8 @@ Icons are line art on a 64×64 view box, drawn like the ship's hologram:
 
 The backdrop is drawn in code: `Visuals/BloomBackdrop.cs` draws the sky, horizon glow, root veins, HUD rings and scanlines once, and `Visuals/BackdropMotes.cs` animates the pollen motes and the radar sweep. As the hull wears, `BackdropMotes` also warms the horizon and the screen's edges (`Visuals/HullWarning.cs`). Keep that warning faint: the owner found a stronger glow "way too much". The motes, the sweep and the enemy's reticle all stand still in low-processor mode, so the engine can idle.
 
+The marks on a fitted piece are drawn in code, by `Screens/GridPainter.cs`: the "+" of a piece that receives a bonus in the top-right of its first cell, and in the top-left the mark of a piece that has a passive. That mark is a small ring around a dot, like a pilot light, in `Palette.Passive`, a pale violet that no tag uses. It is a muted ring with no dot when the passive does not count, and a disabled piece shows "OFFLINE" in its place.
+
 Combat effects are drawn in code too, by `Feedback/FxLayer.cs`: glowing motes, streaks and hex shards made from `textures/glow.svg`, plus rings, bolts, flashes and ghost cards, all in Palette colors and blended additively so they read as light. Floating numbers use Saira bold with a dark outline. `Feedback/CombatFeedback.cs` decides which effect plays for each thing that happens in a fight. These effects still play in low-processor mode, because each one ends on its own; the layer stops updating once nothing is playing.
 
 ## Import settings

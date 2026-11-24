@@ -237,7 +237,7 @@ The sets so far:
 
 | Set | Ship class | Character | Sounds |
 | --- | --- | --- | --- |
-| `recipes/` (the base set) | Seedling | Wood and water: things grown and made by hand | All 31 |
+| `recipes/` (the base set) | Seedling | Wood and water: things grown and made by hand | All 32 |
 | `sets/heliotrope/` | Heliotrope | Warm circuits: an old analog synthesizer in a greenhouse, with resonant filters and a tape echo | All 22 of a ship's own |
 
 The Fairy Ring's set starts as a take, `takes/fairy-ring/` (the living ship). The Comb has none yet. `takes/heliotrope-fight-won/` is the Heliotrope's version of the end of a won fight, left from its first eight sounds; it stays a take while every ship shares the end of a fight.
