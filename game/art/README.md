@@ -38,6 +38,13 @@ Icons are line art on a 64×64 view box, drawn like the ship's hologram:
 - **Fills:** none, or white at 6–8% opacity behind a main outline. The only dark fill is `#0a1512`, which tinting leaves dark.
 - **Effect icons** keep a dark well (`#0a1512` at 45–70% opacity) centered on (32, 32): the card draws the number there, centered, at 43% of the icon's size.
 - **Enemy icons** carry more detail than the rest, because the combat screen shows the enemy large, in a target-lock reticle (`Screens/EnemyEmblem.cs`).
+- **Piece icons** must still read at 26 px, which is what a piece of two or three cells gets on the grid of a 720 px wide screen. Keep the main shape to a few bold lines, and check a new icon at that size.
+- **Shared shapes** make pieces of one kind look related, so reuse them:
+  - A small drone is a dark diamond with a lit core (Drone Wrangler, Drone Minder, Shell Drone, Mite Swarm).
+  - A rotor is a dashed disc with one blade across it and a hub (Seed Drone, Weld Drone).
+  - A lens is a pointed oval (Lens Grinder, Burning Glass).
+  - Roots and mycelium are elbowed traces that end in nodes (Choir Elder, Orchard Keeper, Elder Grove, Root Warden).
+  - A leaf is a pointed oval that bulges to one side (Moss Reactor, Seed Drone, Tide Trellis, Root Warden).
 
 The backdrop is drawn in code: `Visuals/BloomBackdrop.cs` draws the sky, horizon glow, root veins, HUD rings and scanlines once, and `Visuals/BackdropMotes.cs` animates the pollen motes and the radar sweep. As the hull wears, `BackdropMotes` also warms the horizon and the screen's edges (`Visuals/HullWarning.cs`). Keep that warning faint: the owner found a stronger glow "way too much". The motes, the sweep and the enemy's reticle all stand still in low-processor mode, so the engine can idle.
 

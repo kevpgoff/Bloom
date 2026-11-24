@@ -174,5 +174,171 @@
     "placeholder": true,
     "effects": [{ "type": "damage", "amount": 14 }],
     "upgrade": { "effects": [{ "type": "damage", "amount": 20 }] }
+  },
+  {
+    "id": "swell",
+    "name": "Swell",
+    "cost": 1,
+    "placeholder": true,
+    "effects": [
+      { "type": "block", "amount": 3 },
+      { "type": "grow", "amount": 2 }
+    ],
+    "upgrade": {
+      "effects": [
+        { "type": "block", "amount": 5 },
+        { "type": "grow", "amount": 3 }
+      ]
+    }
+  },
+  {
+    "id": "surge",
+    "name": "Surge",
+    "cost": 1,
+    "placeholder": true,
+    "effects": [
+      { "type": "block", "amount": 5 },
+      { "type": "grow", "amount": 3 }
+    ],
+    "upgrade": {
+      "effects": [
+        { "type": "block", "amount": 7 },
+        { "type": "grow", "amount": 4 }
+      ]
+    }
+  },
+  {
+    "id": "canopy",
+    "name": "Canopy",
+    "cost": 2,
+    "placeholder": true,
+    "effects": [
+      { "type": "block", "amount": 9 },
+      { "type": "grow", "amount": 5 }
+    ],
+    "upgrade": { "cost": 1 }
+  },
+  {
+    "id": "shell",
+    "name": "Shell",
+    "cost": 0,
+    "placeholder": true,
+    "effects": [{ "type": "block", "amount": 3 }],
+    "upgrade": { "effects": [{ "type": "block", "amount": 5 }] }
+  },
+  {
+    "id": "nip",
+    "name": "Nip",
+    "cost": 0,
+    "placeholder": true,
+    "effects": [
+      { "type": "damage", "amount": 2 },
+      { "type": "block", "amount": 2 }
+    ],
+    "upgrade": {
+      "effects": [
+        { "type": "damage", "amount": 3 },
+        { "type": "block", "amount": 3 }
+      ]
+    }
+  },
+  {
+    "id": "weld",
+    "name": "Weld",
+    "cost": 1,
+    "placeholder": true,
+    "effects": [
+      { "type": "repair", "count": 1 },
+      { "type": "block", "amount": 6 }
+    ],
+    "upgrade": {
+      "effects": [
+        { "type": "repair", "count": 1 },
+        { "type": "block", "amount": 9 }
+      ]
+    }
+  },
+  {
+    "id": "sting",
+    "name": "Sting",
+    "cost": 0,
+    "placeholder": true,
+    "effects": [{ "type": "damage", "amount": 4 }],
+    "upgrade": { "effects": [{ "type": "damage", "amount": 6 }] }
+  },
+  {
+    "id": "hunker",
+    "name": "Hunker",
+    "cost": 2,
+    "placeholder": true,
+    "effects": [{ "type": "block", "amount": 15 }],
+    "upgrade": { "effects": [{ "type": "block", "amount": 20 }] }
+  },
+  {
+    "id": "bulwark",
+    "name": "Bulwark",
+    "cost": 1,
+    "placeholder": true,
+    "effects": [
+      { "type": "block", "amount": 7 },
+      { "type": "focus", "amount": 3 }
+    ],
+    "upgrade": {
+      "effects": [
+        { "type": "block", "amount": 9 },
+        { "type": "focus", "amount": 5 }
+      ]
+    }
+  },
+  {
+    "id": "aegis",
+    "name": "Aegis",
+    "cost": 1,
+    "placeholder": true,
+    "effects": [{ "type": "block", "amount": 14 }],
+    "upgrade": { "effects": [{ "type": "block", "amount": 19 }] }
+  },
+  {
+    "id": "corona",
+    "name": "Corona",
+    "cost": 0,
+    "placeholder": true,
+    "effects": [{ "type": "gainEnergy", "amount": 3 }],
+    "upgrade": { "effects": [{ "type": "gainEnergy", "amount": 4 }] }
+  },
+  {
+    "id": "splice",
+    "name": "Splice",
+    "cost": 2,
+    "placeholder": true,
+    "effects": [
+      { "type": "repair", "count": 1 },
+      { "type": "block", "amount": 8 }
+    ],
+    "upgrade": { "cost": 1 }
+  },
+  {
+    "id": "signal",
+    "name": "Signal",
+    "cost": 0,
+    "placeholder": true,
+    "effects": [{ "type": "gainEnergy", "amount": 1 }],
+    "upgrade": { "effects": [{ "type": "gainEnergy", "amount": 2 }] }
+  },
+  {
+    "id": "refrain",
+    "name": "Refrain",
+    "cost": 1,
+    "placeholder": true,
+    "effects": [{ "type": "focus", "amount": 3 }],
+    "upgrade": { "effects": [{ "type": "focus", "amount": 5 }] }
+  },
+  {
+    "id": "shelter",
+    "name": "Shelter",
+    "cost": 0,
+    "placeholder": true,
+    "effects": [{ "type": "block", "amount": 4 }],
+    "upgrade": { "effects": [{ "type": "block", "amount": 6 }] }
   }
 ]

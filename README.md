@@ -16,7 +16,7 @@ dotnet build Bloom.sln          # builds the rules, the tests, the sound-effect 
 dotnet test                     # runs the rule tests, including validation of game/data/*.json, and the checks on every sound effect
 godot --path game               # runs the game (portrait window, 405×720)
 godot -e --path game            # opens the project in the editor
-godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 18, …" and a screen line ("MapScreen: …" on a new run)
+godot --path game --headless --quit-after 60   # smoke test: should print "GameRoot: Content loaded: pieces 33, …" and a screen line ("MapScreen: …" on a new run)
 godot --path game -- --fx-demo                 # debug builds: plays the first fight by itself to show the combat feedback; add =lose to show a defeat. The run stays in memory, so the save is untouched
 godot --path game -- --fx-demo --ship=heliotrope   # debug builds: the FX demo plays that ship class. In the game itself, the ship is chosen in the hangar
 tools/import-music.sh                          # builds the game's music from the zips in music/; see Music below
@@ -95,6 +95,7 @@ A debug build can also start test runs from the hangar's Test tab: on the map, o
 | Grid, shapes, rotation, hull sections | Done, tested |
 | Fitting, adjacency, bonuses, lanes, cargo | Done, tested |
 | Deck from fitted pieces | Done, tested |
+| Content files: 33 pieces, 34 cards, 12 enemies, 20 events, 10 hull sections and 2 ship classes | Read strictly (an unknown property is an error) and checked by a validator and a lint in `dotnet test`; see `game/data/README.md`. Almost all of it is placeholder content |
 | Combat turn cycle (energy, draw, block, damage, heavy attacks that disable pieces) | Done, tested |
 | Card effects `repair`, `focus` and `grow`, and adjacency bonuses (`damageBonus`, `startGrown`) in combat | Done, tested; rulings in `docs/decisions.md` |
 | Rewards (1 of 3 pieces) and refitting (move, turn, fit, unfit, compost, undo) between fights | Done, tested; rulings in `docs/decisions.md` |
@@ -106,7 +107,7 @@ A debug build can also start test runs from the hangar's Test tab: on the map, o
 | Ship classes: Seedling (placeholder 5×5) and Heliotrope (placeholder 6×3, keep-energy rule via polymorphic `ShipRule`) | Two placeholder classes built and tested, chosen in the hangar. A class lists one or more loadouts (sets of starting pieces on the same hull); the Seedling has a placeholder second one, Orchard. The Heliotrope plays its own sound set. Defaults to confirm in `docs/decisions.md` |
 | Hangar screen | Done: shown while there is no run. The chosen ship as a hologram with its starting pieces and bonuses, its commune, loadouts, hull, cells, cards, rule and what it is grown from; tabs for the starting pieces (tap one on the hologram for its cards), the starting deck and the voyage's seed, which can be typed to replay a run; a rail of hull silhouettes to switch ships; Launch names the ship. The Voyage tab also shows the record of the chosen ship and loadout. A locked ship shows dimmed with what opens it, and the main button reads "Locked"; with a typed seed it reads "Practice". In a debug build, a Test tab starts a test run at a chosen kind of node or at a named event, and the main button then reads "Test", the ship and the start; a "Locks off" switch beside the title lets locked ships be launched |
 | Renown, unlocks, logbook | Not started |
-| Art | Option A, "Holo Grove" (see `docs/decisions.md` and `game/art/README.md`). Done: palette, Saira font, ship drawing, icons, card, panel and button frames, backdrop, and the enemy shown large in a target-lock reticle |
+| Art | Option A, "Holo Grove" (see `docs/decisions.md` and `game/art/README.md`). Done: palette, Saira font, ship drawing, icons (every piece and enemy has its own), card, panel and button frames, backdrop, and the enemy shown large in a target-lock reticle |
 | Combat screen | Done: enemy and intent, a boss's parts (hull, intent, tap to aim; the aim wears the reticle), ship grid, hand, End Turn, and defeat or voyage complete with the run's seed and a Hangar button |
 | Reward screen | Done: 3 offered pieces with their shapes and cards, Take and Skip |
 | Fitting screen | Done: drag and drop with the piece floating above the finger, fit and bonus preview, tap to select and tap again to turn, cargo hold, Compost (for salvage), Undo. Opened from the map or a dock it goes back there; after choosing a fight it names the enemy, marks its heavy lanes and starts the fight. Upgraded pieces have "+" after their names |
