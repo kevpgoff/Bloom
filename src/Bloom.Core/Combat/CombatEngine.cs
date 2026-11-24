@@ -42,6 +42,12 @@ public sealed record EnemyAction(int? Part, Intent Intent, int? Lane = null, Fit
 /// whose hull reaches 0 is disabled, and the aim goes back to the body. The fight is won when the body's hull reaches 0.
 /// </para>
 /// <para>
+/// Ruling by the owner on 2026-11-23: a card that was played cannot be drawn again in the same turn. A played card
+/// waits in <see cref="CombatState.PlayedPile"/> and joins the discard pile when the turn ends, so a shuffle in the
+/// middle of a turn brings back only the cards that were discarded in earlier turns or repaired in this one.
+/// Without this, cards that draw and cost no energy could be played without end.
+/// </para>
+/// <para>
 /// Each change is reported to <paramref name="emit"/> as a <see cref="CombatEvent"/>, in the order it
 /// happens, so the game can show it. Reporting happens only after validation, so a rejected action reports nothing.
 /// </para>
@@ -280,11 +286,15 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
             Emit(new CardGrew(card.Id, card.Growth));
         }
 
-        combat.DiscardPile.Add(card);
+        // Not the discard pile: a draw later this turn may shuffle that pile, and a played card must stay out of it.
+        combat.PlayedPile.Add(card);
         return combat.Enemy.Hull <= 0 ? EndFight(run, combat, CombatOutcome.Won) : CombatOutcome.Ongoing;
     }
 
-    /// <summary>The enemy acts, unplayed cards go to the discard pile, block returns to 0, and the next turn starts.</summary>
+    /// <summary>
+    /// The enemy acts, the cards played this turn and the unplayed cards go to the discard pile, block returns to 0,
+    /// and the next turn starts.
+    /// </summary>
     public CombatOutcome EndTurn(RunState run)
     {
         var combat = RequireCombat(run);
@@ -299,6 +309,8 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
             Emit(new HandDiscarded(combat.Hand.Count));
         }
 
+        combat.DiscardPile.AddRange(combat.PlayedPile);
+        combat.PlayedPile.Clear();
         combat.DiscardPile.AddRange(combat.Hand);
         combat.Hand.Clear();
         combat.Block = 0;
@@ -479,7 +491,7 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
 
         int pieceId = target.Piece.Id;
         combat.DisabledPieceIds.Add(pieceId);
-        foreach (var pile in new[] { combat.DrawPile, combat.Hand, combat.DiscardPile })
+        foreach (var pile in new[] { combat.DrawPile, combat.Hand, combat.DiscardPile, combat.PlayedPile })
         {
             combat.OfflineCards.AddRange(pile.Where(c => c.SourcePieceId == pieceId));
             pile.RemoveAll(c => c.SourcePieceId == pieceId);
@@ -497,6 +509,11 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         Emit(new PieceRepaired(pieceId));
     }
 
+    /// <summary>
+    /// Draws cards into the hand. When the draw pile runs out, the discard pile is shuffled into it. The cards
+    /// played this turn are not in the discard pile yet (<see cref="CombatState.PlayedPile"/>), so none of them comes
+    /// back before the turn ends. With both piles empty, the rest of the draw is lost.
+    /// </summary>
     private void Draw(RunState run, CombatState combat, int count)
     {
         for (int i = 0; i < count; i++)

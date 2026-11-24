@@ -396,7 +396,10 @@ public partial class CombatScreen : Control
             return;
         }
 
-        var parts = new List<string> { $"Draw {combat.DrawPile.Count}", $"Discard {combat.DiscardPile.Count}" };
+        // A played card counts as discarded here. The rules keep it apart until the turn ends, so that no shuffle
+        // brings it back this turn, but to the player it has left the hand for the discard pile.
+        int discarded = combat.DiscardPile.Count + combat.PlayedPile.Count;
+        var parts = new List<string> { $"Draw {combat.DrawPile.Count}", $"Discard {discarded}" };
         if (combat.OfflineCards.Count > 0)
         {
             parts.Add($"Offline {combat.OfflineCards.Count}");

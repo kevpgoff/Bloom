@@ -1,3 +1,4 @@
+using Bloom.Core.Cards;
 using Bloom.Core.Combat;
 using Bloom.Core.Grid;
 using Bloom.Core.Pieces;
@@ -12,7 +13,8 @@ public class CombatTests
 
     private static int CardIn(CombatState combat, string cardId) => combat.Hand.First(c => c.CardId == cardId).Id;
 
-    private static int TotalCards(CombatState c) => c.DrawPile.Count + c.Hand.Count + c.DiscardPile.Count + c.OfflineCards.Count;
+    private static int TotalCards(CombatState c) =>
+        c.DrawPile.Count + c.Hand.Count + c.DiscardPile.Count + c.PlayedPile.Count + c.OfflineCards.Count;
 
     [Fact]
     public void AFightStartsWithThreeEnergyAndFiveCards()
@@ -29,7 +31,7 @@ public class CombatTests
     }
 
     [Fact]
-    public void PlayingACardPaysEnergyAppliesItAndDiscardsIt()
+    public void PlayingACardPaysEnergyAppliesItAndPutsItWithThePlayedCards()
     {
         var run = NewRun();
         var combat = _engine.StartFight(run, "dummy");
@@ -37,7 +39,8 @@ public class CombatTests
         Assert.Equal(CombatOutcome.Ongoing, _engine.PlayCard(run, ram));
         Assert.Equal(2, combat.Energy);
         Assert.Equal(25, combat.Enemy.Hull);
-        Assert.Contains(combat.DiscardPile, c => c.Id == ram);
+        Assert.Equal([ram], combat.PlayedPile.Select(c => c.Id));
+        Assert.Empty(combat.DiscardPile);
         Assert.DoesNotContain(combat.Hand, c => c.Id == ram);
     }
 
@@ -102,7 +105,7 @@ public class CombatTests
         Assert.Equal(50, run.Hull);
         Assert.Equal([plating.Id], combat.DisabledPieceIds);
         Assert.Equal(2, combat.OfflineCards.Count(c => c.SourcePieceId == plating.Id));
-        Assert.DoesNotContain(combat.DrawPile.Concat(combat.Hand).Concat(combat.DiscardPile), c => c.SourcePieceId == plating.Id);
+        Assert.DoesNotContain(combat.DrawPile.Concat(combat.Hand).Concat(combat.DiscardPile).Concat(combat.PlayedPile), c => c.SourcePieceId == plating.Id);
         Assert.Equal(6, TotalCards(combat));
     }
 
@@ -116,6 +119,109 @@ public class CombatTests
         _engine.EndTurn(run);
         Assert.Equal(60, run.Hull);
         Assert.Empty(combat.DisabledPieceIds);
+    }
+
+    // A card that was played stays out of the deck until the turn ends (the owner's ruling of 2026-11-23).
+
+    [Fact]
+    public void ACardThatWasPlayedIsNotDrawnAgainInTheSameTurn()
+    {
+        var run = NewRun(); // the bridge's 4 cards are all in the hand, so the draw and discard piles are empty
+        var combat = _engine.StartFight(run, "dummy");
+        int ram = CardIn(combat, "ram");
+        _engine.PlayCard(run, ram);
+        var chorus = new CardInstance(900, "chorus", BridgeId(run)); // draws 2
+        combat.Hand.Add(chorus);
+
+        _engine.PlayCard(run, chorus.Id);
+
+        Assert.Equal(3, combat.Hand.Count); // nothing could be drawn
+        Assert.DoesNotContain(combat.Hand, c => c.Id == ram);
+        Assert.Equal([ram, chorus.Id], combat.PlayedPile.Select(c => c.Id));
+        Assert.Empty(combat.DrawPile);
+        Assert.Empty(combat.DiscardPile);
+    }
+
+    [Fact]
+    public void AShuffleInTheMiddleOfATurnBringsBackEarlierDiscardsButNotThePlayedCards()
+    {
+        var run = NewRun(); // the bridge's 4 cards are all in the hand
+        var combat = _engine.StartFight(run, "dummy");
+        int ram = CardIn(combat, "ram");
+        var earlier = combat.Hand.Where(c => c.Id != ram).Take(2).ToList(); // as if discarded in an earlier turn
+        combat.Hand.RemoveAll(earlier.Contains);
+        combat.DiscardPile.AddRange(earlier);
+        _engine.PlayCard(run, ram);
+        var chorus = new CardInstance(900, "chorus", BridgeId(run)); // draws 2
+        combat.Hand.Add(chorus);
+
+        _engine.PlayCard(run, chorus.Id); // the draw pile is empty, so the discard pile is shuffled into it
+
+        Assert.All(earlier, c => Assert.Contains(c, combat.Hand));
+        Assert.DoesNotContain(combat.Hand, c => c.Id == ram);
+        Assert.Equal([ram, chorus.Id], combat.PlayedPile.Select(c => c.Id));
+        Assert.Empty(combat.DiscardPile);
+    }
+
+    [Fact]
+    public void PlayedCardsJoinTheDiscardPileWhenTheTurnEndsAndCanBeDrawnInTheNextTurn()
+    {
+        var run = NewRun(); // 4 cards, all in the hand
+        var combat = _engine.StartFight(run, "dummy");
+        int ram = CardIn(combat, "ram");
+        _engine.PlayCard(run, ram);
+
+        _engine.EndTurn(run); // the played card and the 3 others are discarded, shuffled and drawn again
+
+        Assert.Empty(combat.PlayedPile);
+        Assert.Equal(4, combat.Hand.Count);
+        Assert.Contains(combat.Hand, c => c.Id == ram);
+    }
+
+    [Fact]
+    public void AHeavyAttackAlsoTakesThePlayedCardsOfThePieceItDisablesOffline()
+    {
+        var run = NewRun();
+        var plating = Fit(run, "plating", 0, 0); // front of lane 0
+        var combat = _engine.StartFight(run, "heavy");
+        _engine.PlayCard(run, Take(combat, "deflect")); // blocks 8 of the 10
+
+        _engine.EndTurn(run);
+
+        Assert.Equal(58, run.Hull);
+        Assert.Equal([plating.Id], combat.DisabledPieceIds);
+        Assert.Equal(2, combat.OfflineCards.Count(c => c.SourcePieceId == plating.Id));
+        Assert.DoesNotContain(
+            combat.DrawPile.Concat(combat.Hand).Concat(combat.DiscardPile).Concat(combat.PlayedPile),
+            c => c.SourcePieceId == plating.Id);
+        Assert.Equal(6, TotalCards(combat));
+    }
+
+    /// <summary>
+    /// Before the ruling this turn had no end: each Chorus drew the other Chorus and the Unfurl back, and every
+    /// round of Unfurl and Chorus left 1 more energy than the round before.
+    /// </summary>
+    [Fact]
+    public void CardsThatPayForThemselvesAndDrawAreEachPlayedOnceInATurn()
+    {
+        var run = NewRun();
+        var combat = _engine.StartFight(run, "dummy");
+        combat.Hand.Clear();
+        combat.Hand.AddRange([
+            new CardInstance(900, "unfurl", BridgeId(run)), // gains 2 energy at no cost
+            new CardInstance(901, "chorus", BridgeId(run)), // draws 2 for 1 energy
+            new CardInstance(902, "chorus", BridgeId(run))]);
+
+        int plays = 0;
+        while (plays < 100 && combat.Hand.FirstOrDefault(c => _engine.CanPlay(run, c.Id)) is { } card)
+        {
+            _engine.PlayCard(run, card.Id);
+            plays++;
+        }
+
+        Assert.Equal(3, plays);
+        Assert.Empty(combat.Hand);
+        Assert.Equal([900, 901, 902], combat.PlayedPile.Select(c => c.Id));
     }
 
     [Fact]

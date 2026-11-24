@@ -36,6 +36,20 @@ public class SaveTests
     }
 
     [Fact]
+    public void ASaveKeepsTheCardsPlayedThisTurnApartFromTheDiscardPile()
+    {
+        var engine = new CombatEngine(Db);
+        var run = NewRun();
+        var combat = engine.StartFight(run, "dummy");
+        int ram = combat.Hand.First(c => c.CardId == "ram").Id;
+        engine.PlayCard(run, ram);
+
+        var restored = SaveSerializer.Deserialize(SaveSerializer.Serialize(run));
+        Assert.Equal([ram], restored.Combat!.PlayedPile.Select(c => c.Id));
+        Assert.Empty(restored.Combat.DiscardPile);
+    }
+
+    [Fact]
     public void TheSaveIsReadableJson()
     {
         string json = SaveSerializer.Serialize(NewRun());
@@ -112,7 +126,7 @@ public class SaveTests
             action(reference);
             sawFocus |= reference.Combat?.PendingFocus > 0;
             sawGrowth |= reference.Combat is { } c
-                         && c.DrawPile.Concat(c.Hand).Concat(c.DiscardPile).Any(card => card.Growth > 1);
+                         && c.DrawPile.Concat(c.Hand).Concat(c.DiscardPile).Concat(c.PlayedPile).Any(card => card.Growth > 1);
 
             session = RunSession.TryResume(Db, store)!;
             Assert.Equal(SaveSerializer.Serialize(reference), store.Json);

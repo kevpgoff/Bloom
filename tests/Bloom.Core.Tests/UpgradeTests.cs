@@ -102,7 +102,7 @@ public class CardUpgradeTests
         int sprout = Take(combat, "sprout");
         _engine.PlayCard(run, sprout);
         Assert.Equal(6, combat.Block);
-        var card = combat.DiscardPile.Single(c => c.Id == sprout);
+        var card = combat.PlayedPile.Single(c => c.Id == sprout);
         Assert.Equal([new BlockEffect(9), new GrowEffect(3)], _engine.Preview(run, card).Effects);
     }
 
