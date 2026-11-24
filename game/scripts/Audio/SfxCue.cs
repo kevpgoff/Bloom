@@ -66,6 +66,9 @@ internal enum SfxCue
     /// <summary>A garden card grows.</summary>
     Grow,
 
+    /// <summary>A piece's passive takes effect. What it does has its own sound, which follows.</summary>
+    PassiveFire,
+
     /// <summary>The enemy raises block.</summary>
     EnemyBlock,
 

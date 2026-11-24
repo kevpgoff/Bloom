@@ -37,6 +37,7 @@ public partial class RewardScreen : Control
             GetNode<RichTextLabel>("%Message").Text =
                 $"The {session.Content.Enemy(last.EnemyId).Name} powers down and drifts away. Won in {turns}.\n" +
                 $"Salvage +{offer.Salvage}  ·  {run.Salvage} in all  ·  {HullWarning.HullBbcode(run)}" +
+                (offer.HullRegained > 0 ? $"  [color=#{Palette.Boosted.ToHtml(false)}]+{offer.HullRegained}[/color]" : "") +
                 (offer.Section ? "\n+ Hull section" : "");
         }
 

@@ -164,16 +164,21 @@ public partial class FittingBoard : Control
 
     private void DrawShip(RunSession session, RunState run, GridLayout g)
     {
-        var heavyLanes = session.Refit.NextEnemy(run) is { } enemy
-            ? enemy.AllIntents.Where(i => i.Kind == IntentKind.HeavyAttack).Select(i => run.Ship.Grid.LaneHit(i.Lane!.Value)).Distinct().ToList()
+        // Each heavy attack the next enemy can make, as it would land on the ship as it is fitted now. Moving a
+        // piece with lane armor into a marked lane changes the number on that lane's tag.
+        var heavies = session.Refit.NextEnemy(run) is { } enemy
+            ? enemy.AllIntents.Where(i => i.Kind == IntentKind.HeavyAttack).Select(i => session.Combat.EffectiveIntent(run.Ship, i, [])).ToList()
             : [];
+        var heavyLanes = heavies.Select(a => a.Lane!.Value).Distinct().ToList();
         GridPainter.DrawLanes(this, g, heavyLanes);
         GridPainter.DrawHull(this, g, run.Ship.Grid.Cells);
         foreach (int lane in heavyLanes)
         {
-            GridPainter.DrawHeavyLane(this, g, lane);
+            var hardest = heavies.Where(a => a.Lane == lane).MaxBy(a => a.Intent.Amount)!;
+            GridPainter.DrawHeavyLane(this, g, lane, hardest.Intent.Amount, hardest.Armor > 0);
         }
 
+        var counted = session.Fitter.ActivePassives(run.Ship, []).Select(p => p.Fitted.Piece.Id).ToHashSet();
         var bonuses = session.Fitter.ActiveBonuses(run.Ship, []);
         var receivers = bonuses.Select(b => b.ReceiverId).ToHashSet();
         foreach (var fitted in run.Ship.Fitted)
@@ -187,6 +192,11 @@ public partial class FittingBoard : Control
             GridPainter.DrawPiece(this, g, cells, lifted ? color with { A = 0.25f } : color);
             GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Glyph(color), GridPainter.NameLines(g, cells, name));
             GridPainter.DrawLabel(this, g, cells, name, lifted ? Palette.Muted with { A = 0.5f } : Palette.Label(color));
+            if (!lifted && def.Passive is not null)
+            {
+                GridPainter.DrawPassiveMark(this, g, cells, counted.Contains(id));
+            }
+
             if (!lifted && receivers.Contains(id))
             {
                 GridPainter.DrawBonusBadge(this, g, cells, Palette.Badge);
@@ -267,6 +277,11 @@ public partial class FittingBoard : Control
             var color = Palette.ForPiece(def);
             GridPainter.DrawPiece(this, layout, shape.Cells, lifted ? color with { A = 0.25f } : color);
             GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(def), lifted ? Palette.Muted with { A = 0.35f } : Palette.Glyph(color), labelLines: 0);
+            if (!lifted && def.Passive is not null)
+            {
+                GridPainter.DrawPassiveMark(this, layout, shape.Cells);
+            }
+
             DrawString(BloomTheme.Hud, new Vector2(slot.Position.X + 4, slot.End.Y - 10), CardText.PieceName(def, piece).ToUpperInvariant(), HorizontalAlignment.Center, slot.Size.X - 8, 19,
                 lifted ? Palette.Muted with { A = 0.5f } : Palette.Label(color));
             if (!lifted && piece.Id == SelectedPieceId)

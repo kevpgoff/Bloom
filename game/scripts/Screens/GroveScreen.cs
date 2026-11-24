@@ -7,7 +7,7 @@ namespace Bloom.Game.Screens;
 
 /// <summary>
 /// At a grove: repair the hull, or upgrade one piece, as option cards. Each upgradable piece has its own
-/// card showing its cards as they would be upgraded. Tapping a card selects it and the main button, which
+/// card showing its cards and its passive as they would be upgraded. Tapping a card selects it and the main button, which
 /// names the choice, confirms it through <see cref="GameRoot.Act"/>.
 /// </summary>
 public partial class GroveScreen : Control
@@ -51,7 +51,7 @@ public partial class GroveScreen : Control
             var def = session.Content.Piece(piece.DefId);
             int id = piece.Id;
             string where = run.Cargo.Pieces.Contains(piece) ? $"   [color=#{Palette.Muted.ToHtml(false)}]Cargo hold[/color]" : "";
-            string text = $"[b]{CardText.PieceName(def, upgraded: true)}[/b]{where}\n{CardText.Cards(def, session.Content, upgraded: true)}";
+            string text = $"[b]{CardText.PieceName(def, upgraded: true)}[/b]{where}\n{CardText.PieceBody(def, session.Content, upgraded: true, withBonus: false)}";
             AddOption(
                 options,
                 new OptionCard(Palette.ForPiece(def), text, def, minHeight: 140, shapeSize: 108, fontSize: 22),

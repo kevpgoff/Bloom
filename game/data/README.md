@@ -9,19 +9,20 @@ The files are read strictly (since 2026-11-23). A property that no definition ha
 - a card that no piece adds;
 - a card effect, a bonus or an enemy intent with an amount of 0;
 - a card that grows but has no block, since growth raises only block;
-- a bonus that targets a tag that no piece carries, or two different bonuses that share a name;
-- a rarity with fewer pieces than a reward offers;
+- a bonus that targets a tag that no piece with cards carries, or two different bonuses that share a name;
+- a passive with an amount of 0, a passive whose upgrade is not larger than the passive, or two different passives that share a name;
+- a rarity with fewer pieces than a reward offers, where the pieces without cards count as one, since an offer holds at most one of them;
 - a piece that fits on no ship's starting hull;
 - an event choice that needs a tag that no piece carries, so that it can never open, or a tag that the bridge carries, so that it is always open;
 - two pieces, two cards or two enemies with the same name.
 
-The tests check the structure of the content and not its exact counts, so adding an entry needs no change to a test. They ask for at least 4 pieces for every tag (2 of them common and 1 uncommon or rare), and for each sector at least 3 early, 3 late and 2 hard enemies, a boss and 4 events.
+The tests check the structure of the content and not its exact counts, so adding an entry needs no change to a test. They ask for at least 4 pieces for every tag (2 of them common and 1 uncommon or rare), and for each sector at least 3 early, 3 late and 2 hard enemies, a boss and 4 events. For passives they ask that every trigger is on at least one piece and that every passive has an upgrade.
 
 All numbers are placeholders for testing, as the design spec says. Entries marked `"placeholder": true` are invented and not in the spec. For the 7 example pieces, the spec gives no rarity or commune, so the values here are guesses.
 
 | File | Holds |
 | --- | --- |
-| `pieces.json` | Equipment and crew: shape, tags, the cards they add, an optional adjacency bonus |
+| `pieces.json` | Equipment and crew: shape, tags, the cards they add, an optional adjacency bonus, an optional passive |
 | `cards.json` | Cards: cost, effects and an `upgrade` |
 | `enemies.json` | Enemies: hull points, a repeating pattern of intents, a `pool` and a `sector`, and for a boss its `parts`. The pool says which fights of the sector map draw the enemy (see below). |
 | `ships.json` | Ship classes: starting hull, hull points, one or more `loadouts` of starting pieces, an optional special `rule`, an optional `unlock`, an optional `soundSet`, and the `commune` and `grownFrom` text that the hangar shows |
@@ -33,7 +34,14 @@ All numbers are placeholders for testing, as the design spec says. Entries marke
 - **Shapes** are rows of text: `#` is a cell and `.` is empty. `["###", ".#."]` is a T. Pieces rotate in quarter turns (`R0`, `R90`, `R180`, `R270`, clockwise) and never mirror.
 - **Positions** are absolute grid cells `{ "x": column, "y": row }` in the 6×8 grid. Row 0 is the front, which faces the enemy. A position is the top-left corner of the rotated shape.
 - **Lanes** are grid columns, counted from 0 on the left (the game shows them as L1 to L6). A heavy attack aimed at a lane the hull doesn't reach hits the nearest lane it does reach, so on the seedling an attack on lane 0 hits lane 1 until a hull section grows into lane 0.
-- **Effects** are objects whose first property must be `"type"` (a .NET 8 rule): `{ "type": "damage", "amount": 5 }`. Card effects are `damage`, `block`, `gainEnergy`, `draw`, `repair`, `focus` and `grow`. Bonus-only effects are `damageBonus` and `startGrown`. A `draw` never brings back a card that was played in the same turn: a played card joins the discard pile only when the turn ends, so each card is played at most once a turn.
+- **Effects** are objects whose first property must be `"type"` (a .NET 8 rule): `{ "type": "damage", "amount": 5 }`. Card effects are `damage`, `block`, `gainEnergy`, `draw`, `repair`, `focus` and `grow`. Bonus-only effects are `damageBonus` and `startGrown`. Passive-only effects are `laneArmor` and `regainHull` (see Passives below). A `draw` never brings back a card that was played in the same turn: a played card joins the discard pile only when the turn ends, so each card is played at most once a turn.
+- **Passives** (`"passive"` on a piece) are what a piece does by being fitted, without a card. The owner decided on 2026-11-23 that the game's items are such pieces. A passive has a `"name"`, a `"trigger"`, an `"effect"` and an optional `"upgrade"`, which is the effect of an upgraded piece and must be the same kind of effect. A piece with a passive may add no cards, written `"cards": []`. The triggers, and the effects that each takes:
+  - `"FightStart"`: once, as the first turn starts. `block`, `gainEnergy`, `draw`, `focus` or `damage`.
+  - `"TurnStart"`: as every turn starts, the first included, after the fight-start passives and before the turn's cards are drawn. The same five effects.
+  - `"Standing"`: all the time while the piece works. Only `laneArmor`: a heavy attack that reaches the piece (the piece is the frontmost working piece of the lane that the attack hits) deals that much less damage, never less than 0.
+  - `"FightWon"`: when a fight is won. Only `regainHull`: the hull regains that many points, never past its maximum.
+
+  Rules that hold for every passive: a disabled piece's passive is off. A ship counts a passive of a given name once, from the working piece whose first cell is nearest the front and then the left, so a second copy of a passive piece adds nothing until the first is disabled. Passives take effect in that same order. A passive's damage hits what the player aims at; adjacency bonuses and focus do not add to it, and it uses up no focus. A piece that adds no cards receives no adjacency bonus. A reward or a dock offers at most one piece that adds no cards.
 - **Loadouts** (`"loadouts"` on a ship class in `ships.json`) are the sets of starting pieces that the player chooses from in the hangar. Each has an `"id"` (lowercase words joined by hyphens, unique within its ship, and saved with a run), a `"name"` and its `"startingPieces"`. A ship needs at least one, and the first is the one a run uses when none is named. A loadout changes only the pieces: the hull, the hull points and the rule belong to the ship class. Every loadout must fit on the hull and hold exactly one bridge; the validator starts a run with each to check.
 - **Hangar text** on a ship class: `"commune"` is the commune's id as on pieces (`tide_orchard`), shown as "Tide Orchard", and `"grownFrom"` is one line on what the ship is grown from. The rules read neither.
 - **Ship rules** (`"rule"` on a ship class in `ships.json`) are optional objects whose first property must be `"type"`, as for effects and event outcomes. The only rule built so far is `{ "type": "keepEnergy" }`, which keeps unspent energy for the next turn. Leaving `"rule"` out gives the default rules.
@@ -88,6 +96,24 @@ That layout is the Seedling's first loadout, `a` ("Sprout"). Its second, `b` ("O
 ```
 
 It uses 22 of the 25 cells, and its deck has 2 + 3 + 2 + 1 + 2 + 2 + 1 + 4 = 17 cards.
+
+The third loadout, `c` ("Tidepool"), is a placeholder added with passive pieces on 2026-11-23. It starts with four of them, one for each trigger, so that each kind of passive shows in the first fight. The Tinker is there because a disabled piece's passive is off, and its Patch brings a piece back.
+
+```
+        x: 0 1 2 3 4 5
+   y0      . . . . . .
+   y1      . W W W A A     W  Breakwater: lane armor 4 on lanes 1–3, and 1 Deflect
+   y2      . L L L . M     A  Arc Cutter
+   y3      . K K . M M     L  Light Lance
+   y4      . T . . . O     M  Moss Bank: each turn, gain 2 block
+   y5      . D D . B B     K  Kelp Bed
+   y6      . . . . . .     T  Tinker
+   y7      . . . . . .     O  Lookout: fight start, draw 2 cards
+                           D  Dew Still: fight won, the hull regains 3
+                           B  Bridge
+```
+
+It uses 19 of the 25 cells, and its deck has 1 + 2 + 2 + 2 + 1 + 4 = 12 cards. A first version with a Seed Drone and a Moss Reactor, and with a Moss Bank that gave 3 block, was far stronger than the other two loadouts in fights played by a simple bot, so the pieces and that number were changed until its skirmishes and hard fights came out close to theirs (see "Passive pieces" in `docs/decisions.md`).
 
 ## The placeholder second ship (`heliotrope`)
 
@@ -231,6 +257,30 @@ Notes on how these play under today's rules:
 - Each has its own icon in `game/art/icons/pieces/`, approved by the owner on 2026-11-23. The first line of each file says what it shows.
 - No card of this set draws. When the set was written, a card that was played could be drawn and played again in the same turn, and cards that together cost no energy and drew at least as many cards as were played could be played without end. The owner ended that on 2026-11-23: a played card stays out of the deck until the turn ends. Cards that draw can be written again, but this set has not been changed. See "The draw rule" in `docs/decisions.md`.
 - Hive Mender's Splice costs 2 where the Tinker's Patch costs 1, so that the new crew is not simply a better Tinker.
+
+## Passive pieces
+
+Added on 2026-11-23, the second step of the content expansion. All 9 are `"placeholder": true` and are proposals to confirm in play. Each passive has a name of its own. With them the pieces that can be offered are 24 common, 9 uncommon and 8 rare.
+
+| Piece | Kind, tag, rarity | Shape | Cards | Passive | Upgraded |
+| --- | --- | --- | --- | --- | --- |
+| Dawn Battery | Equipment, Solar, Common | `##` | none | Fight start: gain 2 energy | 3 |
+| Heliostat | Equipment, Solar, Uncommon | `###` | none | Each turn: the next attack deals 2 more damage | 3 |
+| Breakwater | Equipment, Shield, Common | `###` | 1 Deflect (1: block 8) | Armor: a heavy attack that reaches it deals 4 less damage | 6 |
+| Dew Still | Equipment, Garden, Common | `##` | none | Fight won: the hull regains 3 | 5 |
+| Moss Bank | Equipment, Garden, Uncommon | `.#` / `##` | none | Each turn: gain 2 block | 3 |
+| Sentry Drone | Equipment, Drone, Uncommon | `##` | none | Each turn: deal 2 damage | 3 |
+| Hornet Nest | Equipment, Drone, Rare | `##` / `##` | none | Each turn: deal 4 damage | 6 |
+| Lookout | Crew, Common | `#` | none | Fight start: draw 2 cards | 3 |
+| Cantor | Crew, Rare | `##` | none | Each turn: draw 1 card | 2 |
+
+Notes on how these play:
+
+- Dawn Battery, Heliostat (Sunwrights), Breakwater, Dew Still, Moss Bank (Tide Orchard), Sentry Drone, Hornet Nest (Tinker Hives), Lookout and Cantor (Mycelial Choir): every commune has at least two.
+- The Breakwater is the only one that also adds a card. It shows that a piece can have both.
+- The Heliostat's focus adds up from turn to turn until an attack uses it, as focus from cards does.
+- No shipped piece gains energy each turn, although the rules allow it. One more energy every turn is a third more than a ship has, which is too much to give without play to judge it.
+- They have no icons of their own yet. Each shows the icon of an older piece with the same tag (the crew show the Spore Singer's), and the mark for a passive piece on top.
 
 ## Placeholder events
 

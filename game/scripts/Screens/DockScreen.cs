@@ -83,11 +83,7 @@ public partial class DockScreen : Control
             int price = session.Dock.Price(def.Id);
             var priceColor = session.Dock.CanBuy(run, i) ? Palette.Energy : Palette.Refused;
             string text = $"[b]{def.Name}[/b]   [color=#{priceColor.ToHtml(false)}]{price} salvage[/color]\n" +
-                          $"[color=#{muted}]{CardText.Kind(def)}[/color]\n{CardText.Cards(def, session.Content)}";
-            if (def.Bonus is { } bonus)
-            {
-                text += $"\n{CardText.Bonus(bonus)}";
-            }
+                          $"[color=#{muted}]{CardText.Kind(def)}[/color]\n{CardText.PieceBody(def, session.Content)}";
 
             Add(new OptionCard(Palette.ForPiece(def), text, def, minHeight: 170, shapeSize: 120, fontSize: 22), Trade.Buy, i);
         }

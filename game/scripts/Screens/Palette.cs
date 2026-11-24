@@ -58,6 +58,9 @@ internal static class Palette
     /// <summary>The focus effect: a pale gold lens light.</summary>
     public static readonly Color Focus = new("fff0b0");
 
+    /// <summary>A passive: the mark on a piece that has one, and the pulse when it takes effect. A pale violet that no tag uses.</summary>
+    public static readonly Color Passive = new("b7a8ff");
+
     /// <summary>A disabled piece and a refused move.</summary>
     public static readonly Color Refused = new("ff5a6e");
 
@@ -99,6 +102,8 @@ internal static class Palette
         RepairEffect => Repair,
         FocusEffect => Focus,
         GrowEffect => GardenGlow,
+        LaneArmorEffect => Block,
+        RegainHullEffect => Repair,
         _ => Ink,
     };
 

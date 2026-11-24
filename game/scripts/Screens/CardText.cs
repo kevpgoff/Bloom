@@ -1,13 +1,16 @@
 using Bloom.Core.Cards;
 using Bloom.Core.Content;
 using Bloom.Core.Pieces;
+using Bloom.Core.Run;
 using Godot;
 
 namespace Bloom.Game.Screens;
 
 /// <summary>
-/// Words for cards, pieces and bonuses. The numbers come from Bloom.Core; this only writes them out.
-/// Text that uses colors is BBCode for a <see cref="RichTextLabel"/>.
+/// Words for cards, pieces, passives and bonuses. The numbers come from Bloom.Core; this only writes them out.
+/// Text that uses colors is BBCode for a <see cref="RichTextLabel"/>. Every screen that describes a piece
+/// (fitting, combat, rewards, docks, groves and the hangar) builds its text from <see cref="PieceBody"/>, so a
+/// piece reads the same everywhere.
 /// </summary>
 internal static class CardText
 {
@@ -74,7 +77,7 @@ internal static class CardText
 
     /// <summary>
     /// The cards a piece adds, one line each: "2× Lance (2 energy): Deal 12 damage." For an upgraded piece the
-    /// cards are upgraded, with what changed in green.
+    /// cards are upgraded, with what changed in green. Empty for a piece that adds no cards.
     /// </summary>
     public static string Cards(PieceDef piece, ContentDb content, bool upgraded = false) =>
         string.Join("\n", piece.Cards.Select(g => upgraded
@@ -108,10 +111,90 @@ internal static class CardText
         _ => "bonus",
     };
 
-    /// <summary>Name, kind, cards and bonus of a piece, for an info panel. An upgraded piece shows its upgraded cards.</summary>
-    public static string PieceDetails(PieceDef piece, ContentDb content, bool upgraded = false)
+    /// <summary>
+    /// A passive as one line: "Passive · Each turn: gain 3 block." For an upgraded piece it is the upgraded
+    /// passive, with the number that changed in green.
+    /// </summary>
+    public static string Passive(PassiveDef passive, bool upgraded = false)
     {
-        string text = $"[b]{PieceName(piece, upgraded)}[/b]   [color=#{Palette.Muted.ToHtml(false)}]{Kind(piece)}[/color]\n{Cards(piece, content, upgraded)}";
-        return piece.Bonus is { } bonus ? $"{text}\n{Bonus(bonus)}" : text;
+        var effect = passive.EffectFor(upgraded);
+        bool changed = upgraded && effect != passive.Effect;
+        string N(int value) => changed ? $"[color=#{Palette.Boosted.ToHtml(false)}]{value}[/color]" : value.ToString();
+        string what = effect switch
+        {
+            BlockEffect b => $"gain {N(b.Amount)} block",
+            GainEnergyEffect e => $"gain {N(e.Amount)} energy",
+            DrawEffect { Count: 1 } => $"draw {N(1)} card",
+            DrawEffect d => $"draw {N(d.Count)} cards",
+            FocusEffect f => $"the next attack deals {N(f.Amount)} more damage",
+            DamageEffect d => $"deal {N(d.Amount)} damage",
+            LaneArmorEffect a => $"a heavy attack that reaches this piece deals {N(a.Amount)} less damage",
+            RegainHullEffect r => $"the hull regains {N(r.Amount)}",
+            _ => effect.GetType().Name,
+        };
+        string when = passive.Trigger switch
+        {
+            PassiveTrigger.FightStart => "Fight start",
+            PassiveTrigger.TurnStart => "Each turn",
+            PassiveTrigger.Standing => "Armor",
+            PassiveTrigger.FightWon => "Fight won",
+            _ => passive.Trigger.ToString() ?? "",
+        };
+        return $"[color=#{Palette.Label(Palette.Passive).ToHtml(false)}]Passive[/color] · {when}: {what}.";
     }
+
+    /// <summary>
+    /// What a piece does, one line for each thing: the cards it adds, its passive and its bonus, in that order.
+    /// An upgraded piece shows its upgraded cards and passive. <paramref name="withBonus"/> leaves the bonus
+    /// out, for a place that shows only what an upgrade changes.
+    /// </summary>
+    public static string PieceBody(PieceDef piece, ContentDb content, bool upgraded = false, bool withBonus = true)
+    {
+        var lines = new List<string>();
+        if (piece.Cards.Count > 0)
+        {
+            lines.Add(Cards(piece, content, upgraded));
+        }
+
+        if (piece.Passive is { } passive)
+        {
+            lines.Add(Passive(passive, upgraded));
+        }
+
+        if (withBonus && piece.Bonus is { } bonus)
+        {
+            lines.Add(Bonus(bonus));
+        }
+
+        return string.Join("\n", lines);
+    }
+
+    /// <summary>
+    /// A line, with a line break in front, for a fitted piece whose passive does not count: the ship counts a
+    /// passive of a given name once, and another working piece already gives it. Empty for any other piece.
+    /// </summary>
+    public static string PassiveNotCounted(RunSession session, int pieceId, IReadOnlyCollection<int> disabledPieceIds)
+    {
+        var ship = session.State.Ship;
+        if (ship.Find(pieceId) is not { } fitted
+            || disabledPieceIds.Contains(pieceId)
+            || session.Content.Piece(fitted.Piece.DefId).Passive is not { } passive)
+        {
+            return "";
+        }
+
+        var counting = session.Fitter.ActivePassives(ship, disabledPieceIds).FirstOrDefault(p => p.Passive.Name == passive.Name);
+        if (counting is null || counting.Fitted.Piece.Id == pieceId)
+        {
+            return "";
+        }
+
+        string name = PieceName(session.Content.Piece(counting.Fitted.Piece.DefId), counting.Fitted.Piece);
+        string other = counting.Fitted.Piece.DefId == fitted.Piece.DefId ? $"another {name}" : $"the {name}";
+        return $"\n[color=#{Palette.Heavy.ToHtml(false)}]Not counted: {other} already gives this passive.[/color]";
+    }
+
+    /// <summary>Name, kind and <see cref="PieceBody"/> of a piece, for an info panel.</summary>
+    public static string PieceDetails(PieceDef piece, ContentDb content, bool upgraded = false) =>
+        $"[b]{PieceName(piece, upgraded)}[/b]   [color=#{Palette.Muted.ToHtml(false)}]{Kind(piece)}[/color]\n{PieceBody(piece, content, upgraded)}";
 }

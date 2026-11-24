@@ -3,8 +3,8 @@ using System.Text.Json.Serialization;
 namespace Bloom.Core.Cards;
 
 /// <summary>
-/// One thing a card or an adjacency bonus does. In data files, an effect is an object whose first
-/// property is <c>"type"</c>: <c>{ "type": "damage", "amount": 5 }</c>. The type must come first,
+/// One thing a card, an adjacency bonus or a piece's passive does. In data files, an effect is an object whose
+/// first property is <c>"type"</c>: <c>{ "type": "damage", "amount": 5 }</c>. The type must come first,
 /// because .NET 8's JSON reader requires the discriminator before the other properties.
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
@@ -17,6 +17,8 @@ namespace Bloom.Core.Cards;
 [JsonDerivedType(typeof(GrowEffect), "grow")]
 [JsonDerivedType(typeof(DamageBonusEffect), "damageBonus")]
 [JsonDerivedType(typeof(StartGrownEffect), "startGrown")]
+[JsonDerivedType(typeof(LaneArmorEffect), "laneArmor")]
+[JsonDerivedType(typeof(RegainHullEffect), "regainHull")]
 public abstract record Effect;
 
 /// <summary>Deal damage to the enemy. Enemy block absorbs it first.</summary>
@@ -65,3 +67,18 @@ public sealed record DamageBonusEffect(int Amount) : BonusEffect;
 /// when the fight starts and stays even if the giver is disabled later.
 /// </summary>
 public sealed record StartGrownEffect(int Times) : BonusEffect;
+
+/// <summary>
+/// An effect that only a piece's passive can carry (<see cref="Pieces.PassiveDef"/>), never a card. A passive can
+/// also carry some of the card effects; the content validator lists which trigger takes which effect.
+/// </summary>
+public abstract record PassiveOnlyEffect : Effect;
+
+/// <summary>
+/// A heavy attack that reaches the piece deals this much less damage: the piece is the frontmost working piece in
+/// the lane that the attack hits. The damage cannot go below 0. Normal attacks are not reduced.
+/// </summary>
+public sealed record LaneArmorEffect(int Amount) : PassiveOnlyEffect;
+
+/// <summary>The hull regains this many points, up to its maximum.</summary>
+public sealed record RegainHullEffect(int Amount) : PassiveOnlyEffect;

@@ -405,6 +405,38 @@ Taken as defaults, to confirm:
 - **A draw that finds nothing.** When the draw pile and the discard pile are both empty, the rest of a draw is lost, as before. A ship with a small deck now meets this more often: once it has played its whole deck in a turn, it draws nothing more in that turn.
 - **Piece set A is unchanged.** No card of the set draws, because of the loop that the rule now ends. Cards that draw can be written again. Whether Nip, Bulwark, Signal and Shelter get back the draw of their first drafts is for the owner.
 
+### Passive pieces, built on 2026-11-23
+
+The second step of the content expansion. The owner had decided that the game's items are passive pieces, and approved the plan for them on 2026-11-23: a piece may carry a passive that takes effect without a card, and a piece with a passive may add no cards. The plan's rules are built as written:
+
+- **Triggers.** As a fight starts, as each turn starts, all the time while the piece works (lane armor), and when a fight is won.
+- **Once per ship.** A ship counts a passive of a given name once, as a piece receives a named bonus once.
+- **Disabled is off.** A disabled piece's passive does nothing until the piece is repaired.
+- **Upgrades.** An upgrade makes the passive's number larger and never changes what the passive does.
+- **Rewards.** An offer holds at most one piece that adds no cards.
+- **Left out.** Passives that fire when a piece is disabled or repaired. With repair cards that cost nothing they would form an endless loop.
+
+Taken as defaults, to confirm (all numbers and names are placeholders):
+
+- **Order.** A turn starts with its energy, then the passives take effect, then the cards are drawn. The first turn takes the fight-start passives before the each-turn ones. Among passives of one kind the order goes by each piece's first cell: the front row first, then from the left. It does not depend on the order in which pieces were fitted.
+- **Lane armor is the answer to "shields for one lane".** That question was open in the spec. A heavy attack that reaches a piece with armor deals less damage, by the armor's amount and never below 0. "Reaches" means that the piece is the frontmost working piece of the lane that the attack hits, so armor behind another piece does nothing, and a piece three cells wide in the front row guards three lanes. If no damage gets past block, the piece is not disabled, so armor and block together keep a front piece working. Normal attacks are not reduced.
+- **Armor also counts once per ship.** Two Breakwaters on different lanes give armor to only one of them, the one nearer the front and the left, and the other takes over when the first is disabled. This follows the plan's rule to the letter. Armor could instead count for each piece, since two pieces never guard the same lane at once. That is for the owner to decide after play.
+- **What the screens show is what happens.** One function (`CombatEngine.EffectiveIntent`) says what an enemy's move does to the ship. The enemy's turn uses it, and so do the Combat screen ("Heavy attack 9 (−4)") and the tag over a heavy lane, which now carries the damage in the block color when armor has reduced it. The Fitting screen shows the same number before the fight, so moving an armored piece into a marked lane changes the number at once.
+- **The enemy's turn is shown as it would go if the turn ended now.** When the enemy makes several moves in a turn, the Combat screen plays them through in order with the block the ship has at that moment. An attack uses up block, and a heavy attack disables the piece it reaches only if its damage gets past what is left. Before this, a second heavy attack on a lane was always shown on the piece behind the first one's, even when block or armor would keep that first piece working, which gave the wrong piece and, with armor, the wrong number. An independent review of this pull request found it.
+- **A passive's damage.** It hits what the player aims at, the enemy's block absorbs it first, and it can win the fight as a turn starts; the turn's cards are then not drawn. It is not a card: adjacency bonuses and focus do not add to it, and it uses up no focus.
+- **Hull after a won fight.** The pieces that still work give back their hull as the fight is won, never past the maximum. The Reward screen shows it after the hull's numbers. The fight that wins the run gives it back too.
+- **A piece without cards receives no bonus.** Every bonus changes the cards of the piece that receives it, so the "+" and the link are no longer drawn on a piece that has none.
+- **Docks.** A dock's wares are rolled like a reward, so a dock also sells at most one piece without cards.
+- **Upgrades.** A piece can be upgraded if its passive or one of its cards has an upgrade, and the grove shows both. Every shipped passive has an upgrade, and a test checks it.
+- **The 9 pieces and the Tidepool loadout** are listed in `game/data/README.md`. No shipped piece gains energy each turn, although the rules allow it.
+- **How strong they are.** No balance tool is in the repository yet; it is the next step of the plan. A scratch program played duels from a full hull with a simple bot that plays energy and repair first, then blocks what is coming, then attacks. A first Tidepool loadout was far ahead of the other two: it won early fights in 3.1 turns with 0.3 hull lost, where the Sprout takes 4.8 turns and loses 2.8. After the Moss Bank went from 3 block to 2, the Hornet Nest from 5 damage to 4, and the loadout lost its Seed Drone and Moss Reactor for a Kelp Bed and the Tinker, it comes out close to them: 4.6 turns and 0.6 hull in early fights, 8.2 turns and 10 hull in late fights, 11.1 turns and 22 hull in hard fights (the Sprout: 4.8 and 2.8, 7.3 and 13, 9.2 and 27; the Orchard: 6.5 and 1.8, 10.2 and 9, 13.9 and 20). Without its four passive pieces the same ship loses 33 hull in late fights and wins 67% of hard fights, so the passives carry it. Against the Grand Combine, which no starting ship is meant to meet, it wins 43% of duels (the Sprout 80%, the Orchard 75%, the Heliotrope 51%). These numbers come from one simple bot and say nothing about a whole run.
+- **On the screens.** A piece with a passive wears a small lit ring in the top-left of its first cell, on every screen that draws pieces. The ring is muted and has no dot while the passive does not count, and the Fitting screen then says "Not counted" with the piece that gives it. A passive's line starts with the word "Passive" in the mark's color. In a fight, a tap on a piece shows what it does in a panel over the hand; a tap on the panel, on the piece or beside the ship closes it, and so does any action. When a passive takes effect, its piece lights up, the mark sends out a ring, and what it does starts from the piece.
+- **Sound.** One new sound in the base set, `passive-fire`: a seed pod ticks once and a small glass bead rings after it, at −12 dB, the quietest level in use, because it can play several times a turn. Each passive of one action sounds a little higher than the one before. It is on the sound board for the owner to judge by ear.
+- **Icons.** The 9 pieces have no icons of their own yet. Each shows the icon of an older piece with the same tag, and the crew show the Spore Singer's, under the mark for a passive piece. New icons are art, so they wait for the owner's approval as the last batch did.
+- **A fight won as it starts is not shown.** If the passives beat the enemy on the first turn before a card is played, the rules end the fight correctly, but the game goes from the Fitting screen straight to the Reward screen. No shipped content can do this: the most that the pieces deal as a fight starts is 9, and the weakest enemy has 32 hull.
+- **Save.** The save schema goes to 12 (a reward remembers the hull that the fight gave back), so a run saved before is set aside and the hangar opens.
+- **The FX demo** takes `--loadout=c` next to `--ship=`, so that the demo can play the loadout with passive pieces.
+
 ## Proposed in the spec, not yet confirmed
 
 - About 8 nodes and 25 minutes for each sector. (Three sectors for each run was decided on 2026-11-23; see "Content expansion".)
@@ -419,7 +451,7 @@ Taken as defaults, to confirm:
 
 - Price of the game.
 - Final name of the game and of things in the setting.
-- Whether some shields protect a single lane.
+- Whether some shields protect a single lane. (Built as lane armor on 2026-11-23, as a default to confirm; see "Passive pieces".)
 - Whether disabled pieces stay disabled after a fight.
 - Whether normal enemies have parts to target.
 - Whether crew can be lost for the rest of a run.

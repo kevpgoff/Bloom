@@ -67,6 +67,21 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
 
         /// <summary>Each card of one deal sounds this much higher than the card before it.</summary>
         public const float DrawPitchStep = 0.03f;
+
+        /// <summary>How long after a fight's first events the screen is laid out, so that its widgets can be measured.</summary>
+        public const float OpeningLayout = 0.05f;
+
+        /// <summary>The time between a passive's pulse and what it does.</summary>
+        public const float PassiveGap = 0.12f;
+
+        /// <summary>Each passive of one action sounds this much higher than the one before it.</summary>
+        public const float PassivePitchStep = 0.04f;
+
+        /// <summary>A won fight's regained hull shows this long after the last hit, clear of the enemy's shatter.</summary>
+        public const float RegainAfterImpact = 0.3f;
+
+        /// <summary>How long the regained hull's number stays up; the screen waits for it.</summary>
+        public const float RegainShown = 1.0f;
     }
 
     /// <summary>Plays the events of one action and returns what the screen must time to match.</summary>
@@ -87,6 +102,16 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
                 case FightStarted:
                     At(0.05f, () => ReticleLock(null));
                     beat.T = Tuning.OpeningDeal;
+
+                    // The screen has not drawn this enemy yet, so its hull bar still holds the scene's values and
+                    // its place on screen is not laid out. A fight starts at full hull.
+                    if (session.State.Combat?.Enemy is { } enemy)
+                    {
+                        beat.BarMax = Math.Max(1.0, enemy.MaxHull);
+                        beat.BarValue = enemy.MaxHull;
+                        beat.Opening = true;
+                    }
+
                     break;
                 case TurnStarted:
                     TurnStart(beat);
@@ -138,6 +163,12 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
                     break;
                 case TargetChanged changed:
                     At(0f, () => ReticleLock(changed.Part));
+                    break;
+                case PassiveFired fired:
+                    OnPassiveFired(beat, fired);
+                    break;
+                case HullRegained regained:
+                    OnHullRegained(beat, regained);
                     break;
                 case FightEnded { Outcome: CombatOutcome.Won }:
                     Won(beat);
@@ -240,7 +271,17 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         // The hull bar has already dropped; the lost part stays lit until the bolt lands. A part's bar is its panel's.
         if (hit.Part is null && beat.BarValue > hit.HullLeft)
         {
-            fx.BarChunk(beat.Bar, (float)(beat.BarValue / beat.BarMax), (float)(hit.HullLeft / beat.BarMax), Palette.Attack, impact);
+            float before = (float)(beat.BarValue / beat.BarMax);
+            float left = (float)(hit.HullLeft / beat.BarMax);
+            if (beat.Opening)
+            {
+                // A passive's hit as the fight starts: the bar is measured once the screen has laid it out.
+                At(Tuning.OpeningLayout, () => fx.BarChunk(fx.FromGlobal(w.EnemyHullBar.GetGlobalRect()), before, left, Palette.Attack, impact - Tuning.OpeningLayout));
+            }
+            else
+            {
+                fx.BarChunk(beat.Bar, before, left, Palette.Attack, impact);
+            }
         }
 
         if (hit.Part is null)
@@ -436,6 +477,64 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         beat.T += Tuning.EffectGap;
     }
 
+    // Passives
+
+    /// <summary>
+    /// A passive takes effect: its piece lights up and its mark sends out a ring. What it does follows as its own
+    /// event, and starts from the piece. Lane armor waits for the heavy attack it reduces (<see cref="OnShipHit"/>).
+    /// </summary>
+    private void OnPassiveFired(Beat beat, PassiveFired fired)
+    {
+        beat.Source = fired.PieceId;
+        beat.CardCenter = null;
+        beat.CardDefId = null;
+        beat.Focused = false;
+        if (fired.Trigger == PassiveTrigger.Standing)
+        {
+            beat.ArmorPiece = fired.PieceId;
+            return;
+        }
+
+        // After a won fight the pulse waits a moment, so that it is not lost in the enemy's shatter.
+        float at = fired.Trigger == PassiveTrigger.FightWon
+            ? Math.Max(beat.T, Math.Max(beat.LastImpact, 0f) + Tuning.RegainAfterImpact)
+            : beat.T;
+        float pitch = 1f + (beat.Passives++ * Tuning.PassivePitchStep);
+        At(at, () => PassivePulse(fired.PieceId, Palette.Passive, pitch));
+        beat.T = at + Tuning.PassiveGap;
+    }
+
+    private void PassivePulse(int pieceId, Color color, float pitch = 1f)
+    {
+        float cell = CellSize();
+        fx.Flash(PieceCells(pieceId), color with { A = 0.3f }, 0.4f);
+        if (w.Grid.PassiveMarkCenter(pieceId) is { } local)
+        {
+            var mark = fx.FromGlobal(w.Grid.GlobalPosition + local);
+            fx.Ring(mark, color, 4f, cell * 0.6f, 0.4f, 2f);
+            fx.Pulse(mark, color, cell * 0.45f, 0.3f);
+        }
+
+        Haptics.Play(HapticKind.Tick);
+        Sfx.Play(SfxCue.PassiveFire, pitch);
+    }
+
+    /// <summary>The hull that a won fight gives back streams from the piece to the hull's numbers.</summary>
+    private void OnHullRegained(Beat beat, HullRegained regained)
+    {
+        var origin = OriginOf(beat);
+        float at = beat.T;
+        At(at, () =>
+        {
+            var to = LabelCenter(w.ShipLabel);
+            fx.Stream(origin(), to, Palette.Repair, 8, Tuning.StreamTime, 2.6f, ParticleShape.Dot, 50f);
+            fx.Flash([LabelRect(w.ShipLabel)], Palette.Repair with { A = 0.2f }, 0.5f);
+            fx.FloatText($"+{regained.Amount} HULL", to + new Vector2(0, -34), Palette.Repair, 30, 0.9f, 40f, Tuning.StreamTime * 0.8f);
+        });
+        beat.T = at + Tuning.EffectGap;
+        beat.HoldUntil = at + Tuning.RegainShown;
+    }
+
     // Cards moving between piles
 
     private void TurnStart(Beat beat)
@@ -518,6 +617,26 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         float launch = beat.T + Tuning.EnemyWindup;
         float impact = launch + Tuning.EnemyBoltTravel;
         var color = hit.HeavyLane is null ? Palette.Threat : Palette.Heavy;
+
+        // The piece whose lane armor reduced this heavy attack lights up as the attack lands on it.
+        int? armorPiece = hit.Armored > 0 ? beat.ArmorPiece : null;
+        beat.ArmorPiece = null;
+        if (armorPiece is int armored)
+        {
+            At(impact, () =>
+            {
+                PassivePulse(armored, Palette.Block);
+
+                // Beside the piece's mark, in its first cell: clear of the "BLOCKED" that rises above the hull and of
+                // the "OFFLINE" that rises from the piece's center when the attack still disables it.
+                float cell = CellSize();
+                var at = w.Grid.PassiveMarkCenter(armored) is { } local
+                    ? fx.FromGlobal(w.Grid.GlobalPosition + local) + new Vector2(cell * 0.48f, cell * 0.04f)
+                    : ShipTarget(hit.HeavyLane);
+                fx.FloatText($"{hit.Armored} ARMOR", at, Palette.Block, 22, 0.9f, 14f);
+            });
+        }
+
         At(beat.T, () =>
         {
             if (hit.Part is int part)
@@ -675,7 +794,7 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
             fx.Schedule(0.1f, () => Haptics.Play(HapticKind.Light));
             fx.Schedule(0.2f, () => Haptics.Play(HapticKind.Heavy));
         });
-        beat.ExitHold = Math.Max(Tuning.WinHold, at + Tuning.AfterShatter);
+        beat.ExitHold = Math.Max(Math.Max(Tuning.WinHold, at + Tuning.AfterShatter), beat.HoldUntil);
         beat.ResultAt = at + Tuning.ResultAfterImpact;
     }
 
@@ -820,6 +939,18 @@ internal sealed class CombatFeedback(FxLayer fx, CombatFeedback.Widgets w, Func<
         public bool Focused { get; set; }
 
         public bool TurnDeal { get; set; }
+
+        /// <summary>These are the first events of a fight, played before the screen has drawn it.</summary>
+        public bool Opening { get; set; }
+
+        /// <summary>How many passives have pulsed in this action; each sounds a little higher than the last.</summary>
+        public int Passives { get; set; }
+
+        /// <summary>The piece whose lane armor reduces the heavy attack that comes next.</summary>
+        public int? ArmorPiece { get; set; }
+
+        /// <summary>The time until which a won fight's screen should stay up for effects that outlast the shatter.</summary>
+        public float HoldUntil { get; set; }
 
         public double BarValue { get; set; }
 
