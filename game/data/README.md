@@ -16,7 +16,7 @@ The files are read strictly (since 2026-11-23). A property that no definition ha
 - an event choice that needs a tag that no piece carries, so that it can never open, or a tag that the bridge carries, so that it is always open;
 - two pieces, two cards or two enemies with the same name.
 
-The tests check the structure of the content and not its exact counts, so adding an entry needs no change to a test. They ask for at least 4 pieces for every tag (2 of them common and 1 uncommon or rare), and for each sector at least 3 early, 3 late and 2 hard enemies, a boss and 4 events. For passives they ask that every trigger is on at least one piece, that every commune has at least 2 passive pieces, and that every passive has an upgrade.
+The tests check the structure of the content and not its exact counts, so adding an entry needs no change to a test. They ask for at least 4 pieces for every tag (2 of them common and 1 uncommon or rare), and for each sector at least 3 early, 3 late and 2 hard enemies, a boss and 4 events. For passives they ask that every trigger is on at least one piece and that every passive has an upgrade.
 
 All numbers are placeholders for testing, as the design spec says. Entries marked `"placeholder": true` are invented and not in the spec. For the 7 example pieces, the spec gives no rarity or commune, so the values here are guesses.
 

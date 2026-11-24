@@ -26,8 +26,8 @@ public sealed record CardPreview(CardInstance Card, CardDef Def, IReadOnlyList<E
 /// (<see cref="Grid.ShipGrid.LaneHit"/>). Null for any other intent.
 /// </param>
 /// <param name="Target">
-/// For a heavy attack, the piece it disables if its damage gets past block: the frontmost working piece in its lane,
-/// behind any that an earlier heavy attack of the same turn would disable. Null when the lane has none left.
+/// For a heavy attack, the piece it reaches, which it disables if its damage gets past block: the frontmost working
+/// piece in its lane, behind any that an earlier heavy attack of the same turn disables. Null when the lane has none left.
 /// </param>
 /// <param name="Armor">The damage that the lane armor of <paramref name="Target"/> takes off a heavy attack; 0 without armor.</param>
 public sealed record EnemyAction(int? Part, Intent Intent, int? Lane = null, FittedPiece? Target = null, int Armor = 0);
@@ -150,20 +150,31 @@ public sealed class CombatEngine(ContentDb content, Action<CombatEvent>? emit = 
         return new EnemyAction(part, intent with { Amount = amount }, lane, target, intent.Amount - amount);
     }
 
-    /// <summary>What the enemy will do at the end of this turn, in order: its body, then each working part.</summary>
+    /// <summary>
+    /// What the enemy will do at the end of this turn, in order: its body, then each working part. Each move is as
+    /// it would land if the turn ended now. The moves are played through in order with the block the ship has: an
+    /// attack uses up block, and a heavy attack disables the piece it reaches only if its damage gets past what is
+    /// left, so a later heavy attack on the same lane is shown on the piece that it will really reach.
+    /// </summary>
     public IReadOnlyList<EnemyAction> NextActions(RunState run)
     {
         var combat = RequireCombat(run);
         var enemy = combat.Enemy;
         var def = content.Enemy(enemy.DefId);
         var disabled = combat.DisabledPieceIds.ToList();
+        int block = combat.Block;
         var actions = new List<EnemyAction>();
         void Add(int? part, Intent intent)
         {
             var action = EffectiveIntent(run.Ship, intent, disabled, part);
-            if (action.Target is { } target)
+            if (intent.Kind is IntentKind.Attack or IntentKind.HeavyAttack)
             {
-                disabled.Add(target.Piece.Id);
+                int absorbed = Math.Min(block, action.Intent.Amount);
+                block -= absorbed;
+                if (action.Target is { } target && action.Intent.Amount > absorbed)
+                {
+                    disabled.Add(target.Piece.Id);
+                }
             }
 
             actions.Add(action);

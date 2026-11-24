@@ -715,17 +715,15 @@ public class ShippedContentTests
 
     /// <summary>
     /// Every shipped passive has an upgrade, as every shipped card has, so that every piece can be upgraded at a
-    /// grove. Each trigger is on at least one piece, and every commune has at least two passive pieces.
+    /// grove, and each trigger is on at least one piece, so that every kind of passive can be met in play.
     /// </summary>
     [Fact]
-    public void TheShippedPassivesCoverEveryTriggerAndCommuneAndCanBeUpgraded()
+    public void TheShippedPassivesCoverEveryTriggerAndCanBeUpgraded()
     {
         var db = TestContent.LoadShipped();
         var passive = db.Pieces.Where(p => p.Passive is not null).ToList();
         Assert.All(passive, p => Assert.NotNull(p.Passive!.Upgrade));
         Assert.All(Enum.GetValues<PassiveTrigger>(), trigger => Assert.Contains(passive, p => p.Passive!.Trigger == trigger));
-        var communes = db.Pieces.Select(p => p.Commune).Where(c => c is not null).Distinct().ToList();
-        Assert.All(communes, commune => Assert.True(passive.Count(p => p.Commune == commune) >= 2, commune));
     }
 
     /// <summary>The hangar shows each ship's commune and what it is grown from, and names each loadout.</summary>

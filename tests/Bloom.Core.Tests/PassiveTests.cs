@@ -17,9 +17,10 @@ namespace Bloom.Core.Tests;
 /// noted: "ward" (fight start: block 6, upgraded 9), "cell" (fight start: 2 energy), "scout" (fight start: draw 2),
 /// "moss" (each turn: block 3, upgraded 5), "moss_bed" (the same passive on another piece), "muse" (each turn:
 /// focus 2), "sentry" (each turn: 3 damage, upgraded 5), "stinger" (each turn: 4 damage, no upgrade), "wall" (lane
-/// armor 4, upgraded 6, three cells wide, and one Deflect card), "still" (fight won: 3 hull, upgraded 5) and
-/// "gunner" (a Weapon piece with a Lance card and each turn: 2 damage). The enemies "wisp" (5 hull) and "mote" (3)
-/// attack for 1, and the "twin" makes a heavy attack of 10 on lane 0 with its body and again with its one part.
+/// armor 4, upgraded 6, three cells wide, and one Deflect card), "still" (fight won: 3 hull, upgraded 5), "pond"
+/// (fight won: 4 hull) and "gunner" (a Weapon piece with a Lance card and each turn: 2 damage). The enemies "wisp"
+/// (5 hull) and "mote" (3) attack for 1, the "twin" makes a heavy attack of 10 on lane 0 with its body and again
+/// with its one part, and the "side" makes a heavy attack of 10 on lane 3.
 /// The test ship's hull covers x 0 to 4 and y 0 to 4, with the bridge on (0,4) and (1,4).
 /// </remarks>
 public class PassiveTests
@@ -37,6 +38,7 @@ public class PassiveTests
             Passive("stinger", PassiveTrigger.TurnStart, new DamageEffect(4)),
             Passive("wall", PassiveTrigger.Standing, new LaneArmorEffect(4), new LaneArmorEffect(6), shape: ["###"], cards: [new CardGrant("deflect", 1)]),
             Passive("still", PassiveTrigger.FightWon, new RegainHullEffect(3), new RegainHullEffect(5)),
+            Passive("pond", PassiveTrigger.FightWon, new RegainHullEffect(4)),
             Passive("gunner", PassiveTrigger.TurnStart, new DamageEffect(2), cards: [new CardGrant("lance", 1)], tags: [Tag.Weapon]),
         ],
         TestContent.Db.Cards,
@@ -46,6 +48,7 @@ public class PassiveTests
             new EnemyDef("mote", "Mote", 3, [new Intent(IntentKind.Attack, 1)], EnemyPool.Early),
             new EnemyDef("twin", "Twin", 100, [new Intent(IntentKind.HeavyAttack, 10, 0)], EnemyPool.Late,
                 Parts: [new EnemyPartDef("Claw", 20, [new Intent(IntentKind.HeavyAttack, 10, 0)])]),
+            new EnemyDef("side", "Side", 100, [new Intent(IntentKind.HeavyAttack, 10, 3)], EnemyPool.Late),
         ],
         TestContent.Db.Ships,
         TestContent.Db.Sections,
@@ -229,6 +232,29 @@ public class PassiveTests
     }
 
     [Fact]
+    public void ADisabledPiecesPassiveDoesNotFireUntilThePieceIsRepaired()
+    {
+        var run = NewRun();
+        var moss = Fit(run, "moss", 0, 0);
+        Fit(run, "tinker", 4, 0);
+
+        // The mixed enemy attacks for 6, then makes a heavy attack of 20 on lane 0, then blocks.
+        var combat = Start(run, "mixed");
+        _engine.EndTurn(run);
+        Assert.Equal(3, combat.Block);
+        _engine.EndTurn(run);
+        Assert.Equal([moss.Id], combat.DisabledPieceIds);
+        Assert.Equal(0, combat.Block);
+        Assert.DoesNotContain(_log.Skip(_log.FindLastIndex(e => e is TurnStarted)), e => e is PassiveFired);
+
+        _engine.PlayCard(run, TestContent.Take(combat, "patch"), [moss.Id]);
+        Assert.Equal(0, combat.Block);
+        _engine.EndTurn(run);
+        Assert.Equal(3, combat.Block);
+        Assert.Equal(new PassiveFired(moss.Id, PassiveTrigger.TurnStart), _log[_log.FindLastIndex(e => e is TurnStarted) + 1]);
+    }
+
+    [Fact]
     public void AFightStartPassiveAddsToTheEnergyThatAShipKeeps()
     {
         var run = NewRun("solar");
@@ -323,6 +349,46 @@ public class PassiveTests
         // The titan's shell raised 4 block for the whole enemy, so the arm's hull is untouched, but it was the arm that was hit.
         Assert.Contains(new EnemyHit(3, 3, 0, 10, 0), _log);
         Assert.Equal(37, combat.Enemy.Hull);
+    }
+
+    [Fact]
+    public void APassiveThatDisablesTheAimedPartSendsTheNextPassiveToTheBody()
+    {
+        var run = NewRun();
+        Fit(run, "sentry", 2, 0);
+        Fit(run, "stinger", 2, 1);
+        var combat = _engine.StartFight(run, "titan");
+        Assert.Equal(40 - 3 - 4, combat.Enemy.Hull);
+
+        // The shell is taken out so that it raises no block, and the arm is left with 2 hull.
+        combat.Enemy.Parts[1].Hull = 0;
+        combat.Enemy.Parts[0].Hull = 2;
+        _engine.SetTarget(run, 0);
+        _log.Clear();
+        _engine.EndTurn(run);
+
+        int turn = _log.FindIndex(e => e is TurnStarted);
+        Assert.Equal(
+            [new EnemyHit(3, 0, 3, 0, 0), new PartDisabled(0), new EnemyHit(4, 0, 4, 29)],
+            _log.Skip(turn).Where(e => e is EnemyHit or PartDisabled));
+        Assert.Null(combat.Target);
+        Assert.Equal(29, combat.Enemy.Hull);
+    }
+
+    [Fact]
+    public void AShipLostInTheEnemysTurnIsLostEvenIfItsPassivesWouldHaveWonTheNextTurn()
+    {
+        var run = NewRun();
+        Fit(run, "sentry", 2, 0);
+        var combat = _engine.StartFight(run, "dummy");
+        combat.Enemy.Hull = 1;
+        run.Hull = 1;
+        _log.Clear();
+
+        Assert.Equal(CombatOutcome.Lost, _engine.EndTurn(run));
+        Assert.Equal(RunResult.Lost, run.Result);
+        Assert.Equal(1, combat.Enemy.Hull);
+        Assert.DoesNotContain(_log, e => e is PassiveFired or TurnStarted);
     }
 
     [Fact]
@@ -542,6 +608,70 @@ public class PassiveTests
         Assert.Equal(2, _log.Count(e => e is PassiveFired { Trigger: PassiveTrigger.Standing }));
     }
 
+    [Fact]
+    public void ArmorCountsOncePerShipSoASecondArmoredPieceOnAnotherLaneTakesTheFullAttack()
+    {
+        var run = NewRun();
+        Fit(run, "wall", 0, 0);
+        var second = Fit(run, "wall", 2, 1);
+        var combat = Start(run, "side");
+
+        // The first wall, nearer the front and the left, is the one whose armor counts. The attack on lane 3
+        // reaches the second wall, which has none while the first one works.
+        var action = Assert.Single(_engine.NextActions(run));
+        Assert.Equal((second.Id, 10, 0), (action.Target!.Piece.Id, action.Intent.Amount, action.Armor));
+        _engine.EndTurn(run);
+        Assert.Equal(50, run.Hull);
+        Assert.Equal([second.Id], combat.DisabledPieceIds);
+        Assert.DoesNotContain(_log, e => e is PassiveFired { Trigger: PassiveTrigger.Standing });
+    }
+
+    /// <summary>
+    /// The enemy's turn is shown as it would go if the turn ended now. When block takes the whole of the first heavy
+    /// attack, its piece keeps working, so the second heavy attack on the lane reaches the same piece again.
+    /// </summary>
+    [Fact]
+    public void TheNextActionsFollowTheBlockSoAHeavyAttackThatIsBlockedLeavesItsPieceInFront()
+    {
+        var run = NewRun();
+        var front = Fit(run, "wall", 0, 0);
+        var back = Fit(run, "wall", 0, 1);
+        var combat = Start(run, "twin");
+
+        // Without block the first attack gets through, so the second is shown on the wall behind.
+        Assert.Equal([front.Id, back.Id], _engine.NextActions(run).Select(a => a.Target!.Piece.Id));
+
+        // With 8 block: the first attack lands for 6 and is absorbed, and the second lands on the same wall for 6,
+        // of which 2 block absorb the start. That is what the turn then does.
+        _engine.PlayCard(run, TestContent.Take(combat, "deflect"));
+        var actions = _engine.NextActions(run);
+        Assert.Equal([(front.Id, 6, 4), (front.Id, 6, 4)], actions.Select(a => (a.Target!.Piece.Id, a.Intent.Amount, a.Armor)));
+        _log.Clear();
+        _engine.EndTurn(run);
+        Assert.Equal(
+            [new ShipHit(6, 6, 0, 60, 0, null, 4), new ShipHit(6, 2, 4, 56, 0, 0, 4)],
+            _log.OfType<ShipHit>());
+        Assert.Equal([front.Id], combat.DisabledPieceIds);
+    }
+
+    /// <summary>The same when the armor takes the whole attack: the piece keeps working with no block at all.</summary>
+    [Fact]
+    public void TheNextActionsLeaveAPieceInFrontWhenItsArmorTakesTheWholeAttack()
+    {
+        var thick = Db.Piece("wall") with { Id = "thick", Name = "Thick", Passive = new PassiveDef("thick", PassiveTrigger.Standing, new LaneArmorEffect(25)) };
+        var db = ContentDb.Create([.. Db.Pieces, thick], Db.Cards, Db.Enemies, Db.Ships, Db.Sections, Db.Events);
+        var engine = new CombatEngine(db, _log.Add);
+        var run = RunFactory.NewRun(db, "test", 1);
+        var piece = run.NewPiece("thick");
+        new ShipFitter(db).Place(run.Ship, piece, new Cell(0, 0), Rotation.R0);
+        var combat = engine.StartFight(run, "twin");
+
+        Assert.Equal([(piece.Id, 0), (piece.Id, 0)], engine.NextActions(run).Select(a => (a.Target!.Piece.Id, a.Intent.Amount)));
+        engine.EndTurn(run);
+        Assert.Equal(60, run.Hull);
+        Assert.Empty(combat.DisabledPieceIds);
+    }
+
     // A won fight
 
     private RunState Win(RunState run, string enemyId = "dummy")
@@ -579,6 +709,22 @@ public class PassiveTests
         Assert.Equal(after, run.Hull);
         Assert.Equal(regained, run.Reward!.HullRegained);
         Assert.Equal(regained > 0, _log.Any(e => e is PassiveFired));
+    }
+
+    [Theory]
+    [InlineData(40, 47, 7, 2)]
+    [InlineData(58, 60, 2, 1)]
+    public void TwoPassivesOfDifferentNamesAddUpToTheMaximumHull(int hull, int after, int regained, int fired)
+    {
+        var run = NewRun();
+        Fit(run, "still", 0, 0);
+        Fit(run, "pond", 2, 0);
+        run.Hull = hull;
+        Win(run);
+        Assert.Equal(after, run.Hull);
+        Assert.Equal(regained, run.Reward!.HullRegained);
+        Assert.Equal(fired, _log.Count(e => e is PassiveFired { Trigger: PassiveTrigger.FightWon }));
+        Assert.Equal(regained, _log.OfType<HullRegained>().Sum(e => e.Amount));
     }
 
     [Fact]
@@ -659,14 +805,14 @@ public class PassiveTests
             withOne += bare;
         }
 
-        // Nine of the test pieces that can be offered add no cards, so nearly every offer of 6 holds one.
+        // Ten of the test pieces that can be offered add no cards, so nearly every offer of 6 holds one.
         Assert.InRange(withOne, 250, 300);
     }
 
     [Fact]
     public void AnOfferIsShorterWhenTooFewPiecesWithCardsAreLeft()
     {
-        // The bridge is never offered, so this leaves the lance and nine pieces without cards.
+        // The bridge is never offered, so this leaves the lance and ten pieces without cards.
         var db = ContentDb.Create(
             [.. Db.Pieces.Where(p => p.IsBridge || p.Id == "lance" || p.Cards.Count == 0)], Db.Cards, Db.Enemies, Db.Ships, Db.Sections, TestContent.PlainEvents);
         var offer = new RewardEngine(db).RollPieces(RunFactory.NewRun(db, "test", 1), Rules.RewardChoices);
