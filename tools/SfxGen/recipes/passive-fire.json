@@ -1,0 +1,13 @@
+{
+  "id": "passive-fire",
+  "family": "ship",
+  "description": "A piece's passive takes effect: a seed pod ticks once, and a small glass bead rings after it.",
+  "level": -12,
+  "variants": 2,
+  "vary": { "pitch": 0.3, "time": 0.1, "tone": 0.2 },
+  "layers": [
+    { "wave": "wood", "note": "A5", "decay": 70, "hardness": 0.5 },
+    { "wave": "glass", "note": "D7", "gain": -10, "at": 18, "decay": 180, "hardness": 0.2 }
+  ],
+  "master": { "highpass": 300, "lowpass": 9500, "reverb": { "decay": 200, "mix": -20, "damp": 5000, "predelay": 8 } }
+}

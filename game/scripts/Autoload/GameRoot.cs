@@ -50,6 +50,7 @@ public partial class GameRoot : Node
     private const string ProfileSave = "user://profile.json";
     private const string UnreadableProfileCopy = "user://profile.unreadable.json";
     private const string ShipFlag = "--ship=";
+    private const string LoadoutFlag = "--loadout=";
 
     private const ulong DemoSeed = 7;
 
@@ -147,9 +148,10 @@ public partial class GameRoot : Node
         if (demo)
         {
             string ship = RequestedShip(Content) ?? DemoShip;
-            Session = RunSession.StartNew(Content, _store, new RunSetup(ship, DemoSeed));
+            string? loadout = RequestedLoadout(Content.Ship(ship));
+            Session = RunSession.StartNew(Content, _store, new RunSetup(ship, DemoSeed, LoadoutId: loadout));
             AddChild(new FxDemo());
-            GD.Print($"GameRoot: FX demo ({ship}); the run is kept in memory and not saved.");
+            GD.Print($"GameRoot: FX demo ({ship}{(loadout is null ? "" : $", loadout {loadout}")}); the run is kept in memory and not saved.");
             return;
         }
 
@@ -403,6 +405,29 @@ public partial class GameRoot : Node
         }
 
         GD.PushError($"GameRoot: unknown ship class '{id}' in {ShipFlag}; using '{DemoShip}'.");
+        return null;
+    }
+
+    /// <summary>
+    /// Debug launch option <c>-- --loadout=&lt;id&gt;</c> chooses the loadout that the FX demo plays, among those of its
+    /// ship class. Returns null, for the ship's first loadout, when omitted or when the ship has no such loadout
+    /// (after logging an error).
+    /// </summary>
+    private static string? RequestedLoadout(ShipClassDef ship)
+    {
+        string? arg = OS.GetCmdlineUserArgs().FirstOrDefault(a => a.StartsWith(LoadoutFlag, StringComparison.Ordinal));
+        if (arg is null)
+        {
+            return null;
+        }
+
+        string id = arg[LoadoutFlag.Length..];
+        if (ship.Loadouts.Any(l => l.Id == id))
+        {
+            return id;
+        }
+
+        GD.PushError($"GameRoot: the {ship.Name} has no loadout '{id}' in {LoadoutFlag}; using its first.");
         return null;
     }
 

@@ -96,8 +96,12 @@ internal static class GridPainter
         }
     }
 
-    /// <summary>A lane that a heavy attack names: an amber dashed column, and a "HEAVY" tag pointing into it.</summary>
-    public static void DrawHeavyLane(CanvasItem canvas, GridLayout g, int lane)
+    /// <summary>
+    /// A lane that a heavy attack names: an amber dashed column, and a "HEAVY" tag pointing into it. With
+    /// <paramref name="amount"/>, the tag also carries the damage the attack will do as it lands on this ship
+    /// (<c>CombatEngine.EffectiveIntent</c>), in the block color when lane armor has reduced it.
+    /// </summary>
+    public static void DrawHeavyLane(CanvasItem canvas, GridLayout g, int lane, int? amount = null, bool armored = false)
     {
         var laneRect = g.LaneRect(lane);
         canvas.DrawRect(laneRect, Palette.Heavy with { A = 0.06f });
@@ -107,8 +111,17 @@ internal static class GridPainter
         int size = (int)Mathf.Clamp(g.CellSize * 0.17f, 13, 20);
         float cx = laneRect.GetCenter().X;
         float top = laneRect.Position.Y;
-        float half = (font.GetStringSize("HEAVY", HorizontalAlignment.Left, -1, size).X / 2f) + 8f;
-        canvas.DrawString(font, new Vector2(cx - half, top - 17), "HEAVY", HorizontalAlignment.Center, half * 2f, size, Palette.Heavy);
+        string number = amount is int value ? $" {value}" : "";
+        float wordWidth = font.GetStringSize("HEAVY", HorizontalAlignment.Left, -1, size).X;
+        float numberWidth = number.Length == 0 ? 0f : font.GetStringSize(number, HorizontalAlignment.Left, -1, size).X;
+        float half = ((wordWidth + numberWidth) / 2f) + 8f;
+        float left = cx - ((wordWidth + numberWidth) / 2f);
+        canvas.DrawString(font, new Vector2(left, top - 17), "HEAVY", HorizontalAlignment.Left, -1, size, Palette.Heavy);
+        if (number.Length > 0)
+        {
+            canvas.DrawString(font, new Vector2(left + wordWidth, top - 17), number, HorizontalAlignment.Left, -1, size, armored ? Palette.Block : Palette.Heavy);
+        }
+
         float yTop = top - 17 - font.GetAscent(size) - 2;
         float yBottom = top - 13;
         canvas.DrawPolyline([new Vector2(cx - half + 4, yTop), new Vector2(cx - half, yTop), new Vector2(cx - half, yBottom), new Vector2(cx - half + 4, yBottom)], Palette.Heavy, 1.4f, antialiased: true);
@@ -409,6 +422,31 @@ internal static class GridPainter
         canvas.DrawRect(tag, Palette.SurfaceDeep with { A = 0.75f });
         canvas.DrawLine(tag.Position, new Vector2(tag.Position.X, tag.End.Y), Palette.Refused, 2f);
         canvas.DrawString(font, tag.Position + new Vector2(5, 1 + font.GetAscent(fontSize)), "OFFLINE", HorizontalAlignment.Left, -1, fontSize, Palette.Refused);
+    }
+
+    /// <summary>
+    /// The mark of a piece that has a passive: a small lit ring around a dot, like a pilot light, in the top-left
+    /// of its first cell. It is dim and has no dot when the passive does not count, because the ship already
+    /// counts a passive of that name from another piece.
+    /// </summary>
+    public static void DrawPassiveMark(CanvasItem canvas, GridLayout g, IReadOnlyCollection<Cell> cells, bool counts = true)
+    {
+        var (center, radius) = PassiveMark(g, cells);
+        var color = counts ? Palette.Passive : Palette.Muted;
+        canvas.DrawCircle(center, radius + 2f, Palette.SurfaceDeep with { A = 0.7f });
+        canvas.DrawArc(center, radius, 0f, Mathf.Tau, 24, color, counts ? 1.6f : 2f, antialiased: true);
+        if (counts)
+        {
+            canvas.DrawCircle(center, radius * 0.42f, color.Lerp(Colors.White, 0.35f));
+        }
+    }
+
+    /// <summary>Where <see cref="DrawPassiveMark"/> puts its mark for a piece, and the mark's radius.</summary>
+    internal static (Vector2 Center, float Radius) PassiveMark(GridLayout g, IReadOnlyCollection<Cell> cells)
+    {
+        var corner = g.CellRect(Cell.RowMajor(cells).First());
+        float radius = Mathf.Clamp(g.CellSize * 0.085f, 5f, 9f);
+        return (corner.Position + new Vector2(8f + radius, 8f + radius), radius);
     }
 
     /// <summary>The "+" on a piece that receives an adjacency bonus, bracketed in the top-right of its first cell.</summary>

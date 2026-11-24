@@ -20,6 +20,11 @@ namespace Bloom.Game.Screens;
 /// picking resumes as if the card had not been tapped.
 /// </para>
 /// <para>
+/// A tap on a piece shows what it does, in a panel over the hand: its cards, its passive and its bonus. A tap on
+/// the panel, on the same piece or beside the ship closes it, and so does any action. While a repair card is
+/// picking its pieces, a tap picks a piece and shows nothing.
+/// </para>
+/// <para>
 /// A boss's parts are shown in a row of <see cref="PartPanel"/>s under the enemy. Tapping a part aims at it and
 /// tapping the enemy aims at its body, each through <see cref="CombatEngine.SetTarget"/>, so the aim is saved.
 /// </para>
@@ -59,6 +64,8 @@ public partial class CombatScreen : Control
 
     private FxLayer _fx = null!;
     private CombatFeedback _feedback = null!;
+    private PanelContainer _pieceInfo = null!;
+    private RichTextLabel _pieceInfoText = null!;
 
     private EnemyEmblem _enemyEmblem = null!;
     private Label _enemyName = null!;
@@ -127,11 +134,14 @@ public partial class CombatScreen : Control
             CardRect,
             () => _cardButtons.Values.Where(IsLive).Select(b => b.GetGlobalRect()).ToList());
 
+        BuildPieceInfo(layout);
         _endTurn.Pressed += OnEndTurnPressed;
         GetNode<Button>("%CancelButton").Pressed += CancelTargeting;
         GetNode<Button>("%HangarButton").Pressed += LeaveForHangar;
         _grid.PieceTapped += OnPieceTapped;
+        _grid.BackgroundTapped += HidePieceInfo;
         _handScroll.Resized += OnHandResized;
+        GameRoot.Instance.Changed += HidePieceInfo;
         GameRoot.Instance.Changed += QueueRefresh;
         GameRoot.Instance.CombatEvents += OnCombatEvents;
 
@@ -150,6 +160,7 @@ public partial class CombatScreen : Control
 
     public override void _ExitTree()
     {
+        GameRoot.Instance.Changed -= HidePieceInfo;
         GameRoot.Instance.Changed -= QueueRefresh;
         GameRoot.Instance.CombatEvents -= OnCombatEvents;
     }
@@ -310,7 +321,7 @@ public partial class CombatScreen : Control
 
         var actions = session.Combat.NextActions(run);
         var body = actions.First(a => a.Part is null);
-        var (text, color) = IntentLook(body.Intent);
+        var (text, color) = IntentLook(body);
         if (body.Target is { } target)
         {
             text += $"  ·  {CardText.PieceName(session.Content.Piece(target.Piece.DefId), target.Piece)}";
@@ -324,12 +335,16 @@ public partial class CombatScreen : Control
         ShowParts(session, combat, actions);
     }
 
-    private static (string Text, Color Color) IntentLook(Intent intent) => intent.Kind switch
+    /// <summary>
+    /// A move as it will land on the ship: a heavy attack shows the damage left after lane armor, and what the
+    /// armor takes off after it, as in "Heavy attack 9 (−4)".
+    /// </summary>
+    private static (string Text, Color Color) IntentLook(EnemyAction action) => action.Intent.Kind switch
     {
-        IntentKind.Attack => ($"Attack {intent.Amount}", Palette.Attack),
-        IntentKind.HeavyAttack => ($"Heavy attack {intent.Amount}", Palette.Heavy),
-        IntentKind.Block => ($"Block {intent.Amount}", Palette.Block),
-        _ => (intent.Kind.ToString(), Colors.White),
+        IntentKind.Attack => ($"Attack {action.Intent.Amount}", Palette.Attack),
+        IntentKind.HeavyAttack => ($"Heavy attack {action.Intent.Amount}{(action.Armor > 0 ? $" (−{action.Armor})" : "")}", Palette.Heavy),
+        IntentKind.Block => ($"Block {action.Intent.Amount}", Palette.Block),
+        _ => (action.Intent.Kind.ToString(), Colors.White),
     };
 
     /// <summary>A panel for each of a boss's parts, in order; none for an enemy without parts.</summary>
@@ -359,9 +374,9 @@ public partial class CombatScreen : Control
         var defs = session.Content.Enemy(combat.Enemy.DefId).AllParts;
         for (int i = 0; i < parts.Count; i++)
         {
-            var intent = actions.FirstOrDefault(a => a.Part == i)?.Intent;
-            var (text, color) = intent is null ? ("", Palette.Muted) : IntentLook(intent);
-            _parts[i].SetPart(defs[i].Name, parts[i].Hull, parts[i].MaxHull, intent is null ? null : ArtLibrary.IntentIcon(intent.Kind), text, color, combat.Target == i);
+            var action = actions.FirstOrDefault(a => a.Part == i);
+            var (text, color) = action is null ? ("", Palette.Muted) : IntentLook(action);
+            _parts[i].SetPart(defs[i].Name, parts[i].Hull, parts[i].MaxHull, action is null ? null : ArtLibrary.IntentIcon(action.Intent.Kind), text, color, combat.Target == i);
         }
     }
 
@@ -751,6 +766,12 @@ public partial class CombatScreen : Control
 
     private void OnPieceTapped(int pieceId)
     {
+        if (_targetingCardId is null)
+        {
+            TogglePieceInfo(pieceId);
+            return;
+        }
+
         if (_targetingCardId is not int cardId || Session?.State.Combat is not { } combat || !combat.DisabledPieceIds.Contains(pieceId))
         {
             return;
@@ -770,6 +791,94 @@ public partial class CombatScreen : Control
         var targets = _chosenTargets.ToList();
         ClearTargeting();
         Act(s => s.Combat.PlayCard(s.State, cardId, targets));
+    }
+
+    /// <summary>The panel that shows a tapped piece's text. It is made here and not in the scene, since it floats over the hand.</summary>
+    private void BuildPieceInfo(Control layout)
+    {
+        _pieceInfo = new PanelContainer { Name = "PieceInfo", Visible = false, MouseFilter = MouseFilterEnum.Stop };
+
+        // Opaque, unlike the theme's panels: the hand lies under it and would show through the text.
+        _pieceInfo.AddThemeStyleboxOverride("panel", BloomTheme.FlatBox(Palette.Surface, Palette.HoloLine with { A = 0.45f }, border: 1, radius: 2));
+        var margin = new MarginContainer { MouseFilter = MouseFilterEnum.Ignore };
+        foreach (string side in new[] { "left", "top", "right", "bottom" })
+        {
+            margin.AddThemeConstantOverride($"margin_{side}", 16);
+        }
+
+        _pieceInfoText = new RichTextLabel
+        {
+            BbcodeEnabled = true,
+            FitContent = true,
+            ScrollActive = false,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            SizeFlagsVertical = SizeFlags.ShrinkCenter,
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+        _pieceInfoText.AddThemeFontSizeOverride("normal_font_size", 22);
+        _pieceInfoText.AddThemeFontSizeOverride("bold_font_size", 28);
+        margin.AddChild(_pieceInfoText);
+        _pieceInfo.AddChild(margin);
+        AddChild(_pieceInfo);
+
+        // Over the layout and under the effects, so a passive's pulse still shows while the panel is open.
+        MoveChild(_pieceInfo, layout.GetIndex() + 1);
+        BloomTheme.AttachPanelFrame(_pieceInfo);
+        _pieceInfo.GuiInput += e =>
+        {
+            if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
+            {
+                HidePieceInfo();
+            }
+        };
+        _pieceInfo.MinimumSizeChanged += PlacePieceInfo;
+    }
+
+    /// <summary>Shows what a fitted piece does, or closes the panel when it already shows that piece.</summary>
+    private void TogglePieceInfo(int pieceId)
+    {
+        if (Session is not { } session || session.State.Ship.Find(pieceId) is not { } fitted)
+        {
+            return;
+        }
+
+        if (_pieceInfo.Visible && _grid.InspectedPieceId == pieceId)
+        {
+            HidePieceInfo();
+            return;
+        }
+
+        var disabled = session.State.Combat?.DisabledPieceIds ?? [];
+        string text = CardText.PieceDetails(session.Content.Piece(fitted.Piece.DefId), session.Content, fitted.Piece.Upgraded);
+        if (disabled.Contains(pieceId))
+        {
+            text += $"\n[color=#{Palette.Refused.ToHtml(false)}]Offline[/color]";
+        }
+
+        _pieceInfoText.Text = text + CardText.PassiveNotCounted(session, pieceId, disabled);
+        _grid.InspectedPieceId = pieceId;
+        _pieceInfo.Visible = true;
+        PlacePieceInfo();
+    }
+
+    /// <summary>The panel covers the hand, and grows upward over the status lines when its text needs more room.</summary>
+    private void PlacePieceInfo()
+    {
+        if (!_pieceInfo.Visible)
+        {
+            return;
+        }
+
+        var hand = _handScroll.GetGlobalRect();
+        float height = Mathf.Max(hand.Size.Y, _pieceInfo.GetCombinedMinimumSize().Y);
+        _pieceInfo.GlobalPosition = new Vector2(hand.Position.X, hand.End.Y - height);
+        _pieceInfo.Size = new Vector2(hand.Size.X, height);
+    }
+
+    private void HidePieceInfo()
+    {
+        _pieceInfo.Visible = false;
+        _grid.InspectedPieceId = null;
     }
 
     private void ShowTargeting(CombatState? combat)

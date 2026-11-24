@@ -65,6 +65,7 @@ public partial class ShipPreview : Control
         GridPainter.DrawLanes(this, g);
         GridPainter.DrawHull(this, g, ship.Grid.Cells);
 
+        var counted = fitter.ActivePassives(ship, []).Select(p => p.Fitted.Piece.Id).ToHashSet();
         var bonuses = fitter.ActiveBonuses(ship, []);
         var receivers = bonuses.Select(b => b.ReceiverId).ToHashSet();
         foreach (var fitted in ship.Fitted)
@@ -75,6 +76,11 @@ public partial class ShipPreview : Control
             GridPainter.DrawPiece(this, g, cells, color);
             GridPainter.DrawPieceIcon(this, g, cells, ArtLibrary.PieceIcon(def), Palette.Glyph(color), GridPainter.NameLines(g, cells, def.Name));
             GridPainter.DrawLabel(this, g, cells, def.Name, Palette.Label(color));
+            if (def.Passive is not null)
+            {
+                GridPainter.DrawPassiveMark(this, g, cells, counted.Contains(fitted.Piece.Id));
+            }
+
             if (receivers.Contains(fitted.Piece.Id))
             {
                 GridPainter.DrawBonusBadge(this, g, cells, Palette.Badge);

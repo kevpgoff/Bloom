@@ -40,8 +40,27 @@ public partial class ShipGridView : Control
     private IReadOnlyCollection<int> _selectable = [];
     private IReadOnlyCollection<int> _chosen = [];
 
+    private int? _inspectedPieceId;
+
     /// <summary>A piece was tapped; the argument is its piece id.</summary>
     public event Action<int>? PieceTapped;
+
+    /// <summary>The view was tapped where no piece is.</summary>
+    public event Action? BackgroundTapped;
+
+    /// <summary>The piece whose text the screen is showing, outlined in white. It stays until the screen clears it.</summary>
+    public int? InspectedPieceId
+    {
+        get => _inspectedPieceId;
+        set
+        {
+            if (_inspectedPieceId != value)
+            {
+                _inspectedPieceId = value;
+                QueueRedraw();
+            }
+        }
+    }
 
     /// <summary>The piece behind the card under the finger or the mouse, outlined in white.</summary>
     public int? HighlightPieceId
@@ -151,9 +170,12 @@ public partial class ShipGridView : Control
         GridPainter.DrawHull(this, g, run.Ship.Grid.Cells, HullWarning.Deck(_warning));
         foreach (int lane in heavyLanes)
         {
-            GridPainter.DrawHeavyLane(this, g, lane);
+            // When two heavy attacks land on one lane, its tag shows the harder one.
+            var hardest = heavies.Where(a => a.Lane == lane).MaxBy(a => a.Intent.Amount)!;
+            GridPainter.DrawHeavyLane(this, g, lane, hardest.Intent.Amount, hardest.Armor > 0);
         }
 
+        var counted = _session.Fitter.ActivePassives(run.Ship, disabled).Select(p => p.Fitted.Piece.Id).ToHashSet();
         var bonuses = _session.Fitter.ActiveBonuses(run.Ship, disabled);
         var bonusReceivers = bonuses.Select(b => b.ReceiverId).ToHashSet();
         var targetIds = heavies.Where(a => a.Target is not null).Select(a => a.Target!.Piece.Id).ToHashSet();
@@ -172,6 +194,10 @@ public partial class ShipGridView : Control
             {
                 GridPainter.DrawOffTag(this, g, cells);
             }
+            else if (def.Passive is not null)
+            {
+                GridPainter.DrawPassiveMark(this, g, cells, counted.Contains(id));
+            }
 
             if (bonusReceivers.Contains(id))
             {
@@ -189,7 +215,7 @@ public partial class ShipGridView : Control
                 GridPainter.DrawOutline(this, g, cells, chosen ? Palette.Chosen : Palette.Selectable, chosen ? 8 : 5);
             }
 
-            if (id == _highlightPieceId)
+            if (id == _highlightPieceId || id == _inspectedPieceId)
             {
                 GridPainter.DrawOutline(this, g, cells, Colors.White, 4);
             }
@@ -219,7 +245,17 @@ public partial class ShipGridView : Control
             AcceptEvent();
             PieceTapped?.Invoke(fitted.Piece.Id);
         }
+        else
+        {
+            BackgroundTapped?.Invoke();
+        }
     }
+
+    /// <summary>Where a piece's passive mark sits, in local coordinates, or null when the piece is not fitted or nothing is drawn yet.</summary>
+    public Vector2? PassiveMarkCenter(int pieceId) =>
+        _session is not null && ComputeLayout() is { } g && _session.State.Ship.Find(pieceId) is { } fitted
+            ? GridPainter.PassiveMark(g, _session.Fitter.CellsOf(fitted)).Center
+            : null;
 
     /// <summary>The cells of a fitted piece, in local coordinates. Empty when the piece is not fitted or nothing is drawn yet.</summary>
     public IReadOnlyList<Rect2> PieceCellRects(int pieceId) =>

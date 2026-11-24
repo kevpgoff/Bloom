@@ -126,7 +126,7 @@ public partial class FittingScreen : Control
         }
 
         _info.Text = selected is int id && PieceOf(run, id) is { } piece
-            ? CardText.PieceDetails(session.Content.Piece(piece.DefId), session.Content, piece.Upgraded)
+            ? CardText.PieceDetails(session.Content.Piece(piece.DefId), session.Content, piece.Upgraded) + CardText.PassiveNotCounted(session, id, [])
             : "";
     }
 

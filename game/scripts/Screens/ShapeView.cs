@@ -67,5 +67,9 @@ public partial class ShapeView : Control
         var color = Palette.ForPiece(piece);
         GridPainter.DrawPiece(this, layout, shape.Cells, color);
         GridPainter.DrawPieceIcon(this, layout, shape.Cells, ArtLibrary.PieceIcon(piece), Palette.Glyph(color), labelLines: 0);
+        if (piece.Passive is not null)
+        {
+            GridPainter.DrawPassiveMark(this, layout, shape.Cells);
+        }
     }
 }
