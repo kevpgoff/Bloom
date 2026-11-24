@@ -398,59 +398,87 @@ public class ContentTests
 
 public class ShippedContentTests
 {
+    /// <summary>
+    /// The shipped content loads, and the lint finds nothing in it. These tests check the content's structure,
+    /// not its exact counts, so that adding an entry does not break them.
+    /// </summary>
     [Fact]
-    public void TheShippedContentLoadsAndPassesValidation()
+    public void TheShippedContentLoadsAndPassesValidationAndTheLint()
     {
         var db = TestContent.LoadShipped();
-        Assert.Equal(18, db.Pieces.Count); // the spec's 7, the placeholder Tinker, 8 placeholder rewards and 2 Heliotrope placeholders
-        Assert.Equal(19, db.Cards.Count);  // the spec's 8, the placeholder Patch, 8 for the rewards and 2 for the Heliotrope pieces
-        Assert.Equal(12, db.Enemies.Count);
-        Assert.Equal(2, db.Ships.Count);
-        Assert.Equal(10, db.Sections.Count);
-        Assert.Equal(20, db.Events.Count); // 10 sketched with the owner and 10 from the owner's writer prompt, 2026-11-23
+        Assert.Empty(ContentLint.Check(db));
     }
 
     /// <summary>
-    /// Every choice of every shipped event can be taken on the starting ship and continued past, with salvage to
-    /// pay for it. A choice that needs a tag the seedling lacks is played with a piece of that tag fitted on new hull.
+    /// A tag can be built around only when several pieces carry it, and a choice of an event can ask for any tag.
+    /// The numbers are the least that the 2026-11-23 piece set gives, so that a later change cannot thin a tag out
+    /// without this test saying so.
+    /// </summary>
+    [Fact]
+    public void EveryTagAndKindHasEnoughPiecesToBuildAround()
+    {
+        var offered = TestContent.LoadShipped().Pieces.Where(p => !p.IsBridge).ToList();
+        foreach (var tag in Enum.GetValues<Tag>().Where(t => t != Tag.Core))
+        {
+            var carrying = offered.Where(p => p.Tags.Contains(tag)).ToList();
+            Assert.True(carrying.Count >= 4, $"Only {carrying.Count} pieces carry {tag}.");
+            Assert.True(carrying.Count(p => p.Rarity == Rarity.Common) >= 2, $"Fewer than 2 common pieces carry {tag}.");
+            Assert.True(carrying.Any(p => p.Rarity != Rarity.Common), $"No uncommon or rare piece carries {tag}.");
+        }
+
+        Assert.True(offered.Count(p => p.Kind == PieceKind.Crew) >= 6);
+        Assert.True(offered.Count(p => p.Kind == PieceKind.Equipment) >= 12);
+    }
+
+    /// <summary>
+    /// Every choice of every shipped event can be taken on every ship and continued past, with salvage to pay for
+    /// it. A choice that needs a tag is played with a piece of that tag fitted on new hull.
     /// </summary>
     [Fact]
     public void EveryShippedEventChoiceCanBePlayed()
     {
         var db = TestContent.LoadShipped();
         var events = new EventEngine(db);
-        foreach (var ev in db.Events)
+        foreach (var ship in db.Ships)
         {
-            for (int i = 0; i < ev.Choices.Count; i++)
+            foreach (var ev in db.Events)
             {
-                for (ulong seed = 1; seed <= 4; seed++)
+                for (int i = 0; i < ev.Choices.Count; i++)
                 {
-                    var run = RunFactory.NewRun(db, "seedling", seed);
-                    run.Salvage = 500;
-                    if (ev.Choices[i].NeedsTag is { } tag)
+                    for (ulong seed = 1; seed <= 4; seed++)
                     {
-                        FitPieceWithTag(db, run, tag);
-                    }
+                        var run = RunFactory.NewRun(db, ship.Id, seed);
+                        run.Salvage = 500;
+                        if (ev.Choices[i].NeedsTag is { } tag)
+                        {
+                            FitPieceWithTag(db, run, tag);
+                        }
 
-                    run.Event = new EventVisit(ev.Id);
-                    Assert.Equal(ChoiceState.Open, events.StateOf(run, ev.Choices[i]));
-                    events.Choose(run, i);
-                    events.Continue(run);
-                    Assert.Contains(run.Phase, new[] { RunPhase.Map, RunPhase.Shipyard, RunPhase.Prepare });
+                        run.Event = new EventVisit(ev.Id);
+                        Assert.Equal(ChoiceState.Open, events.StateOf(run, ev.Choices[i]));
+                        events.Choose(run, i);
+                        events.Continue(run);
+                        Assert.Contains(run.Phase, new[] { RunPhase.Map, RunPhase.Shipyard, RunPhase.Prepare });
+                    }
                 }
             }
         }
     }
 
-    /// <summary>Test setup: grows two rows of hull behind the ship and fits the first piece with <paramref name="tag"/> there.</summary>
+    /// <summary>
+    /// Test setup: grows the hull over the whole grid and fits the first piece with <paramref name="tag"/> on the
+    /// first free spot. It works for any starting hull, wherever the hull sits in the grid.
+    /// </summary>
     private static void FitPieceWithTag(ContentDb db, RunState run, Tag tag)
     {
-        run.Ship.Grid.Attach([.. Enumerable.Range(0, Rules.GridColumns).SelectMany(x => new[] { new Cell(x, 6), new Cell(x, 7) })]);
+        var grid = run.Ship.Grid;
+        var all = Enumerable.Range(0, Rules.GridRows).SelectMany(y => Enumerable.Range(0, Rules.GridColumns).Select(x => new Cell(x, y)));
+        grid.Attach([.. all.Where(c => !grid.Contains(c))]);
         var piece = run.NewPiece(db.Pieces.First(p => !p.IsBridge && p.Tags.Contains(tag)).Id);
         run.Cargo.Add(piece);
         var refit = new RefitEngine(db);
         var spot = Enum.GetValues<Rotation>()
-            .SelectMany(r => Enumerable.Range(0, Rules.GridColumns).Select(x => (Origin: new Cell(x, 6), Rotation: r)))
+            .SelectMany(r => grid.Cells.Select(origin => (Origin: origin, Rotation: r)))
             .First(s => refit.PreviewPlacement(run, piece.Id, s.Origin, s.Rotation).Error == FitError.None);
         refit.FitFromCargo(run, piece.Id, spot.Origin, spot.Rotation);
     }
@@ -470,16 +498,40 @@ public class ShippedContentTests
         }
     }
 
-    /// <summary>The first sector (owner, 2026-11-22): 8 normal enemies, 3 hard ones and a boss.</summary>
+    /// <summary>
+    /// Every sector has enough enemies that a path seldom meets one twice: an enemy repeats in a run only after
+    /// the rest of its pool has been met. The early rows can all be skirmishes, so the early pool needs one enemy
+    /// for each of them. These are floors for any sector. The owner sized the first sector larger on 2026-11-22
+    /// (4 early, 4 late, 3 hard and a boss), and this test does not hold it to those numbers.
+    /// </summary>
     [Fact]
-    public void TheFirstSectorHasEnemiesInEveryPool()
+    public void EverySectorHasEnoughEnemiesInEveryPool()
     {
         var db = TestContent.LoadShipped();
-        int Count(EnemyPool pool) => db.Enemies.Count(e => e.Pool == pool && e.Sector == 1);
-        Assert.Equal(4, Count(EnemyPool.Early));
-        Assert.Equal(4, Count(EnemyPool.Late));
-        Assert.Equal(3, Count(EnemyPool.Hard));
-        Assert.Equal(1, Count(EnemyPool.Boss));
+        for (int sector = 1; sector <= Rules.SectorsPerRun; sector++)
+        {
+            int Count(EnemyPool pool) => db.Enemies.Count(e => e.Pool == pool && e.Sector == sector);
+            Assert.True(Count(EnemyPool.Early) >= Rules.MapEarlyRows, $"Sector {sector} has too few early enemies.");
+            Assert.True(Count(EnemyPool.Late) >= 3, $"Sector {sector} has too few late enemies.");
+            Assert.True(Count(EnemyPool.Hard) >= 2, $"Sector {sector} has too few hard enemies.");
+            Assert.True(Count(EnemyPool.Boss) >= 1, $"Sector {sector} has no boss.");
+        }
+    }
+
+    /// <summary>
+    /// Every sector has enough events that a path never has to meet one twice. The opening rows are skirmishes and
+    /// the row before the boss is fixed, and any other row of a path can be an event.
+    /// </summary>
+    [Fact]
+    public void EverySectorHasEnoughEvents()
+    {
+        var db = TestContent.LoadShipped();
+        int rowsThatCanHoldAnEvent = Rules.MapRows - Rules.MapOpeningRows - (Rules.MapRowBeforeBoss is null ? 0 : 1);
+        for (int sector = 1; sector <= Rules.SectorsPerRun; sector++)
+        {
+            int count = db.Events.Count(e => e.Sector == sector);
+            Assert.True(count >= rowsThatCanHoldAnEvent, $"Sector {sector} has {count} events, but a path can hold {rowsThatCanHoldAnEvent}.");
+        }
     }
 
     /// <summary>The spec's boss (owner, 2026-11-22): 2 or 3 parts, each acting every turn with its own pattern.</summary>
