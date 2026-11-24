@@ -29,8 +29,9 @@ public class CombatEventTests
 
     private static void MoveToHand(CombatState combat, int cardId)
     {
-        var card = combat.DiscardPile.Concat(combat.DrawPile).Single(c => c.Id == cardId);
+        var card = combat.DiscardPile.Concat(combat.DrawPile).Concat(combat.PlayedPile).Single(c => c.Id == cardId);
         combat.DiscardPile.Remove(card);
+        combat.PlayedPile.Remove(card);
         combat.DrawPile.Remove(card);
         combat.Hand.Add(card);
     }
@@ -133,6 +134,26 @@ public class CombatEventTests
         Assert.Equal(new DiscardShuffled(3), _log[2]);
         Assert.Equal(new CardDrawn(combat.Hand[^1].Id), _log[3]);
         Assert.Contains(basics.Skip(1), c => c.Id == combat.Hand[^1].Id);
+    }
+
+    [Fact]
+    public void AShuffleInTheMiddleOfATurnCountsOnlyTheDiscardPile()
+    {
+        var run = NewRun(); // the bridge's 4 cards are all in the hand
+        var combat = Start(run, "dummy");
+        var basics = combat.Hand.ToList();
+        combat.Hand.Clear();
+        combat.PlayedPile.Add(basics[0]);            // played earlier this turn
+        combat.DiscardPile.AddRange(basics.Skip(1)); // discarded in an earlier turn
+        var chorus = new CardInstance(900, "chorus", BridgeId(run));
+        combat.Hand.Add(chorus);
+
+        _engine.PlayCard(run, chorus.Id);
+        Assert.Equal(
+            [typeof(CardPlayed), typeof(DiscardShuffled), typeof(CardDrawn), typeof(CardDrawn)],
+            _log.Select(e => e.GetType()));
+        Assert.Equal(new DiscardShuffled(3), _log[1]);
+        Assert.DoesNotContain(combat.Hand, c => c.Id == basics[0].Id);
     }
 
     [Fact]

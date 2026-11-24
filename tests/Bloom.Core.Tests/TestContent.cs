@@ -220,12 +220,13 @@ internal static class TestContent
     /// <summary>
     /// Test setup: moves a copy of the card from wherever it is in the deck into the hand and returns its
     /// id. Pass <paramref name="skip"/> to take a later copy. Copies are counted in the hand, then the draw
-    /// pile, then the discard pile, and a copy already in the hand stays where it is, so taking copy 0 and
-    /// then copy 1 always gives two different cards.
+    /// pile, then the discard pile, then the cards played this turn, and a copy already in the hand stays where it
+    /// is, so taking copy 0 and then copy 1 always gives two different cards. Taking a card that was played this
+    /// turn is something the rules never do; tests use it to play one card several times without ending turns.
     /// </summary>
     public static int Take(CombatState combat, string cardId, int skip = 0)
     {
-        foreach (var pile in new[] { combat.Hand, combat.DrawPile, combat.DiscardPile })
+        foreach (var pile in new[] { combat.Hand, combat.DrawPile, combat.DiscardPile, combat.PlayedPile })
         {
             foreach (var card in pile.Where(c => c.CardId == cardId))
             {

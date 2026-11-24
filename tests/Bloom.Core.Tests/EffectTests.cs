@@ -12,7 +12,7 @@ public class EffectTests
     private readonly CombatEngine _engine = new(Db);
 
     private static CardInstance Card(CombatState combat, int id) =>
-        combat.Hand.Concat(combat.DrawPile).Concat(combat.DiscardPile).Concat(combat.OfflineCards).Single(c => c.Id == id);
+        combat.Hand.Concat(combat.DrawPile).Concat(combat.DiscardPile).Concat(combat.PlayedPile).Concat(combat.OfflineCards).Single(c => c.Id == id);
 
     private int PreviewDamage(RunState run, int cardId) =>
         _engine.Preview(run, Card(run.Combat!, cardId)).Effects.OfType<DamageEffect>().Single().Amount;
@@ -229,7 +229,7 @@ public class EffectTests
         Assert.Empty(combat.DisabledPieceIds);
         Assert.Empty(combat.OfflineCards);
         Assert.Equal(2, combat.DiscardPile.Count(c => c.SourcePieceId == plating.Id));
-        Assert.Contains(combat.DiscardPile, c => c.Id == patch);
+        Assert.Contains(combat.PlayedPile, c => c.Id == patch);
     }
 
     [Fact]
@@ -389,7 +389,7 @@ public class EffectTests
 
     private static void MoveToHand(CombatState combat, int cardId)
     {
-        foreach (var pile in new[] { combat.DrawPile, combat.DiscardPile })
+        foreach (var pile in new[] { combat.DrawPile, combat.DiscardPile, combat.PlayedPile })
         {
             if (pile.Find(c => c.Id == cardId) is { } card)
             {

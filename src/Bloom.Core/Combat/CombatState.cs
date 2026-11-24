@@ -130,6 +130,12 @@ public sealed class CombatState
 
     public List<CardInstance> DiscardPile { get; set; } = [];
 
+    /// <summary>
+    /// The cards played this turn, in the order they were played. They join the discard pile when the turn ends.
+    /// Until then no shuffle reaches them, so a card that was played cannot be drawn again in the same turn.
+    /// </summary>
+    public List<CardInstance> PlayedPile { get; set; } = [];
+
     /// <summary>Cards of disabled pieces. They are out of the deck until the piece is repaired.</summary>
     public List<CardInstance> OfflineCards { get; set; } = [];
 
