@@ -378,7 +378,7 @@ Taken as defaults, to confirm (all numbers and names are placeholders):
   - On a ship stripped down to the bridge and a Mirror Kite, the kite's two Glide cards (0: gain 1 energy, draw 1) draw each other without end, so the energy has no limit. That ship still plays at most 3 Rams in a turn, because a Glide draws one card and each Ram that is played stays out of the hand.
   - With a card that draws two (the Spore Singer's Chorus, or the upgraded kite's Glide), every card that is played comes back. A ship of the bridge, the Spore Singer and a Mirror Kite destroyed the Feral Harvester, the Strip Miner and the Grand Combine on turn 1 in 500 of 500 tries each.
   - Such a ship needs a Mirror Kite, which the Mirror Field event gives to any ship with a Solar piece, and it costs the pieces that are composted to strip the ship: at least 4 on the Seedling's first loadout, since the cargo hold keeps 3.
-  - A first draft of the set made this easier: a card that draws 1 for 1 energy (Nip, Bulwark and Shelter in that draft) pays for itself next to a Glide, and the bridge, a Mirror Kite and the common Mite Swarm won most fights on turn 1 with nothing upgraded. So no card of the set draws now. The rule itself is a question for the owner (below).
+  - A first draft of the set made this easier: a card that draws 1 for 1 energy (Nip, Bulwark and Shelter in that draft) pays for itself next to a Glide, and the bridge, a Mirror Kite and the common Mite Swarm won most fights on turn 1 with nothing upgraded. So no card of the set draws now. The owner decided the rule itself the same day (see "The draw rule" below).
 - **Commune of the Shield pieces.** Bark Plate, Tide Wall and Storm Shell are marked `tide_orchard`, since the spec gives the Seedling Garden and Shield as main tags. The two older Shield pieces have no commune. The rules do not read it.
 
 Asked for and approved by the owner:
@@ -387,6 +387,23 @@ Asked for and approved by the owner:
   - The Mite Swarm shows three mites and not a cloud of them, because smaller mites vanish at the 26 px that a three-cell piece gets on the grid.
   - The Shell Drone is a small drone under a dome of three plates, not a drone whose body is a shell. A domed body looked too much like the bridge and the Hive Core.
   - The Burning Glass uses the pointed lens of the Lens Grinder, so that the two Sunwrights lens pieces look related.
+
+### The draw rule, decided on 2026-11-23
+
+The question came out of piece set A (above): a card that was played could be drawn and played again in the same turn, and a small ship won any fight of sector 1 on its first turn. The owner decided that **a card cannot be drawn again in the turn in which it was played** ("Do not allow cards to be redrawn").
+
+How it is built:
+
+- **The played cards wait.** A played card goes to a pile of its own (`CombatState.PlayedPile`) and joins the discard pile when the turn ends. A shuffle in the middle of a turn takes only the discard pile, so it brings back the cards that were discarded in earlier turns and leaves out the cards played in this one. A card is therefore played at most once a turn. A heavy attack that disables a piece takes that piece's played cards offline with its other cards.
+- **Measured on the shipped content.** Before the rule, a ship of the bridge, the Spore Singer and a Mirror Kite won on turn 1 in 500 of 500 tries against each of the Feral Harvester, the Strip Miner and the Grand Combine. With the rule it wins on turn 1 in 0 of 500, and the most damage it does in that turn is 10. In 800 fights played at random, with every piece that draws fitted, no card was played twice in a turn.
+- **Save.** The save schema goes to 11 (a fight remembers the cards played this turn), so a run saved before is set aside and the hangar opens.
+
+Taken as defaults, to confirm:
+
+- **The discard count.** The "Discard" number on the Combat screen counts the played cards too. To the player a played card has gone to the discard pile; the rules keep it apart only so that no shuffle reaches it this turn. After a shuffle in the middle of a turn the number therefore falls to the count of cards played this turn, not to 0.
+- **Repaired cards.** The cards of a repaired piece still go to the discard pile at once (the ruling of 2026-11-21), so a later draw in the same turn can bring them into the hand. They were not played this turn.
+- **A draw that finds nothing.** When the draw pile and the discard pile are both empty, the rest of a draw is lost, as before. A ship with a small deck now meets this more often: once it has played its whole deck in a turn, it draws nothing more in that turn.
+- **Piece set A is unchanged.** No card of the set draws, because of the loop that the rule now ends. Cards that draw can be written again. Whether Nip, Bulwark, Signal and Shelter get back the draw of their first drafts is for the owner.
 
 ## Proposed in the spec, not yet confirmed
 
@@ -406,5 +423,4 @@ Asked for and approved by the owner:
 - Whether disabled pieces stay disabled after a fight.
 - Whether normal enemies have parts to target.
 - Whether crew can be lost for the rest of a run.
-- Whether a card that was played this turn can be drawn again in the same turn. Today it can, and a small ship with a Mirror Kite and the Spore Singer wins any fight of sector 1 on its first turn (see "Content guard and piece set A"). Options: keep played cards out of the shuffle until the turn ends, which ends every such loop because a card is then played at most once a turn; or keep the rule and take the draw or the energy off Glide, which leaves other pairs of cards to watch for; or treat the loop as a build that the player has earned.
 - Team and schedule for the first playable version.

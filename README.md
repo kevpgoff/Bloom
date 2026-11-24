@@ -96,7 +96,7 @@ A debug build can also start test runs from the hangar's Test tab: on the map, o
 | Fitting, adjacency, bonuses, lanes, cargo | Done, tested |
 | Deck from fitted pieces | Done, tested |
 | Content files: 33 pieces, 34 cards, 12 enemies, 20 events, 10 hull sections and 2 ship classes | Read strictly (an unknown property is an error) and checked by a validator and a lint in `dotnet test`; see `game/data/README.md`. Almost all of it is placeholder content |
-| Combat turn cycle (energy, draw, block, damage, heavy attacks that disable pieces) | Done, tested |
+| Combat turn cycle (energy, draw, block, damage, heavy attacks that disable pieces) | Done, tested. A card that was played cannot be drawn again in the same turn |
 | Card effects `repair`, `focus` and `grow`, and adjacency bonuses (`damageBonus`, `startGrown`) in combat | Done, tested; rulings in `docs/decisions.md` |
 | Rewards (1 of 3 pieces) and refitting (move, turn, fit, unfit, compost, undo) between fights | Done, tested; rulings in `docs/decisions.md` |
 | Sector map: generation, choosing nodes, skirmishes, hard fights, the boss, groves (repair), salvage from fights and composting | Done, tested; rulings in `docs/decisions.md`. One sector per run (`Rules.SectorsPerRun`) |
